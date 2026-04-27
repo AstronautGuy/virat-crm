@@ -4,7 +4,7 @@
 
 - **[x] Phase 1: Authentication & Access Control**
   - Kinde setup, tRPC middleware, session management
-- **Phase 2: Database Schema & Core Entities**
+- **[x] Phase 2: Database Schema & Core Entities**
   - Drizzle models, migrations, and database seeding
 - **Phase 3: Secure Workforce Operations (Geofencing)**
   - GPS Punch-in, server-side Haversine, Attendance logs
