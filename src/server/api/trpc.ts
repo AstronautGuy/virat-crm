@@ -6,9 +6,10 @@
  * TL;DR - This is where all the tRPC server stuff is created and plugged in. The pieces you will
  * need to use are documented accordingly near the end.
  */
-import { initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 
 import { db } from "@/server/db";
 
@@ -25,8 +26,13 @@ import { db } from "@/server/db";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
+  const { getUser, getPermission } = getKindeServerSession();
+  const user = await getUser();
+
   return {
     db,
+    user,
+    getPermission,
     ...opts,
   };
 };
@@ -104,3 +110,41 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * are logged in.
  */
 export const publicProcedure = t.procedure.use(timingMiddleware);
+
+/**
+ * Protected (authenticated) procedure
+ *
+ * If you want a query or mutation to ONLY be accessible to logged in users, use this. It verifies
+ * the session is valid and guarantees `ctx.user` is present.
+ */
+const isAuthed = t.middleware(({ ctx, next }) => {
+  if (!ctx.user || !ctx.user.id) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  return next({
+    ctx: {
+      ...ctx,
+      user: ctx.user,
+    },
+  });
+});
+
+export const protectedProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(isAuthed);
+
+/**
+ * Admin (authenticated + admin permission) procedure
+ */
+const isAdmin = t.middleware(async ({ ctx, next }) => {
+  const adminPermission = await ctx.getPermission("admin:access");
+  if (!adminPermission?.isGranted) {
+    throw new TRPCError({ code: "FORBIDDEN" });
+  }
+  return next({ ctx });
+});
+
+export const adminProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(isAuthed)
+  .use(isAdmin);
