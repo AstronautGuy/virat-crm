@@ -2,7 +2,7 @@
 
 ## Milestone 1: Modernization & Security Rewrite
 
-- **Phase 1: Authentication & Access Control**
+- **[x] Phase 1: Authentication & Access Control**
   - Kinde setup, tRPC middleware, session management
 - **Phase 2: Database Schema & Core Entities**
   - Drizzle models, migrations, and database seeding
