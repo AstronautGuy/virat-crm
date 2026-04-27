@@ -4,6 +4,7 @@ import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -16,9 +17,15 @@ const geist = Geist({
   variable: "--font-geist-sans",
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const { getUser, getPermission } = getKindeServerSession();
+  const user = await getUser();
+  const adminPermission = await getPermission("admin:access");
+  
+  // console.log("User:", user);
+  // console.log("Is Admin:", adminPermission?.isGranted);
   return (
     <html lang="en" className={`${geist.variable}`}>
       <body>
