@@ -1,6 +1,4 @@
-import Link from "next/link";
-
-import { api, HydrateClient } from "@/trpc/server";
+import { HydrateClient } from "@/trpc/server";
 import { MockLocationPinger } from "./_components/dev/MockLocationPinger";
 
 export default async function Home() {

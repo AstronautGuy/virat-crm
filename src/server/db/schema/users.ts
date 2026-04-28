@@ -1,4 +1,5 @@
-import { pgTableCreator, varchar, uuid, boolean, integer, timestamp, pgEnum, AnyPgColumn } from "drizzle-orm/pg-core";
+import { pgTableCreator, varchar, uuid, boolean, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { branches } from "./branches";
 import { relations } from "drizzle-orm";
 

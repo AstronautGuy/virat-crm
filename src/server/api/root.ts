@@ -1,6 +1,10 @@
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 import { locationRouter } from "./routers/location";
+import { hierarchyRouter } from "./routers/hierarchy";
+import { salesRouter } from "./routers/sales";
+import { replacementsRouter } from "./routers/replacements";
+import { notificationsRouter } from "./routers/notifications";
 
 /**
  * This is the primary router for your server.
@@ -9,6 +13,10 @@ import { locationRouter } from "./routers/location";
  */
 export const appRouter = createTRPCRouter({
   location: locationRouter,
+  hierarchy: hierarchyRouter,
+  sales: salesRouter,
+  replacements: replacementsRouter,
+  notifications: notificationsRouter,
 });
 
 // export type definition of API

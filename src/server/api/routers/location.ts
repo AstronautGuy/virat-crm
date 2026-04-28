@@ -56,12 +56,12 @@ export const locationRouter = createTRPCRouter({
       });
 
       let frequencyMap: Record<string, number> = {};
-      if (existingSlab && existingSlab.frequencyMap) {
+      if (existingSlab?.frequencyMap) {
         frequencyMap = existingSlab.frequencyMap;
       }
 
       // Increment frequency for current location
-      frequencyMap[coordsKey] = (frequencyMap[coordsKey] || 0) + 1;
+      frequencyMap[coordsKey] = (frequencyMap[coordsKey] ?? 0) + 1;
 
       // Find the most frequent location in the slab
       let maxCount = 0;

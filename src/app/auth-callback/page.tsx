@@ -8,7 +8,7 @@ export default async function AuthCallbackPage() {
   const { getUser } = getKindeServerSession();
   const user = await getUser();
 
-  if (!user || !user.id || !user.email) {
+  if (!user?.id || !user?.email) {
     redirect("/");
   }
 

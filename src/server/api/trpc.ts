@@ -118,7 +118,7 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
  * the session is valid and guarantees `ctx.user` is present.
  */
 const isAuthed = t.middleware(({ ctx, next }) => {
-  if (!ctx.user || !ctx.user.id) {
+  if (!ctx.user?.id) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
   return next({
