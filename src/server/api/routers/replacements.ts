@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { replacements } from "@/server/db/schema/replacements";
 import { users } from "@/server/db/schema/users";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, inArray } from "drizzle-orm";
 import { sales } from "@/server/db/schema/sales";
 
 export const replacementsRouter = createTRPCRouter({
@@ -58,6 +58,44 @@ export const replacementsRouter = createTRPCRouter({
       with: {
         sale: true,
       },
+      orderBy: (replacements, { desc }) => [desc(replacements.createdAt)],
+    });
+  }),
+
+  getReplacements: protectedProcedure.query(async ({ ctx }) => {
+    const currentUser = await ctx.db.query.users.findFirst({
+      where: eq(users.kindeId, ctx.user.id),
+      columns: { id: true, role: true },
+    });
+
+    if (!currentUser) return [];
+
+    if (currentUser.role === "Admin") {
+      return ctx.db.query.replacements.findMany({
+        with: { sale: true, user: true },
+        orderBy: (replacements, { desc }) => [desc(replacements.createdAt)],
+      });
+    }
+
+    // CTE to get all descendants for current user
+    const descendantsQuery = sql`
+      WITH RECURSIVE subordinates AS (
+        SELECT id FROM "virat-crm_user" WHERE manager_id = ${currentUser.id}
+        UNION
+        SELECT e.id FROM "virat-crm_user" e
+        INNER JOIN subordinates s ON s.id = e.manager_id
+      )
+      SELECT id FROM subordinates;
+    `;
+
+    const rows = await ctx.db.execute(descendantsQuery);
+    const descendantIds = rows.map((row: Record<string, unknown>) => String(row.id));
+    const allowedIds = [currentUser.id, ...descendantIds];
+
+    return ctx.db.query.replacements.findMany({
+      where: inArray(replacements.userId, allowedIds),
+      with: { sale: true, user: true },
+      orderBy: (replacements, { desc }) => [desc(replacements.createdAt)],
     });
   }),
 

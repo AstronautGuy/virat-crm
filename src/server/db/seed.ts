@@ -1,8 +1,17 @@
 import { db } from "./index";
-import { branches, users } from "./schema";
+import { branches, users, products, sales, saleItems, replacements } from "./schema";
+import { sql } from "drizzle-orm";
 
 async function main() {
   console.log("Seeding database...");
+
+  // Truncate tables to allow re-seeding
+  await db.execute(sql`TRUNCATE TABLE "virat-crm_replacement" CASCADE;`);
+  await db.execute(sql`TRUNCATE TABLE "virat-crm_sale_item" CASCADE;`);
+  await db.execute(sql`TRUNCATE TABLE "virat-crm_sale" CASCADE;`);
+  await db.execute(sql`TRUNCATE TABLE "virat-crm_product" CASCADE;`);
+  await db.execute(sql`TRUNCATE TABLE "virat-crm_user" CASCADE;`);
+  await db.execute(sql`TRUNCATE TABLE "virat-crm_branch" CASCADE;`);
 
   // Seed Branches
   const insertedBranches = await db
@@ -33,7 +42,7 @@ async function main() {
     throw new Error("Failed to insert Headquarters branch");
   }
 
-  // Seed Users (Admin)
+  // Seed Users (Admin & Employee)
   const insertedUsers = await db
     .insert(users)
     .values([
@@ -55,10 +64,106 @@ async function main() {
         branchId: hq.id,
         isActive: true,
       },
+      {
+        kindeId: "kp_mock_manager_123",
+        email: "manager@viraterp.com",
+        firstName: "Mock",
+        lastName: "Manager",
+        role: "Manager",
+        branchId: hq.id,
+        isActive: true,
+      }
     ])
     .returning();
 
   console.log("Users seeded:", insertedUsers.length);
+  const admin = insertedUsers[0];
+  const employee = insertedUsers[1];
+  const manager = insertedUsers[2];
+
+  // Seed Products
+  const insertedProducts = await db
+    .insert(products)
+    .values([
+      { name: "Virat Premium Cement", sku: "VPC-001", price: "350.00", stock: 1000 },
+      { name: "Virat Standard Cement", sku: "VSC-002", price: "280.00", stock: 2000 },
+      { name: "Virat Quick-Dry", sku: "VQD-003", price: "400.00", stock: 500 },
+    ])
+    .returning();
+  
+  console.log("Products seeded:", insertedProducts.length);
+  const p1 = insertedProducts[0]!;
+  const p2 = insertedProducts[1]!;
+
+  // Seed Sales
+  const insertedSales = await db
+    .insert(sales)
+    .values([
+      {
+        branchId: hq.id,
+        orderNumber: "ORD-1001",
+        transactionNumber: "TXN-1001",
+        status: "Approved",
+        userId: employee!.id,
+        managerId: manager!.id,
+        pincode: "110001",
+        customerName: "Ramesh Builders",
+        customerAddress: "New Delhi",
+        mainQty: 100,
+        freeQty: 10,
+        totalQty: 110,
+        invoiceAmount: "35000.00",
+        receivedAmount: "35000.00",
+        balanceAmount: "0.00",
+      },
+      {
+        branchId: hq.id,
+        orderNumber: "ORD-1002",
+        status: "Pending",
+        userId: employee!.id,
+        managerId: manager!.id,
+        pincode: "110002",
+        customerName: "Suresh Constructions",
+        customerAddress: "South Delhi",
+        mainQty: 50,
+        freeQty: 0,
+        totalQty: 50,
+        invoiceAmount: "14000.00",
+        receivedAmount: "5000.00",
+        balanceAmount: "9000.00",
+      }
+    ])
+    .returning();
+
+  console.log("Sales seeded:", insertedSales.length);
+  const sale1 = insertedSales[0]!;
+  const sale2 = insertedSales[1]!;
+
+  // Seed Sale Items
+  await db.insert(saleItems).values([
+    { saleId: sale1.id, productId: p1.id, quantity: 100, isFree: false },
+    { saleId: sale1.id, productId: p2.id, quantity: 10, isFree: true },
+    { saleId: sale2.id, productId: p2.id, quantity: 50, isFree: false },
+  ]);
+  console.log("Sale Items seeded");
+
+  // Seed Replacements
+  await db.insert(replacements).values([
+    {
+      originalSaleId: sale1.id,
+      userId: employee!.id,
+      reason: "Bags were torn during transit",
+      status: "Pending",
+    },
+    {
+      originalSaleId: sale2.id,
+      userId: employee!.id,
+      reason: "Quality check failed",
+      status: "Approved",
+    }
+  ]);
+  console.log("Replacements seeded");
+
   console.log("Database seeding completed.");
   process.exit(0);
 }

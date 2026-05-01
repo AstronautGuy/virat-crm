@@ -1,13 +1,15 @@
 import { HydrateClient } from "@/trpc/server";
-import { MockLocationPinger } from "./_components/dev/MockLocationPinger";
+import { DashboardLayout } from "./_components/layout/DashboardLayout";
 
 export default async function Home() {
 
   return (
     <HydrateClient>
-      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-       <MockLocationPinger />
-      </main>
+      <DashboardLayout>
+        <div className="flex min-h-[80vh] flex-col items-center justify-center rounded-xl bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
+          {/*<MockLocationPinger />*/}
+        </div>
+      </DashboardLayout>
     </HydrateClient>
   );
 }
