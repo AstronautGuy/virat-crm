@@ -5,6 +5,7 @@ import { hierarchyRouter } from "./routers/hierarchy";
 import { salesRouter } from "./routers/sales";
 import { replacementsRouter } from "./routers/replacements";
 import { notificationsRouter } from "./routers/notifications";
+import { usersRouter } from "./routers/users";
 
 /**
  * This is the primary router for your server.
@@ -17,6 +18,7 @@ export const appRouter = createTRPCRouter({
   sales: salesRouter,
   replacements: replacementsRouter,
   notifications: notificationsRouter,
+  users: usersRouter,
 });
 
 // export type definition of API
