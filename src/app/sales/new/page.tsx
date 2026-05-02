@@ -38,13 +38,21 @@ export default function NewSale() {
         setIsFetchingPincode(true);
         try {
           const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
-          const data = await res.json();
+          interface PincodeResponse {
+            PostOffice: Array<{
+              Name: string;
+              District: string;
+              State: string;
+            }>;
+            Status: string;
+          }
+          const data = (await res.json()) as PincodeResponse[];
           if (Array.isArray(data) && data[0]?.Status === "Success") {
             const postOffice = data[0].PostOffice?.[0];
             if (postOffice) {
-              setCity(postOffice.District || "");
-              setState(postOffice.State || "");
-              setArea(postOffice.Name || "");
+              setCity(postOffice.District ?? "");
+              setState(postOffice.State ?? "");
+              setArea(postOffice.Name ?? "");
             }
           }
         } catch (e) {
