@@ -15,6 +15,9 @@ export default function ReplacementsDashboard() {
   const { data: replacements, isLoading, refetch } = api.replacements.getReplacements.useQuery();
   const { mutate: updateStatus, isPending: isUpdating } = api.replacements.updateReplacementStatus.useMutation({
     onSuccess: () => refetch(),
+    onError: (error) => {
+      alert(`Status update failed: ${error.message}`);
+    }
   });
 
   const filteredReplacements = replacements?.filter(

@@ -15,6 +15,9 @@ export default function SalesDashboard() {
   const { data: sales, isLoading, refetch } = api.sales.getSales.useQuery();
   const { mutate: updateStatus, isPending: isUpdating } = api.sales.updateSaleStatus.useMutation({
     onSuccess: () => refetch(),
+    onError: (error) => {
+      alert(`Status update failed: ${error.message}`);
+    }
   });
 
   const filteredSales = sales?.filter(

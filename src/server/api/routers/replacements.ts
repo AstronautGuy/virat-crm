@@ -27,10 +27,22 @@ export const replacementsRouter = createTRPCRouter({
 
       if (!originalSale) throw new Error("Original sale not found");
       
-      // Admin and managers shouldn't normally be replacing on behalf, but if they do we could let them.
-      // But standard is that replacement is requested by the sale owner.
-      if (originalSale.userId !== currentUser.id && currentUser.role === "Employee") {
-        throw new Error("Unauthorized: Sale does not belong to you");
+      if (currentUser.role !== "Admin" && originalSale.userId !== currentUser.id) {
+        // If not the owner, must be a manager of the owner
+        const descendantsQuery = sql`
+          WITH RECURSIVE subordinates AS (
+            SELECT id FROM "virat-crm_user" WHERE manager_id = ${currentUser.id}
+            UNION
+            SELECT e.id FROM "virat-crm_user" e
+            INNER JOIN subordinates s ON s.id = e.manager_id
+          )
+          SELECT id FROM subordinates WHERE id = ${originalSale.userId} LIMIT 1;
+        `;
+
+        const rows = await ctx.db.execute(descendantsQuery);
+        if (rows.length === 0) {
+          throw new Error("Unauthorized: You do not have permission to request replacement for this sale");
+        }
       }
 
       const [replacement] = await ctx.db

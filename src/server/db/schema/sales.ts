@@ -18,6 +18,11 @@ export const sales = createTable("sale", {
   userId: uuid("user_id").references(() => users.id).notNull(), // Employee
   managerId: uuid("manager_id").references(() => users.id), // Field Supervisor
   pincode: varchar("pincode", { length: 20 }),
+  addressLine1: varchar("address_line_1", { length: 256 }),
+  landmark: varchar("landmark", { length: 256 }),
+  area: varchar("area", { length: 256 }),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 100 }),
   deliveryAddress: text("delivery_address"),
   customerName: varchar("customer_name", { length: 256 }),
   customerAddress: text("customer_address"),

@@ -10,13 +10,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Plus, Trash2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function NewSale() {
   const router = useRouter();
   
   const [branchId, setBranchId] = useState("1");
   const [pincode, setPincode] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [landmark, setLandmark] = useState("");
+  const [area, setArea] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [invoiceAmount, setInvoiceAmount] = useState("");
@@ -24,6 +29,33 @@ export default function NewSale() {
   const [receivedAmount, setReceivedAmount] = useState("");
   
   const [items, setItems] = useState([{ id: Date.now(), productId: "1", quantity: "1", isFree: false }]);
+
+  // Pincode Auto-fill Effect
+  const [isFetchingPincode, setIsFetchingPincode] = useState(false);
+  useEffect(() => {
+    if (pincode.length === 6 && /^[1-9][0-9]{5}$/.test(pincode)) {
+      const fetchDetails = async () => {
+        setIsFetchingPincode(true);
+        try {
+          const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+          const data = await res.json();
+          if (Array.isArray(data) && data[0]?.Status === "Success") {
+            const postOffice = data[0].PostOffice?.[0];
+            if (postOffice) {
+              setCity(postOffice.District || "");
+              setState(postOffice.State || "");
+              setArea(postOffice.Name || "");
+            }
+          }
+        } catch (e) {
+          console.error("Failed to fetch pincode details", e);
+        } finally {
+          setIsFetchingPincode(false);
+        }
+      };
+      void fetchDetails();
+    }
+  }, [pincode]);
 
   const { mutate: createSale, isPending } = api.sales.createSale.useMutation({
     onSuccess: () => {
@@ -40,6 +72,11 @@ export default function NewSale() {
     createSale({
       branchId: parseInt(branchId),
       pincode: pincode === "" ? undefined : pincode,
+      addressLine1: addressLine1 === "" ? undefined : addressLine1,
+      landmark: landmark === "" ? undefined : landmark,
+      area: area === "" ? undefined : area,
+      city: city === "" ? undefined : city,
+      state: state === "" ? undefined : state,
       customerName: customerName === "" ? undefined : customerName,
       customerAddress: customerAddress === "" ? undefined : customerAddress,
       invoiceAmount: invoiceAmount === "" ? undefined : invoiceAmount,
@@ -90,19 +127,43 @@ export default function NewSale() {
                   <Input id="branchId" value={branchId} onChange={e => setBranchId(e.target.value)} required type="number" />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="pincode" className="text-xs">Pincode (For Delivery)</Label>
-                  <Input id="pincode" value={pincode} onChange={e => setPincode(e.target.value)} placeholder="e.g. 400001" />
+                  <Label htmlFor="pincode" className="text-xs flex items-center justify-between">
+                    Pincode
+                    {isFetchingPincode && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+                  </Label>
+                  <Input id="pincode" value={pincode} onChange={e => setPincode(e.target.value)} placeholder="e.g. 110001" maxLength={6} />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="city" className="text-xs">City</Label>
+                  <Input id="city" value={city} onChange={e => setCity(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="state" className="text-xs">State</Label>
+                  <Input id="state" value={state} onChange={e => setState(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="area" className="text-xs">Area / Post Office</Label>
+                <Input id="area" value={area} onChange={e => setArea(e.target.value)} />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="addressLine1" className="text-xs">Address Line 1</Label>
+                <Input id="addressLine1" value={addressLine1} onChange={e => setAddressLine1(e.target.value)} placeholder="House No, Street, etc." />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="landmark" className="text-xs">Landmark</Label>
+                <Input id="landmark" value={landmark} onChange={e => setLandmark(e.target.value)} placeholder="Near XYZ..." />
               </div>
               
               <div className="space-y-1">
                 <Label htmlFor="customerName" className="text-xs">Customer Name</Label>
                 <Input id="customerName" value={customerName} onChange={e => setCustomerName(e.target.value)} />
-              </div>
-              
-              <div className="space-y-1">
-                <Label htmlFor="customerAddress" className="text-xs">Customer Address</Label>
-                <Textarea id="customerAddress" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} rows={2} />
               </div>
             </CardContent>
           </Card>
