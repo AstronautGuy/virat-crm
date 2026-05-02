@@ -8,7 +8,7 @@
   - Drizzle models, migrations, and database seeding
 - **[x] Phase 3: Secure Workforce Operations (Geofencing)**
   - GPS Punch-in, server-side Haversine, Attendance logs
-- **Phase 4: Transactions & Workflow Automation**
+- **[x] Phase 4: Transactions & Workflow Automation**
   - Sales logging, Leave management, Approvals
 - **Phase 5: Secure Cloud Storage**
   - Cloudflare R2 integration, pre-signed URLs, Document vault
