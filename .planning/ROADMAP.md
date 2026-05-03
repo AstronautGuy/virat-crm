@@ -8,8 +8,8 @@
 
 - **Phase 11: Real-time Location Intelligence**
   - GPS Breadcrumbs, Live Map View, Route Playback
-- **Phase 12: Visual Team Hierarchy & Territory Mapping**
-  - Interactive Org Tree, Map-based Territory overlays
+- **Phase 12: Visual Team Hierarchy**
+  - Interactive Org Tree, Manager-Subordinate reporting visualization
 - **Phase 13: Advanced Automated Reporting Engine**
   - Scheduled PDF/Excel reports, Custom Report Builder UI
 - **Phase 14: Milestone 3 Audit & Hardening**

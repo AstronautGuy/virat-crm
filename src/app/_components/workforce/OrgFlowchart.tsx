@@ -1,0 +1,190 @@
+"use client";
+
+import React, { useMemo, useEffect, useCallback } from "react";
+import ReactFlow, { 
+  Background, 
+  Controls, 
+  Handle, 
+  Position,
+  Node,
+  Edge,
+  useNodesState,
+  useEdgesState,
+  ConnectionLineType,
+} from "reactflow";
+import "reactflow/dist/style.css";
+import { api } from "@/trpc/react";
+import { Shield, Users, User, MapPin } from "lucide-react";
+import Link from "next/link";
+import dagre from "dagre";
+
+const NodeStyles = {
+  Admin: "border-purple-200 bg-purple-50 text-purple-700 hover:border-purple-300",
+  Manager: "border-blue-200 bg-blue-50 text-blue-700 hover:border-blue-300",
+  Employee: "border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300",
+};
+
+const CustomNode = ({ data }: any) => {
+  const Icon = data.role === "Admin" ? Shield : data.role === "Manager" ? Users : User;
+  
+  return (
+    <div className={`px-5 py-4 shadow-lg rounded-2xl border-2 min-w-[220px] bg-white transition-all duration-300 group ${NodeStyles[data.role as keyof typeof NodeStyles]}`}>
+      <Handle type="target" position={Position.Top} className="!w-3 !h-3 !bg-gray-300 !border-2 !border-white" />
+      <div className="flex items-center gap-4">
+        <div className={`p-3 rounded-xl transition-colors ${NodeStyles[data.role as keyof typeof NodeStyles]}`}>
+          <Icon className="h-6 w-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-0.5">{data.role}</p>
+          <p className="text-sm font-bold truncate text-gray-900">{data.name}</p>
+        </div>
+        <Link 
+          href={`/admin/live-map?userId=${data.id}`}
+          className="p-2 rounded-xl hover:bg-white/80 transition-all opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0"
+        >
+          <MapPin className="h-5 w-5 text-blue-600" />
+        </Link>
+      </div>
+      <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !bg-gray-300 !border-2 !border-white" />
+    </div>
+  );
+};
+
+const nodeTypes = {
+  custom: CustomNode,
+};
+
+const dagreGraph = new dagre.graphlib.Graph();
+dagreGraph.setDefaultEdgeLabel(() => ({}));
+
+const nodeWidth = 260;
+const nodeHeight = 100;
+
+const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = "TB") => {
+  const isHorizontal = direction === "LR";
+  dagreGraph.setGraph({ rankdir: direction, nodesep: 100, ranksep: 120 });
+
+  nodes.forEach((node) => {
+    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+  });
+
+  edges.forEach((edge) => {
+    dagreGraph.setEdge(edge.source, edge.target);
+  });
+
+  dagre.layout(dagreGraph);
+
+  nodes.forEach((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id);
+    node.targetPosition = isHorizontal ? Position.Left : Position.Top;
+    node.sourcePosition = isHorizontal ? Position.Right : Position.Bottom;
+
+    // We are shifting the dagre node position (which is center-based) to top-left-based
+    node.position = {
+      x: nodeWithPosition.x - nodeWidth / 2,
+      y: nodeWithPosition.y - nodeHeight / 2,
+    };
+
+    return node;
+  });
+
+  return { nodes, edges };
+};
+
+export function OrgFlowchart() {
+  const { data: roots, isLoading } = api.users.getOrgTree.useQuery();
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  const onLayout = useCallback(
+    (direction: string) => {
+      const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
+        nodes,
+        edges,
+        direction
+      );
+
+      setNodes([...layoutedNodes]);
+      setEdges([...layoutedEdges]);
+    },
+    [nodes, edges]
+  );
+
+  useEffect(() => {
+    if (!roots) return;
+
+    const initialNodes: Node[] = [];
+    const initialEdges: Edge[] = [];
+
+    const traverse = (node: any, parentId: string | null = null) => {
+      const id = node.id.toString();
+      
+      initialNodes.push({
+        id,
+        type: "custom",
+        data: { name: node.name, role: node.role, id: node.id },
+        position: { x: 0, y: 0 }, // Positioned by dagre
+      });
+
+      if (parentId) {
+        initialEdges.push({
+          id: `e-${parentId}-${id}`,
+          source: parentId,
+          target: id,
+          type: ConnectionLineType.SmoothStep,
+          animated: true,
+          style: { stroke: "#94a3b8", strokeWidth: 2 },
+        });
+      }
+
+      if (node.children) {
+        node.children.forEach((child: any) => traverse(child, id));
+      }
+    };
+
+    roots.forEach((root) => traverse(root));
+
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
+      initialNodes,
+      initialEdges
+    );
+
+    setNodes(layoutedNodes);
+    setEdges(layoutedEdges);
+  }, [roots]);
+
+  if (isLoading) return <div className="h-[700px] bg-gray-50 animate-pulse rounded-3xl" />;
+
+  return (
+    <div className="h-[800px] w-full border border-gray-100 rounded-3xl overflow-hidden bg-slate-50 shadow-inner relative">
+      <div className="absolute top-6 left-6 z-10 flex gap-2">
+        <button 
+          onClick={() => onLayout("TB")}
+          className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 text-xs font-bold hover:bg-gray-50 transition-colors"
+        >
+          Vertical
+        </button>
+        <button 
+          onClick={() => onLayout("LR")}
+          className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 text-xs font-bold hover:bg-gray-50 transition-colors"
+        >
+          Horizontal
+        </button>
+      </div>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        nodeTypes={nodeTypes}
+        connectionLineType={ConnectionLineType.SmoothStep}
+        fitView
+        minZoom={0.1}
+        maxZoom={1.5}
+      >
+        <Background color="#cbd5e1" gap={25} />
+        <Controls />
+      </ReactFlow>
+    </div>
+  );
+}
