@@ -27,12 +27,28 @@ import { db } from "@/server/db";
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   const { getUser, getPermission } = getKindeServerSession();
-  const user = await getUser();
+  let user = await getUser();
+
+  // Mock user for development if no session exists
+  if (!user && process.env.NODE_ENV === "development") {
+    user = {
+      id: "kp_mock_employee_123",
+      email: "employee1@viraterp.com",
+      given_name: "Test",
+      family_name: "Employee",
+      picture: null,
+    } as any;
+  }
+
+  const mockGetPermission = async (p: string) => {
+    if (process.env.NODE_ENV === "development") return { isGranted: true };
+    return getPermission(p);
+  };
 
   return {
     db,
     user,
-    getPermission,
+    getPermission: process.env.NODE_ENV === "development" ? mockGetPermission : getPermission,
     ...opts,
   };
 };

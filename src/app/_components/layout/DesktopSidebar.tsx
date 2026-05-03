@@ -2,16 +2,31 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingBag, Users, FileText, User } from "lucide-react";
+import { Home, ShoppingBag, Users, FileText, User, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 
 export function DesktopSidebar() {
   const pathname = usePathname();
+  const { getPermission, getPermissions, isAuthenticated, isLoading } = useKindeBrowserClient();
+
+  const permissions = getPermissions()?.permissions ?? [];
+  const isManager = permissions.includes("manager:access") || getPermission("manager:access")?.isGranted;
+  const isAdmin = permissions.includes("admin:access") || getPermission("admin:access")?.isGranted;
+  
+  // Show if manager/admin OR if in dev and still loading/mocked
+  const canViewMap = isManager || isAdmin || (process.env.NODE_ENV === "development");
 
   const links = [
     { href: "/", label: "Dashboard", icon: Home },
     { href: "/sales", label: "Sales Register", icon: ShoppingBag },
     { href: "/attendance", label: "Workforce", icon: Users },
+    { 
+      href: "/admin/live-map", 
+      label: "Live Field View", 
+      icon: MapPin,
+      hidden: !canViewMap 
+    },
     { href: "/documents", label: "Documents", icon: FileText },
     { href: "/profile", label: "My Profile", icon: User },
   ];
@@ -23,7 +38,7 @@ export function DesktopSidebar() {
       </div>
       <div className="p-4">
         <nav className="space-y-1">
-          {links.map((link) => {
+          {links.filter(l => !l.hidden).map((link) => {
             const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
             const Icon = link.icon;
             return (

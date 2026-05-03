@@ -4,7 +4,13 @@
 - **[x] v1: Modernization & Security Rewrite** ([Details](file:///.planning/milestones/v1-ROADMAP.md))
 - **[x] v2: Intelligence & Advanced Workflows** ([Details](file:///.planning/milestones/v2-ROADMAP.md))
 
-## Future Work
-- **Phase 11: Advanced Inventory Management**
-- **Phase 12: Multi-Branch Financial Consolidation**
-- **Phase 13: AI-Powered Sales Forecasting**
+## Milestone 3: Field Intelligence & Advanced Reporting
+
+- **Phase 11: Real-time Location Intelligence**
+  - GPS Breadcrumbs, Live Map View, Route Playback
+- **Phase 12: Visual Team Hierarchy & Territory Mapping**
+  - Interactive Org Tree, Map-based Territory overlays
+- **Phase 13: Advanced Automated Reporting Engine**
+  - Scheduled PDF/Excel reports, Custom Report Builder UI
+- **Phase 14: Milestone 3 Audit & Hardening**
+  - Performance optimization for maps, Security review

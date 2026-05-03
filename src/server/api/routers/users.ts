@@ -10,6 +10,16 @@ export const usersRouter = createTRPCRouter({
         manager: true,
       },
     });
-    return user;
+
+    const managerPerm = await ctx.getPermission("manager:access");
+    const adminPerm = await ctx.getPermission("admin:access");
+
+    return {
+      ...user,
+      permissions: {
+        isManager: !!managerPerm?.isGranted,
+        isAdmin: !!adminPerm?.isGranted,
+      },
+    };
   }),
 });

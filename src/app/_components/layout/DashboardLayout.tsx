@@ -1,11 +1,16 @@
+"use client";
+
 import { DesktopSidebar } from "./DesktopSidebar";
+import { MobileNav } from "./MobileNav";
 import { useSyncManager } from "@/hooks/use-sync-manager";
+import { useLocationBreadcrumbs } from "@/hooks/use-location-breadcrumbs";
 import { RefreshCcw, WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "../ErrorBoundary";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isSyncing, pendingCount } = useSyncManager();
+  useLocationBreadcrumbs();
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">

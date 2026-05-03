@@ -6,10 +6,25 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export default async function Home() {
-  const [salesSummary, workforceSummary] = await Promise.all([
-    api.analytics.getSalesSummary({ preset: "today" }),
-    api.analytics.getWorkforceSummary(),
-  ]);
+  const user = await api.users.getMe();
+  
+  const isManager = !!user?.permissions?.isManager || !!user?.permissions?.isAdmin;
+
+  let salesSummary = { revenue: 0, count: 0, quantity: 0 };
+  let workforceSummary = { activeToday: 0, pendingLeaves: 0 };
+
+  if (isManager) {
+    try {
+      const [sales, workforce] = await Promise.all([
+        api.analytics.getSalesSummary({ preset: "today" }),
+        api.analytics.getWorkforceSummary(),
+      ]);
+      salesSummary = sales;
+      workforceSummary = workforce;
+    } catch (error) {
+      console.error("Failed to fetch analytics:", error);
+    }
+  }
 
   const currencyFormatter = new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -18,11 +33,11 @@ export default async function Home() {
   });
 
   const metrics = [
-    { label: "Daily Sales", value: currencyFormatter.format(salesSummary.revenue), trend: `${salesSummary.count} Sales` },
-    { label: "Active Staff", value: `${workforceSummary.activeToday}`, trend: "Today" },
-    { label: "Pending Leaves", value: `${workforceSummary.pendingLeaves}`, trend: "Review" },
-    { label: "Daily Volume", value: `${salesSummary.quantity}`, trend: "Units" },
-  ];
+    { label: "Daily Sales", value: currencyFormatter.format(salesSummary.revenue), trend: `${salesSummary.count} Sales`, hide: !isManager },
+    { label: "Active Staff", value: `${workforceSummary.activeToday}`, trend: "Today", hide: !isManager },
+    { label: "Pending Leaves", value: `${workforceSummary.pendingLeaves}`, trend: "Review", hide: !isManager },
+    { label: "Daily Volume", value: `${salesSummary.quantity}`, trend: "Units", hide: !isManager },
+  ].filter(m => !m.hide);
 
   return (
     <HydrateClient>
@@ -30,7 +45,9 @@ export default async function Home() {
         <div className="flex flex-col space-y-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-sm text-gray-500">Welcome back. Here's what's happening today.</p>
+            <p className="text-sm text-gray-500">
+              Welcome back, {user?.firstName}. {isManager ? "Here's what's happening today." : "Have a productive day!"}
+            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

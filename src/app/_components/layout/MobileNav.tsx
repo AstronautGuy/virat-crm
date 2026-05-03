@@ -2,23 +2,37 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingBag, Users, FileText, User } from "lucide-react";
+import { Home, ShoppingBag, Users, FileText, User, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 
 export function MobileNav() {
   const pathname = usePathname();
+  const { getPermission, getPermissions, isAuthenticated, isLoading } = useKindeBrowserClient();
+
+  const permissions = getPermissions()?.permissions ?? [];
+  const isManager = permissions.includes("manager:access") || getPermission("manager:access")?.isGranted;
+  const isAdmin = permissions.includes("admin:access") || getPermission("admin:access")?.isGranted;
+  
+  const canViewMap = isManager || isAdmin || (process.env.NODE_ENV === "development");
 
   const links = [
     { href: "/", label: "Home", icon: Home },
     { href: "/sales", label: "Sales", icon: ShoppingBag },
     { href: "/attendance", label: "Staff", icon: Users },
+    { 
+      href: "/admin/live-map", 
+      label: "Live", 
+      icon: MapPin,
+      hidden: !canViewMap
+    },
     { href: "/documents", label: "Docs", icon: FileText },
     { href: "/profile", label: "Profile", icon: User },
   ];
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-around border-t border-gray-100 bg-white/80 backdrop-blur-md px-2 pb-safe md:hidden">
-      {links.map((link) => {
+      {links.filter(l => !l.hidden).map((link) => {
         const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
         const Icon = link.icon;
         return (

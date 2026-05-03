@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/trpc/react";
-import { getOfflineQueue, removeFromOfflineQueue } from "./offline-db";
+import { getOfflineQueue, removeFromOfflineQueue } from "@/lib/offline-db";
 
 export function useSyncManager() {
   const [isSyncing, setIsSyncing] = useState(false);

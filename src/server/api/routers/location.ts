@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { locationLogs } from "@/server/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { createTRPCRouter, protectedProcedure, managerProcedure } from "@/server/api/trpc";
+import { locationLogs, breadcrumbs, users } from "@/server/db/schema";
+import { eq, and, desc, inArray, gte, lte, asc } from "drizzle-orm";
 
 function getCurrentSlab() {
   const now = new Date();
@@ -96,7 +96,7 @@ export const locationRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  getHistory: protectedProcedure
+  getHistory: managerProcedure
     .input(
       z.object({
         userId: z.string().uuid(),
@@ -115,5 +115,129 @@ export const locationRouter = createTRPCRouter({
       });
 
       return logs;
+    }),
+
+  logBreadcrumb: protectedProcedure
+    .input(
+      z.object({
+        latitude: z.number(),
+        longitude: z.number(),
+        accuracy: z.number().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.query.users.findFirst({
+        where: (users, { eq }) => eq(users.kindeId, ctx.user.id),
+      });
+
+      if (!user) {
+        throw new Error("User not found in database");
+      }
+
+      await ctx.db.insert(breadcrumbs).values({
+        userId: user.id,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        accuracy: input.accuracy,
+      });
+
+      return { success: true };
+    }),
+
+  getLiveTeam: managerProcedure
+    .query(async ({ ctx }) => {
+      const currentUser = await ctx.db.query.users.findFirst({
+        where: (users, { eq }) => eq(users.kindeId, ctx.user.id),
+      });
+
+      if (!currentUser) throw new Error("User not found");
+
+      const adminPermission = await ctx.getPermission("admin:access");
+      const isSystemAdmin = adminPermission?.isGranted;
+
+      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+
+      // Find all users this manager can see
+      let visibleUserIds: string[] = [];
+      if (isSystemAdmin) {
+        // Admin sees everyone
+        const allUsers = await ctx.db.query.users.findMany({
+          columns: { id: true },
+        });
+        visibleUserIds = allUsers.map(u => u.id);
+      } else {
+        // Manager sees their subordinates
+        const subordinates = await ctx.db.query.users.findMany({
+          where: eq(users.managerId, currentUser.id),
+          columns: { id: true },
+        });
+        visibleUserIds = subordinates.map(u => u.id);
+      }
+
+      if (visibleUserIds.length === 0) return [];
+
+      const latestBreadcrumbs = await ctx.db.query.breadcrumbs.findMany({
+        where: and(
+          gte(breadcrumbs.createdAt, fifteenMinutesAgo),
+          inArray(breadcrumbs.userId, visibleUserIds)
+        ),
+        with: {
+          user: true,
+        },
+        orderBy: (breadcrumbs, { desc }) => [desc(breadcrumbs.createdAt)],
+      });
+
+      const userMap = new Map();
+      latestBreadcrumbs.forEach((b) => {
+        if (!userMap.has(b.userId)) {
+          userMap.set(b.userId, b);
+        }
+      });
+
+      return Array.from(userMap.values());
+    }),
+
+  getRoutePlayback: managerProcedure
+    .input(
+      z.object({
+        userId: z.string().uuid(),
+        date: z.string(), // YYYY-MM-DD
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const currentUser = await ctx.db.query.users.findFirst({
+        where: (users, { eq }) => eq(users.kindeId, ctx.user.id),
+      });
+
+      if (!currentUser) throw new Error("User not found");
+
+      const adminPermission = await ctx.getPermission("admin:access");
+      const isSystemAdmin = adminPermission?.isGranted;
+
+      // Check if manager is authorized to see this user
+      if (!isSystemAdmin) {
+        const targetUser = await ctx.db.query.users.findFirst({
+          where: and(
+            eq(users.id, input.userId),
+            eq(users.managerId, currentUser.id)
+          ),
+        });
+        if (!targetUser) throw new Error("Not authorized to view this user's route");
+      }
+
+      // Fetch breadcrumbs for a specific day
+      const startOfDay = new Date(`${input.date}T00:00:00Z`);
+      const endOfDay = new Date(`${input.date}T23:59:59Z`);
+
+      const path = await ctx.db.query.breadcrumbs.findMany({
+        where: and(
+          eq(breadcrumbs.userId, input.userId),
+          gte(breadcrumbs.createdAt, startOfDay),
+          lte(breadcrumbs.createdAt, endOfDay)
+        ),
+        orderBy: [asc(breadcrumbs.createdAt)],
+      });
+
+      return path;
     }),
 });

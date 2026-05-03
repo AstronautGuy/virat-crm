@@ -1,12 +1,12 @@
 ---
 status: active
-current_phase: 10 (archived)
-progress: 100% (Milestone 2 Shipped)
+current_phase: 11 (planning)
+progress: 0% (Planning M3)
 ---
 # Project State
 
 ## Current Focus
-Planning Milestone 3: Operations Expansion.
+Phase 11: Real-time Location Intelligence.
 
 ## Project Reference
 See: .planning/PROJECT.md (updated 2026-05-03)

@@ -16,15 +16,18 @@ Secure, mobile-first operations management that ensures authenticated access and
 - ✓ Track branch locations
 - ✓ Log daily attendance and sales transactions
 - ✓ Manage leave requests
-- ✓ Upload and store staff documents (Phase 5)
-- ✓ Mobile-first PWA with bottom navigation (Phase 6)
+- ✓ Upload and store staff documents
+- ✓ Mobile-first PWA with bottom navigation
+- ✓ Analytics & Business Intelligence dashboards (M2)
+- ✓ Web Push Notifications for system alerts (M2)
+- ✓ Advanced Offline Data Synchronization (M2)
 
-### Active (Milestone 2)
+### Active (Milestone 3: Field Intelligence & Advanced Reporting)
 
-- [ ] Analytics & Business Intelligence dashboards
-- [ ] Web Push Notifications for system alerts
-- [ ] Advanced Offline Data Synchronization
-- [ ] Real-time workforce location heatmaps
+- [ ] Real-time Location Tracking (Breadcrumbs & Live Maps)
+- [ ] Visual Team Hierarchy & Territory Mapping
+- [ ] Advanced Automated Reporting (PDF/Excel scheduled reports)
+- [ ] Performance Heatmaps (Sales vs. Location data)
 
 ### Out of Scope
 
@@ -38,14 +41,19 @@ Secure, mobile-first operations management that ensures authenticated access and
 - **v1: Foundations**: Auth, DB, Geofencing, Storage, PWA.
 - **v2: Intelligence**: Analytics, Push, Offline Sync, Hardening.
 
-### Next Milestone: M3 (Operations Expansion)
-- Goal: Deepen inventory and financial workflows.
+### Next Milestone: M3 (Field Intelligence & Advanced Reporting)
+- Goal: Establish real-time field visibility, visual team mapping, and automated reporting engines.
 
 ## Constraints
 
-- **Tech Stack**: Next.js App Router, Tailwind v4, Drizzle ORM, tRPC, Kinde Auth, Cloudflare R2, **Tremor/Recharts** (for analytics).
-- **Security**: Server-side verification — Geofencing and roles must be validated securely on the backend.
-- **Data Integrity**: Conflict resolution for offline sync — Ensure transactions are merged correctly when connectivity returns.
+- **Data Integrity**: Multi-branch consistency — Ensure inventory updates are atomic across locations.
+
+## Mobile Compatibility (Native Wrapper Focus)
+
+- **Map Interaction**: All mapping features must be fully touch-optimized with high hit-targets and smooth gestures.
+- **Location Efficiency**: Periodic breadcrumbs must be battery-efficient and designed for WebView background execution limits.
+- **File Handling**: PDF/Excel report generation and viewing must be designed to work reliably inside a native mobile wrapper (WebView).
+- **Responsive Charts**: All analytics and heatmaps must use mobile-first responsive scaling (Recharts/Tremor).
 
 ## Key Decisions
 
@@ -55,10 +63,12 @@ Secure, mobile-first operations management that ensures authenticated access and
 | Server-Side Haversine | Prevent GPS spoofing and secure the punch-in flow | Completed (Phase 3) |
 | Cloudflare R2 | S3-compatible replacement for managed Base44 uploads | Completed (Phase 5) |
 | Serwist PWA | Modern Service Worker management for Next.js 15 | Completed (Phase 6) |
+| Web Push (VAPID) | Native notifications for real-time workflow alerts | Completed (Phase 8) |
+| IndexedDB Queue | Robust offline resilience for field agents | Completed (Phase 9) |
 
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
 
 ---
-*Last updated: 2026-05-03 after Milestone 1 Completion*
+*Last updated: 2026-05-03 after Milestone 2 Completion*
