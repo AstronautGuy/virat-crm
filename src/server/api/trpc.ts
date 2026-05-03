@@ -148,3 +148,21 @@ export const adminProcedure = t.procedure
   .use(timingMiddleware)
   .use(isAuthed)
   .use(isAdmin);
+
+/**
+ * Manager (authenticated + manager or admin permission) procedure
+ */
+const isManager = t.middleware(async ({ ctx, next }) => {
+  const managerPermission = await ctx.getPermission("manager:access");
+  const adminPermission = await ctx.getPermission("admin:access");
+  
+  if (!managerPermission?.isGranted && !adminPermission?.isGranted) {
+    throw new TRPCError({ code: "FORBIDDEN" });
+  }
+  return next({ ctx });
+});
+
+export const managerProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(isAuthed)
+  .use(isManager);

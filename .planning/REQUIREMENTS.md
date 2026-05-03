@@ -1,72 +1,25 @@
-# Requirements: Virat ERP
+# Milestone 2 Requirements: Analytics & Advanced Workflows
 
-**Defined:** 2026-04-27
-**Core Value:** Secure, mobile-first operations management that ensures authenticated access and verifiably accurate location tracking for remote workforce punch-ins.
+## 1. Analytics & Business Intelligence (BI)
+- **Sales Dashboard**: Interactive charts (line/bar) showing sales trends over time, top-performing products, and branch-wise performance.
+- **Workforce Dashboard**: Attendance rates, geofence breach frequency, and leave balance summaries.
+- **CSV/Excel Export**: Ability to export filtered reports for external accounting.
 
-## v1 Requirements
+## 2. Web Push Notifications
+- **Status Alerts**: Notify agents when their sales/leaves are approved or rejected.
+- **Geofence Alerts**: Notify managers of punch-ins outside the authorized radius (if policy requires).
+- **Admin Broadcasts**: Send system-wide announcements to all active PWAs.
 
-### Authentication & Access
+## 3. Advanced Offline Data Synchronization
+- **Transaction Queue**: Save sales/attendance logs to IndexedDB when offline.
+- **Auto-Sync**: Automatically push queued transactions when the network is restored.
+- **Conflict Handling**: Handle scenarios where an offline transaction conflicts with server state (e.g., duplicate order numbers).
 
-- [ ] **AUTH-01**: Implement Kinde Auth for employee login mapping `ecode` to username
-- [ ] **AUTH-02**: Enforce strict server-side RBAC using tRPC middleware
-- [ ] **AUTH-03**: Secure session management using HTTP-only cookies
+## 4. Real-time Maps
+- **Staff Heatmap**: View last known locations of field staff (during active shift only) on a Mapbox/Leaflet interface.
+- **Branch Coverage**: Visualize geographical distribution of sales activity.
 
-### Core Entities & Database
-
-- [ ] **DATA-01**: Implement Drizzle ORM schema for Employees, Branches, Attendance, Transactions, Leaves, Documents, Replacements, Vouchers, Ledgers, Announcements, SystemLogs
-- [ ] **DATA-02**: Support relational constraints and cascading rules for the workforce hierarchy
-
-### Workforce Operations
-
-- [ ] **OPS-01**: Geofenced punch-in/out capturing GPS coordinates securely
-- [ ] **OPS-02**: Server-side distance calculation (Haversine) from branch coordinates
-- [ ] **OPS-03**: Employee leave management (request, approve/deny)
-- [ ] **OPS-04**: Sales transaction logging and replacement workflows
-
-### Secure Storage
-
-- [ ] **STOR-01**: Cloudflare R2 integration via pre-signed S3 URLs
-- [ ] **STOR-02**: Server-side enforcement of 5MB file upload limit
-- [ ] **STOR-03**: Secure retrieval of staff documents
-
-### Mobile Experience (PWA)
-
-- [ ] **MOB-01**: Mobile-first Tailwind layouts with bottom navigation
-- [ ] **MOB-02**: Minimum 44px hit targets and touch-friendly interactions
-- [ ] **MOB-03**: PWA manifest and service worker configuration
-
-## Out of Scope
-
-| Feature | Reason |
-|---------|--------|
-| InvokeLLM | Explicitly removed from new architecture |
-| Client-Side Geofencing | Security vulnerability |
-
-## Traceability
-
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
-| DATA-01 | Phase 2 | Pending |
-| DATA-02 | Phase 2 | Pending |
-| OPS-01 | Phase 3 | Pending |
-| OPS-02 | Phase 3 | Pending |
-| OPS-03 | Phase 4 | Pending |
-| OPS-04 | Phase 4 | Pending |
-| STOR-01 | Phase 5 | Pending |
-| STOR-02 | Phase 5 | Pending |
-| STOR-03 | Phase 5 | Pending |
-| MOB-01 | Phase 6 | Pending |
-| MOB-02 | Phase 6 | Pending |
-| MOB-03 | Phase 6 | Pending |
-
-**Coverage:**
-- v1 requirements: 15 total
-- Mapped to phases: 15
-- Unmapped: 0 ✓
-
----
-*Requirements defined: 2026-04-27*
-*Last updated: 2026-04-27 after initial definition*
+## Non-Functional Requirements
+- **Responsive Charts**: Analytics must be readable on mobile (portrait and landscape).
+- **Battery Efficiency**: Push notifications should not significantly drain mobile battery.
+- **Data Privacy**: Location tracking only active during official shift hours.

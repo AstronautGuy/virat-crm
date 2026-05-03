@@ -4,6 +4,7 @@ import { replacements } from "@/server/db/schema/replacements";
 import { users } from "@/server/db/schema/users";
 import { eq, sql, inArray } from "drizzle-orm";
 import { sales } from "@/server/db/schema/sales";
+import { sendNotificationToUser } from "@/server/lib/push";
 
 export const replacementsRouter = createTRPCRouter({
   createReplacement: protectedProcedure
@@ -20,7 +21,6 @@ export const replacementsRouter = createTRPCRouter({
 
       if (!currentUser) throw new Error("User not found");
 
-      // Verify ownership
       const originalSale = await ctx.db.query.sales.findFirst({
         where: eq(sales.id, input.originalSaleId),
       });
@@ -28,7 +28,6 @@ export const replacementsRouter = createTRPCRouter({
       if (!originalSale) throw new Error("Original sale not found");
       
       if (currentUser.role !== "Admin" && originalSale.userId !== currentUser.id) {
-        // If not the owner, must be a manager of the owner
         const descendantsQuery = sql`
           WITH RECURSIVE subordinates AS (
             SELECT id FROM "virat-crm_user" WHERE manager_id = ${currentUser.id}
@@ -41,7 +40,7 @@ export const replacementsRouter = createTRPCRouter({
 
         const rows = await ctx.db.execute(descendantsQuery);
         if (rows.length === 0) {
-          throw new Error("Unauthorized: You do not have permission to request replacement for this sale");
+          throw new Error("Unauthorized");
         }
       }
 
@@ -98,7 +97,6 @@ export const replacementsRouter = createTRPCRouter({
       });
     }
 
-    // CTE to get all descendants for current user
     const descendantsQuery = sql`
       WITH RECURSIVE subordinates AS (
         SELECT id FROM "virat-crm_user" WHERE manager_id = ${currentUser.id}
@@ -110,7 +108,7 @@ export const replacementsRouter = createTRPCRouter({
     `;
 
     const rows = await ctx.db.execute(descendantsQuery);
-    const descendantIds = rows.map((row: Record<string, unknown>) => String(row.id));
+    const descendantIds = rows.map((row: any) => String(row.id));
     const allowedIds = [currentUser.id, ...descendantIds];
 
     return ctx.db.query.replacements.findMany({
@@ -135,7 +133,6 @@ export const replacementsRouter = createTRPCRouter({
 
       if (!currentUser) throw new Error("User not found");
 
-      // Verify the replacement exists
       const targetReplacement = await ctx.db.query.replacements.findFirst({
         where: eq(replacements.id, input.replacementId),
       });
@@ -147,7 +144,6 @@ export const replacementsRouter = createTRPCRouter({
           throw new Error("Unauthorized to update status");
         }
 
-        // Must be an ancestor/manager of the user who made the replacement request
         const descendantsQuery = sql`
           WITH RECURSIVE subordinates AS (
             SELECT id FROM "virat-crm_user" WHERE manager_id = ${currentUser.id}
@@ -160,7 +156,7 @@ export const replacementsRouter = createTRPCRouter({
 
         const rows = await ctx.db.execute(descendantsQuery);
         if (rows.length === 0) {
-          throw new Error("Unauthorized: Replacement request does not belong to your team");
+          throw new Error("Unauthorized");
         }
       }
 
@@ -169,6 +165,15 @@ export const replacementsRouter = createTRPCRouter({
         .set({ status: input.status })
         .where(eq(replacements.id, input.replacementId))
         .returning();
+
+      if (updated) {
+        void sendNotificationToUser(updated.userId, {
+          title: `Replacement ${input.status}`,
+          body: `Your replacement request for ID ${updated.id} has been ${input.status.toLowerCase()}.`,
+          url: "/replacements",
+        });
+      }
+
       return updated;
     }),
 });

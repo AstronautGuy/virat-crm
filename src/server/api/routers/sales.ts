@@ -4,6 +4,7 @@ import { sales } from "@/server/db/schema/sales";
 import { saleItems } from "@/server/db/schema/saleItems";
 import { users } from "@/server/db/schema/users";
 import { eq, inArray, sql } from "drizzle-orm";
+import { sendNotificationToUser } from "@/server/lib/push";
 
 export const salesRouter = createTRPCRouter({
   createSale: protectedProcedure
@@ -31,23 +32,21 @@ export const salesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // 1. Fetch current user
       const currentUser = await ctx.db.query.users.findFirst({
         where: eq(users.kindeId, ctx.user.id),
       });
 
       if (!currentUser) throw new Error("User not found");
 
-      // 2. Fetch delivery address from Pincode API if pincode is provided
       let deliveryAddress = "";
       if (input.pincode) {
         try {
           const res = await fetch(`https://api.postalpincode.in/pincode/${input.pincode}`);
-          const data = (await res.json()) as Array<{ Status: string; PostOffice: Array<Record<string, unknown>> }>;
+          const data = (await res.json()) as any;
           if (Array.isArray(data) && data[0]?.Status === "Success") {
             const postOffice = data[0].PostOffice?.[0];
             if (postOffice) {
-              deliveryAddress = `${String(postOffice.Name)}, ${String(postOffice.District)}, ${String(postOffice.State)}, ${String(postOffice.Country)}`;
+              deliveryAddress = `${postOffice.Name}, ${postOffice.District}, ${postOffice.State}`;
             }
           }
         } catch (e) {
@@ -55,7 +54,6 @@ export const salesRouter = createTRPCRouter({
         }
       }
 
-      // 3. Calculate totals
       let mainQty = 0;
       let freeQty = 0;
       for (const item of input.items) {
@@ -69,7 +67,6 @@ export const salesRouter = createTRPCRouter({
       const receivedAmt = parseFloat(input.receivedAmount ?? "0");
       const balanceAmt = invoiceAmt - advanceAmt - receivedAmt;
 
-      // 4. Create Sale
       const orderNumber = `ORD-${Date.now()}`;
       const transactionNumber = `TXN-${Date.now()}`;
 
@@ -100,7 +97,6 @@ export const salesRouter = createTRPCRouter({
         })
         .returning();
 
-      // 5. Insert Items
       if (input.items.length > 0 && newSale) {
         await ctx.db.insert(saleItems).values(
           input.items.map((item) => ({
@@ -138,7 +134,6 @@ export const salesRouter = createTRPCRouter({
       });
     }
 
-    // CTE to get all descendants for current user
     const descendantsQuery = sql`
       WITH RECURSIVE subordinates AS (
         SELECT id FROM "virat-crm_user" WHERE manager_id = ${currentUser.id}
@@ -150,7 +145,7 @@ export const salesRouter = createTRPCRouter({
     `;
 
     const rows = await ctx.db.execute(descendantsQuery);
-    const descendantIds = rows.map((row: Record<string, unknown>) => String(row.id));
+    const descendantIds = rows.map((row: any) => String(row.id));
     const allowedIds = [currentUser.id, ...descendantIds];
 
     return ctx.db.query.sales.findMany({
@@ -177,7 +172,6 @@ export const salesRouter = createTRPCRouter({
 
       if (!currentUser) throw new Error("User not found");
 
-      // Verify the sale exists
       const targetSale = await ctx.db.query.sales.findFirst({
         where: eq(sales.id, input.saleId),
       });
@@ -185,13 +179,10 @@ export const salesRouter = createTRPCRouter({
       if (!targetSale) throw new Error("Sale not found");
 
       if (currentUser.role !== "Admin") {
-        // Must be manager to approve
         if (currentUser.role !== "Manager") {
           throw new Error("Unauthorized to update status");
         }
 
-        // Must be an ancestor/manager of the user who made the sale
-        // Using CTE to check descendants
         const descendantsQuery = sql`
           WITH RECURSIVE subordinates AS (
             SELECT id FROM "virat-crm_user" WHERE manager_id = ${currentUser.id}
@@ -213,6 +204,15 @@ export const salesRouter = createTRPCRouter({
         .set({ status: input.status })
         .where(eq(sales.id, input.saleId))
         .returning();
+
+      if (updated) {
+        void sendNotificationToUser(updated.userId, {
+          title: `Sale ${input.status}`,
+          body: `Your order ${updated.orderNumber} has been ${input.status.toLowerCase()}.`,
+          url: "/sales",
+        });
+      }
+
       return updated;
     }),
 });

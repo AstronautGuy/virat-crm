@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, User, Mail, Shield, Briefcase, MapPin } from "lucide-react";
+import { PushSettings } from "../_components/PushSettings";
 
 export default function ProfilePage() {
   const { data: user, isLoading } = api.users.getMe.useQuery();
@@ -105,6 +106,16 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Notification Settings</CardTitle>
+            <CardDescription>Configure how you receive real-time alerts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PushSettings />
           </CardContent>
         </Card>
 

@@ -8,3 +8,4 @@ export { saleItems, saleItemsRelations } from "./saleItems";
 export { replacements, replacementsRelations } from "./replacements";
 export { notifications, notificationsRelations } from "./notifications";
 export { files, filesRelations, fileEntityTypeEnum } from "./files";
+export { pushSubscriptions, pushSubscriptionsRelations } from "./pushSubscriptions";

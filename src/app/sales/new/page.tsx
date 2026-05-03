@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Loader2, CheckCircle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Loader2, CheckCircle, WifiOff } from "lucide-react";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -79,9 +80,9 @@ export default function NewSale() {
     }
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    createSale({
+    const saleData = {
       branchId: parseInt(branchId),
       pincode: pincode === "" ? undefined : pincode,
       addressLine1: addressLine1 === "" ? undefined : addressLine1,
@@ -99,7 +100,21 @@ export default function NewSale() {
         quantity: parseInt(item.quantity),
         isFree: item.isFree
       }))
-    });
+    };
+
+    if (!navigator.onLine) {
+      const { addToOfflineQueue } = await import("@/lib/offline-db");
+      await addToOfflineQueue({
+        type: "createSale",
+        data: saleData,
+        createdAt: Date.now()
+      });
+      setSuccess(true);
+      setNewSaleId(-1); // Indicator for offline
+      return;
+    }
+
+    createSale(saleData);
   };
 
   const addItem = () => {
@@ -129,38 +144,58 @@ export default function NewSale() {
 
         {success && newSaleId ? (
           <div className="space-y-6">
-            <Card className="border-primary/20 bg-primary/5">
+            <Card className={cn(
+              "border-primary/20",
+              newSaleId === -1 ? "bg-orange-50 border-orange-200" : "bg-primary/5"
+            )}>
               <CardContent className="pt-6 text-center">
-                <div className="inline-flex p-3 bg-primary/20 rounded-full mb-4">
-                  <CheckCircle className="w-10 h-10 text-primary" />
+                <div className={cn(
+                  "inline-flex p-3 rounded-full mb-4",
+                  newSaleId === -1 ? "bg-orange-100" : "bg-primary/20"
+                )}>
+                  {newSaleId === -1 ? (
+                    <WifiOff className="w-10 h-10 text-orange-600" />
+                  ) : (
+                    <CheckCircle className="w-10 h-10 text-primary" />
+                  )}
                 </div>
-                <h2 className="text-2xl font-bold">Sale Logged Successfully!</h2>
+                <h2 className="text-2xl font-bold">
+                  {newSaleId === -1 ? "Sale Saved Locally!" : "Sale Logged Successfully!"}
+                </h2>
                 <p className="text-muted-foreground mt-2">
-                  Your sale record has been created. You can now upload the invoice or relevant documents below.
+                  {newSaleId === -1 
+                    ? "You are currently offline. This sale has been saved to your device and will sync automatically once you regain connection."
+                    : "Your sale record has been created. You can now upload the invoice or relevant documents below."}
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold uppercase text-muted-foreground">Upload Invoice / Documents</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <FileUploader 
-                  entityType="sale" 
-                  entityId={newSaleId} 
-                  maxFiles={3}
-                  onUploadComplete={() => {
-                    // Optional: show a small toast or success indicator
-                  }}
-                />
-                <div className="mt-6 flex justify-center">
-                  <Link href="/sales">
-                    <Button variant="outline">Skip & Finish</Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
+            {newSaleId !== -1 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-semibold uppercase text-muted-foreground">Upload Invoice / Documents</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <FileUploader 
+                    entityType="sale" 
+                    entityId={newSaleId} 
+                    maxFiles={3}
+                    onUploadComplete={() => {}}
+                  />
+                  <div className="mt-6 flex justify-center">
+                    <Link href="/sales">
+                      <Button variant="outline">Skip & Finish</Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="flex justify-center">
+                <Link href="/sales">
+                  <Button className="px-8">Return to Sales</Button>
+                </Link>
+              </div>
+            )}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6 pb-6">

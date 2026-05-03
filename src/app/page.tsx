@@ -1,4 +1,4 @@
-import { HydrateClient } from "@/trpc/server";
+import { api, HydrateClient } from "@/trpc/server";
 import { DashboardLayout } from "./_components/layout/DashboardLayout";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,23 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export default async function Home() {
+  const [salesSummary, workforceSummary] = await Promise.all([
+    api.analytics.getSalesSummary({ preset: "today" }),
+    api.analytics.getWorkforceSummary(),
+  ]);
+
+  const currencyFormatter = new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  });
+
+  const metrics = [
+    { label: "Daily Sales", value: currencyFormatter.format(salesSummary.revenue), trend: `${salesSummary.count} Sales` },
+    { label: "Active Staff", value: `${workforceSummary.activeToday}`, trend: "Today" },
+    { label: "Pending Leaves", value: `${workforceSummary.pendingLeaves}`, trend: "Review" },
+    { label: "Daily Volume", value: `${salesSummary.quantity}`, trend: "Units" },
+  ];
 
   return (
     <HydrateClient>
@@ -17,19 +34,13 @@ export default async function Home() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { label: "Daily Sales", value: "₹42,500", trend: "+12%" },
-              { label: "Active Staff", value: "18/24", trend: "Normal" },
-              { label: "Pending Sales", value: "7", trend: "Action Required" },
-              { label: "Stock Alerts", value: "3", trend: "Urgent" },
-            ].map((metric) => (
+            {metrics.map((metric) => (
               <div key={metric.label} className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:shadow-md">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{metric.label}</p>
                 <div className="mt-1 flex items-end justify-between">
                   <p className="text-2xl font-bold text-gray-900">{metric.value}</p>
                   <span className={cn(
-                    "text-[10px] font-medium px-2 py-0.5 rounded-full",
-                    metric.trend.includes("+") || metric.trend === "Normal" ? "bg-blue-50 text-blue-600" : "bg-orange-50 text-orange-600"
+                    "text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-600"
                   )}>
                     {metric.trend}
                   </span>

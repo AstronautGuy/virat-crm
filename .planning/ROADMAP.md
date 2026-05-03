@@ -14,3 +14,14 @@
   - Cloudflare R2 integration, pre-signed URLs, Document vault
 - **[x] Phase 6: Mobile PWA & UI Polish**
   - Bottom navigation, hit-targets, Service Workers, dynamic imports
+
+## Milestone 2: Intelligence & Advanced Workflows
+
+- **[x] Phase 7: Backend Analytics & Aggregation Layer**
+  - SQL aggregation queries (Drizzle), tRPC analytics endpoints, CSV export backend
+- **[x] Phase 8: Web Push Notifications & Real-time Alerts**
+  - Push API, VAPID setup, Approval alerts, Admin broadcasts
+- **[x] Phase 9: Advanced Offline Sync & Conflict Resolution**
+  - IndexedDB (Dexie) integration, Sync manager, Optimistic UI
+- **[x] Phase 10: Project Hardening & Final Audit**
+  - Performance audit, Security review, Final documentation
