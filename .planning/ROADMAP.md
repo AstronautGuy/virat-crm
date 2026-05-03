@@ -10,7 +10,7 @@
   - GPS Punch-in, server-side Haversine, Attendance logs
 - **[x] Phase 4: Transactions & Workflow Automation**
   - Sales logging, Leave management, Approvals
-- **Phase 5: Secure Cloud Storage**
+- **[x] Phase 5: Secure Cloud Storage**
   - Cloudflare R2 integration, pre-signed URLs, Document vault
-- **Phase 6: Mobile PWA & UI Polish**
+- **[x] Phase 6: Mobile PWA & UI Polish**
   - Bottom navigation, hit-targets, Service Workers, dynamic imports

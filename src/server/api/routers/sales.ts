@@ -125,7 +125,15 @@ export const salesRouter = createTRPCRouter({
 
     if (currentUser.role === "Admin") {
       return ctx.db.query.sales.findMany({
-        with: { user: true, manager: true, branch: true, items: true },
+        with: { 
+          user: true, 
+          manager: true, 
+          branch: true, 
+          items: true, 
+          files: {
+            where: (files, { eq }) => eq(files.entityType, "sale")
+          }
+        },
         orderBy: (sales, { desc }) => [desc(sales.createdAt)],
       });
     }
@@ -147,7 +155,15 @@ export const salesRouter = createTRPCRouter({
 
     return ctx.db.query.sales.findMany({
       where: inArray(sales.userId, allowedIds),
-      with: { user: true, manager: true, branch: true, items: true },
+      with: { 
+        user: true, 
+        manager: true, 
+        branch: true, 
+        items: true, 
+        files: {
+          where: (files, { eq }) => eq(files.entityType, "sale")
+        }
+      },
       orderBy: (sales, { desc }) => [desc(sales.createdAt)],
     });
   }),

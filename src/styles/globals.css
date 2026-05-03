@@ -126,9 +126,36 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    /* PWA Safe Area Support */
+    padding-bottom: env(safe-area-inset-bottom);
   }
   html {
     @apply font-sans;
+    /* Prevent overscroll bounce on body but keep for specific elements */
+    overscroll-behavior-y: none;
+    height: 100%;
+  }
+
+  /* Universal hit-target baseline for mobile */
+  button, 
+  a, 
+  input, 
+  select {
+    @apply min-h-11 min-w-11;
+  }
+
+  /* Premium Light Aesthetics */
+  .premium-card {
+    @apply bg-white border border-gray-100 shadow-sm rounded-xl overflow-hidden;
+  }
+
+  /* Hide scrollbars for clean look but keep functional */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

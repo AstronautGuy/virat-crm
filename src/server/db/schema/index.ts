@@ -6,4 +6,5 @@ export { leaves, leavesRelations, leaveTypeEnum, leaveStatusEnum } from "./leave
 export { products } from "./products";
 export { saleItems, saleItemsRelations } from "./saleItems";
 export { replacements, replacementsRelations } from "./replacements";
-export { notifications } from "./notifications";
+export { notifications, notificationsRelations } from "./notifications";
+export { files, filesRelations, fileEntityTypeEnum } from "./files";

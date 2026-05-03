@@ -5,9 +5,10 @@ import { api } from "@/trpc/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Check, X, Loader2 } from "lucide-react";
+import { Plus, Check, X, Loader2, FileText } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { FileGallery } from "@/app/_components/ui/FileGallery";
 
 export default function ReplacementsDashboard() {
   const [filter, setFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
@@ -99,6 +100,12 @@ export default function ReplacementsDashboard() {
                     <div className="flex flex-col mt-2">
                       <span className="text-muted-foreground text-[10px] uppercase">Reason</span>
                       <p className="font-medium text-sm line-clamp-3">{req.reason}</p>
+                    </div>
+                    <div className="flex flex-col mt-2 pt-2 border-t border-dashed">
+                      <span className="text-muted-foreground text-[10px] uppercase mb-1 flex items-center gap-1">
+                        <FileText className="w-3 h-3" /> Documents
+                      </span>
+                      <FileGallery entityType="replacement" entityId={req.id} initialFiles={req.files} />
                     </div>
                   </div>
 

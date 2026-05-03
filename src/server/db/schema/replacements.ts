@@ -2,6 +2,7 @@ import { pgTableCreator, serial, integer, text, timestamp, uuid, varchar } from 
 import { relations } from "drizzle-orm";
 import { sales } from "./sales";
 import { users } from "./users";
+import { files } from "./files";
 
 export const createTable = pgTableCreator((name) => `virat-crm_${name}`);
 
@@ -15,7 +16,7 @@ export const replacements = createTable("replacement", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(() => new Date()),
 });
 
-export const replacementsRelations = relations(replacements, ({ one }) => ({
+export const replacementsRelations = relations(replacements, ({ one, many }) => ({
   sale: one(sales, {
     fields: [replacements.originalSaleId],
     references: [sales.id],
@@ -24,4 +25,5 @@ export const replacementsRelations = relations(replacements, ({ one }) => ({
     fields: [replacements.userId],
     references: [users.id],
   }),
+  files: many(files, { relationName: "replacement_files" }),
 }));

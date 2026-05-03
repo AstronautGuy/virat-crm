@@ -5,9 +5,15 @@ import { api } from "@/trpc/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Check, X, Loader2 } from "lucide-react";
+import { Plus, Check, X, Loader2, FileText } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import dynamic from "next/dynamic";
+
+const FileGallery = dynamic(() => import("@/app/_components/ui/FileGallery").then(m => m.FileGallery), {
+  ssr: false,
+  loading: () => <div className="h-10 w-full animate-pulse bg-gray-50 rounded-lg" />
+});
 
 export default function SalesDashboard() {
   const [filter, setFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
@@ -62,69 +68,65 @@ export default function SalesDashboard() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredSales.map((sale) => (
-              <Card key={sale.id} className="overflow-hidden">
-                <CardHeader className="pb-2">
+              <Card key={sale.id} className="overflow-hidden border-gray-100 shadow-sm transition-all hover:shadow-md">
+                <CardHeader className="pb-3 bg-gray-50/50">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base truncate" title={sale.orderNumber}>
+                    <CardTitle className="text-sm font-semibold tracking-tight truncate" title={sale.orderNumber}>
                       {sale.orderNumber}
                     </CardTitle>
                     <Badge
-                      variant={
+                      className={cn(
+                        "text-[10px] uppercase tracking-wider px-2 py-0.5",
                         sale.status === "Approved"
-                          ? "default"
+                          ? "bg-blue-50 text-blue-700 border-blue-100"
                           : sale.status === "Rejected"
-                          ? "destructive"
-                          : "secondary"
-                      }
+                          ? "bg-red-50 text-red-700 border-red-100"
+                          : "bg-orange-50 text-orange-700 border-orange-100"
+                      )}
+                      variant="outline"
                     >
                       {sale.status}
                     </Badge>
                   </div>
-                  <CardDescription className="text-xs">
-                    {new Date(sale.createdAt).toLocaleDateString()} • {sale.customerName ?? "No Customer Name"}
+                  <CardDescription className="text-[10px] text-gray-500">
+                    {new Date(sale.createdAt).toLocaleDateString()} • {sale.customerName ?? "Anonymous"}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="pb-4">
-                  <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs">
                     <div className="flex flex-col">
-                      <span className="text-muted-foreground text-[10px] uppercase">Amount</span>
-                      <span className="font-medium font-mono">₹{sale.invoiceAmount}</span>
+                      <span className="text-gray-400 text-[9px] uppercase font-bold tracking-widest">Amount</span>
+                      <span className="font-semibold text-gray-900">₹{sale.invoiceAmount}</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-muted-foreground text-[10px] uppercase">Balance</span>
-                      <span className="font-medium font-mono text-destructive">₹{sale.balanceAmount}</span>
+                      <span className="text-gray-400 text-[9px] uppercase font-bold tracking-widest">Balance</span>
+                      <span className="font-semibold text-red-600">₹{sale.balanceAmount}</span>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-muted-foreground text-[10px] uppercase">Items</span>
-                      <span className="font-medium">{sale.totalQty} qty</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-muted-foreground text-[10px] uppercase">Agent</span>
-                      <span className="font-medium truncate" title={String(`${sale.user?.firstName ?? ""} ${sale.user?.lastName ?? ""}`.trim())}>
-                        {`${sale.user?.firstName ?? ""} ${sale.user?.lastName ?? ""}`.trim() || "Unknown"}
+                    <div className="flex flex-col col-span-2 pt-2 border-t border-gray-50">
+                      <span className="text-gray-400 text-[9px] uppercase font-bold tracking-widest mb-1 flex items-center gap-1">
+                        <FileText className="w-3 h-3" /> Documents
                       </span>
+                      <FileGallery entityType="sale" entityId={sale.id} initialFiles={sale.files} />
                     </div>
                   </div>
 
                   {sale.status === "Pending" && (
-                    <div className="mt-4 flex gap-2 pt-2 border-t">
+                    <div className="mt-5 flex gap-2 pt-3 border-t border-gray-50">
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="flex-1 border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
+                        className="flex-1 h-10 border-blue-100 bg-blue-50/50 text-blue-700 hover:bg-blue-100 transition-all text-xs"
                         onClick={() => updateStatus({ saleId: sale.id, status: "Approved" })}
                         disabled={isUpdating}
                       >
-                        <Check className="mr-1 h-3 w-3" /> Approve
+                        <Check className="mr-1.5 h-3.5 w-3.5" /> Approve
                       </Button>
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="flex-1 border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                        className="flex-1 h-10 border-gray-100 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-all text-xs"
                         onClick={() => updateStatus({ saleId: sale.id, status: "Rejected" })}
                         disabled={isUpdating}
                       >
-                        <X className="mr-1 h-3 w-3" /> Reject
+                        <X className="mr-1.5 h-3.5 w-3.5" /> Reject
                       </Button>
                     </div>
                   )}

@@ -69,6 +69,9 @@ export const replacementsRouter = createTRPCRouter({
       where: eq(replacements.userId, currentUser.id),
       with: {
         sale: true,
+        files: {
+          where: (files, { eq }) => eq(files.entityType, "replacement")
+        }
       },
       orderBy: (replacements, { desc }) => [desc(replacements.createdAt)],
     });
@@ -84,7 +87,13 @@ export const replacementsRouter = createTRPCRouter({
 
     if (currentUser.role === "Admin") {
       return ctx.db.query.replacements.findMany({
-        with: { sale: true, user: true },
+        with: { 
+          sale: true, 
+          user: true, 
+          files: {
+            where: (files, { eq }) => eq(files.entityType, "replacement")
+          }
+        },
         orderBy: (replacements, { desc }) => [desc(replacements.createdAt)],
       });
     }
@@ -106,7 +115,13 @@ export const replacementsRouter = createTRPCRouter({
 
     return ctx.db.query.replacements.findMany({
       where: inArray(replacements.userId, allowedIds),
-      with: { sale: true, user: true },
+      with: { 
+        sale: true, 
+        user: true, 
+        files: {
+          where: (files, { eq }) => eq(files.entityType, "replacement")
+        }
+      },
       orderBy: (replacements, { desc }) => [desc(replacements.createdAt)],
     });
   }),

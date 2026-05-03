@@ -16,15 +16,10 @@ Secure, mobile-first operations management that ensures authenticated access and
 - ✓ Track branch locations
 - ✓ Log daily attendance and sales transactions
 - ✓ Manage leave requests
-- ✓ Upload and store staff documents
+- ✓ Upload and store staff documents (Phase 5)
 
 ### Active
 
-- [ ] Next.js App Router frontend migration
-- [ ] Kinde Authentication integration with strict RBAC
-- [ ] Relational schema migration to Drizzle ORM (PostgreSQL)
-- [ ] tRPC API layer with server-side security (Haversine geofence calculation)
-- [ ] Cloudflare R2 secure file storage via pre-signed URLs
 - [ ] Mobile-first PWA configuration
 
 ### Out of Scope
@@ -47,9 +42,9 @@ The system is migrating from a hosted Base44 BaaS environment to a self-hosted T
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Kinde Auth | Secure, modern RBAC replacement for local `ecode` login | — Pending |
-| Server-Side Haversine | Prevent GPS spoofing and secure the punch-in flow | — Pending |
-| Cloudflare R2 | S3-compatible, cost-effective replacement for managed Base44 uploads | — Pending |
+| Kinde Auth | Secure, modern RBAC replacement for local `ecode` login | Completed (Phase 1) |
+| Server-Side Haversine | Prevent GPS spoofing and secure the punch-in flow | Completed (Phase 3) |
+| Cloudflare R2 | S3-compatible, cost-effective replacement for managed Base44 uploads | Completed (Phase 5) |
 
 ## Evolution
 
