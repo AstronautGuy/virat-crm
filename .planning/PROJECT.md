@@ -34,7 +34,12 @@ Secure, mobile-first operations management that ensures authenticated access and
 
 ## Context
 
-Milestone 1 successfully modernized the core infrastructure, moving to a secure T3 stack with Kinde Auth, R2 storage, and a polished PWA interface. Milestone 2 focuses on turning this data into actionable intelligence through analytics and ensuring reliable field operations via advanced offline sync and real-time alerts.
+### Shipped Milestones
+- **v1: Foundations**: Auth, DB, Geofencing, Storage, PWA.
+- **v2: Intelligence**: Analytics, Push, Offline Sync, Hardening.
+
+### Next Milestone: M3 (Operations Expansion)
+- Goal: Deepen inventory and financial workflows.
 
 ## Constraints
 
