@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingBag, Users, FileText, User, MapPin } from "lucide-react";
+import { Home, ShoppingBag, Users, FileText, User, MapPin, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 
@@ -25,6 +25,12 @@ export function DesktopSidebar() {
       href: "/admin/live-map", 
       label: "Live Field View", 
       icon: MapPin,
+      hidden: !canViewMap 
+    },
+    { 
+      href: "/admin/reports", 
+      label: "Intelligence Reports", 
+      icon: BarChart3,
       hidden: !canViewMap 
     },
     { href: "/documents", label: "Documents", icon: FileText },
