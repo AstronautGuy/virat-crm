@@ -18,4 +18,9 @@ progress: 100%
 ## Project Reference
 See: .planning/PROJECT.md (updated 2026-05-03)
 
+## Accumulated Context
+
+### Pending Todos
+- [ ] Implement Role-Based Feature Access Control (auth)
+
 **Core value:** Transforming field data into actionable intelligence while ensuring robust offline resilience and real-time operational alerts.
