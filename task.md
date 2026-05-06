@@ -1,27 +1,25 @@
-# Milestone 2: Intelligence & Advanced Workflows
+# Milestone 3: Field Intelligence & Advanced Reporting
 
-## Phase 7: Backend Analytics & Aggregation Layer
-- `[x]` **Wave 1: Aggregation Foundations (Sales Focus)**
-- `[x]` **Wave 2: Operational Analytics (Workforce & Export)**
-- `[x]` **Wave 3: Integration & Security**
+## Phase 11: Real-time Location Intelligence
+- `[x]` GPS Breadcrumbs & Live Tracking
+- `[x]` Live Map View (Leaflet)
+- `[x]` Route Playback
 
-## Phase 8: Web Push Notifications & Real-time Alerts
-- `[x]` **Wave 1: Push Infrastructure (Backend)**
-- `[x]` **Wave 2: Service Worker & Permissions (Frontend)**
-- `[x]` **Wave 3: Real-time Triggers (Workflow)**
+## Phase 12: Visual Team Hierarchy
+- `[x]` Recursive Organization Tree
+- `[x]` Org-wide Manager views
+- `[x]` Manager-Subordinate reporting visualization
 
-## Phase 9: Advanced Offline Sync & Conflict Resolution
-- `[x]` **Wave 1: Local Data Store (IndexedDB)**
-- `[x]` **Wave 2: Sync Manager & Background Flush**
-- `[x]` **Wave 3: UI Integration & Feedback**
+## Phase 13: Advanced Automated Reporting Engine
+- `[x]` Multi-scope aggregation (Individual, Team, Subtree)
+- `[x]` Professional XLSX Exports (Sales & Attendance)
+- `[x]` Flexible timeframes (Daily to Lifetime)
 
-## Phase 10: Project Hardening & Final Audit
-- `[x]` **Wave 1: Stability & Error Handling**
-  - `[x]` Task 1.1: Global Error Boundary (`ErrorBoundary.tsx`)
-  - `[x]` Task 1.2: Loading States & UX Polish
-- `[x]` **Wave 2: Security & Performance Audit**
-  - `[x]` Task 2.1: tRPC RBAC Audit (Added missing `leavesRouter`)
-  - `[x]` Task 2.2: Performance Tweaks
-- `[x]` **Wave 3: Final Handover & Docs**
-  - `[x]` Task 3.1: Documentation Update (`USER-GUIDE.md`)
-  - `[x]` Task 3.2: Code Cleanup (Removed debug routes)
+## Phase 14: Milestone 3 Audit & Hardening
+- `[x]` Consolidate package manager (standardize on `pnpm`)
+- `[x]` Restrict map data to single-day visibility
+- `[x]` Implement yearly aggregation for Lifetime reports
+- `[ ]` Verify map data restriction in Live Field View
+- `[ ]` Verify yearly grouping in Lifetime XLSX exports
+- `[ ]` Final security audit of tRPC procedures
+- `[ ]` Milestone 3 Completion Summary

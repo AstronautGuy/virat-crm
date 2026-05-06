@@ -167,6 +167,44 @@ export default function ReportsPage() {
           />
         </div>
 
+        {/* Yearly Summary (for Lifetime) */}
+        {preset === "all" && reportData?.yearlyStats && reportData.yearlyStats.length > 0 && (
+          <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6">
+            <h3 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
+              <BarChart3 className="w-6 h-6 text-indigo-600" />
+              <span>Yearly Performance Snapshot</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {reportData.yearlyStats.map((year: any) => (
+                <div key={year.year} className="p-6 rounded-2xl bg-gray-50 border border-gray-100 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl font-black text-gray-900">{year.year}</span>
+                    <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full">Annual Summary</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Revenue</p>
+                      <p className="text-lg font-bold text-gray-900">₹{year.revenue.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Orders</p>
+                      <p className="text-lg font-bold text-gray-900">{year.orders}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Visits</p>
+                      <p className="text-lg font-bold text-gray-900">{year.visits}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Growth</p>
+                      <p className="text-lg font-bold text-green-600">+--%</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Actions & Preview */}
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">

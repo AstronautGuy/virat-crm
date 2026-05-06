@@ -117,7 +117,28 @@ export const reportsRouter = createTRPCRouter({
           )
         );
 
-      // 4. Summarize
+      // 4. Yearly Aggregation (for Lifetime reports)
+      let yearlyStats: any[] = [];
+      if (input.preset === "all") {
+        const years = new Set<number>();
+        salesData.forEach(s => years.add(new Date(s.date).getFullYear()));
+        attendanceData.forEach(a => years.add(new Date(a.recordedAt).getFullYear()));
+
+        yearlyStats = Array.from(years).sort((a, b) => b - a).map(year => {
+          const yearSales = salesData.filter(s => new Date(s.date).getFullYear() === year);
+          const yearAttendance = attendanceData.filter(a => new Date(a.recordedAt).getFullYear() === year);
+          
+          return {
+            year,
+            revenue: yearSales.reduce((acc, s) => acc + parseFloat(s.invoiceAmount), 0),
+            balance: yearSales.reduce((acc, s) => acc + parseFloat(s.balanceAmount), 0),
+            orders: yearSales.length,
+            visits: yearAttendance.length,
+          };
+        });
+      }
+
+      // 5. Summarize
       const summary = {
         revenue: salesData.reduce((acc, s) => acc + parseFloat(s.invoiceAmount), 0),
         balance: salesData.reduce((acc, s) => acc + parseFloat(s.balanceAmount), 0),
@@ -128,6 +149,7 @@ export const reportsRouter = createTRPCRouter({
       return {
         sales: salesData,
         attendance: attendanceData,
+        yearlyStats,
         summary,
       };
     }),

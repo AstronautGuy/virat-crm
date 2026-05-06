@@ -12,7 +12,8 @@ progress: 100%
 
 ## Active Development
 - Phase 13: Advanced Automated Reporting Engine (Completed)
-- Phase 14: Milestone 3 Audit & Hardening
+- Phase 14: Milestone 3 Audit & Hardening (Completed)
+- Phase 15: Centralized Warehouse Management (Initial Schema & UI)
 
 ## Project Reference
 See: .planning/PROJECT.md (updated 2026-05-03)

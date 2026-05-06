@@ -225,7 +225,12 @@ export const locationRouter = createTRPCRouter({
         if (!targetUser) throw new Error("Not authorized to view this user's route");
       }
 
-      // Fetch breadcrumbs for a specific day
+      // Fetch breadcrumbs for a specific day - RESTRICTED TO TODAY
+      const todayStr = getFormattedDate();
+      if (input.date !== todayStr) {
+        throw new Error("Historical route playback is restricted. Please use Intelligence Reports for long-term analysis.");
+      }
+
       const startOfDay = new Date(`${input.date}T00:00:00Z`);
       const endOfDay = new Date(`${input.date}T23:59:59Z`);
 

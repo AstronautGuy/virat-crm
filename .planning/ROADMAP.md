@@ -12,5 +12,16 @@
   - Interactive Org Tree, Manager-Subordinate reporting visualization
 - **Phase 13: Advanced Automated Reporting Engine**
   - Scheduled PDF/Excel reports, Custom Report Builder UI
-- **Phase 14: Milestone 3 Audit & Hardening**
+- **[x] Phase 14: Milestone 3 Audit & Hardening**
   - Performance optimization for maps, Security review
+
+## Milestone 4: Inventory & Warehouse Intelligence
+
+- **Phase 15: Centralized Warehouse Management**
+  - Multi-warehouse schema, Warehouse Manager UI, Inter-branch transfers
+- **Phase 16: Stock Tracking & Replenishment Alerts**
+  - Real-time inventory levels, Low stock triggers, Automatic reorder logic
+- **Phase 17: Product Variants & Batch Tracking**
+  - Expiry dates, Batch numbers, SKU management
+- **Phase 18: Milestone 4 Audit & Hardening**
+  - Inventory reconciliation tools, Physical audit logs
