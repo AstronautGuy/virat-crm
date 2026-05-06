@@ -12,6 +12,9 @@ import { ZodError } from "zod";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 
 import { db } from "@/server/db";
+import { users } from "@/server/db/schema/users";
+import { rolePermissions } from "@/server/db/schema/rolePermissions";
+import { eq, and } from "drizzle-orm";
 
 /**
  * 1. CONTEXT
@@ -40,6 +43,13 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
     } as any;
   }
 
+  // Fetch DB user for role information
+  const dbUser = user 
+    ? await db.query.users.findFirst({
+        where: eq(users.kindeId, user.id),
+      })
+    : null;
+
   const mockGetPermission = async (p: string) => {
     if (process.env.NODE_ENV === "development") return { isGranted: true };
     return getPermission(p);
@@ -48,6 +58,7 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
   return {
     db,
     user,
+    dbUser, // Added DB user to context
     getPermission: process.env.NODE_ENV === "development" ? mockGetPermission : getPermission,
     ...opts,
   };
@@ -134,13 +145,14 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
  * the session is valid and guarantees `ctx.user` is present.
  */
 const isAuthed = t.middleware(({ ctx, next }) => {
-  if (!ctx.user?.id) {
+  if (!ctx.user?.id || !ctx.dbUser) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
   return next({
     ctx: {
       ...ctx,
       user: ctx.user,
+      dbUser: ctx.dbUser,
     },
   });
 });
@@ -148,6 +160,39 @@ const isAuthed = t.middleware(({ ctx, next }) => {
 export const protectedProcedure = t.procedure
   .use(timingMiddleware)
   .use(isAuthed);
+
+/**
+ * Dynamic Feature Gate Middleware
+ */
+export const featureProtectedProcedure = (featureKey: string) => {
+  return protectedProcedure.use(
+    t.middleware(async ({ ctx, next }) => {
+      // Safety check for TS and runtime
+      if (!ctx.dbUser) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "User profile not found in database." });
+      }
+
+      // Admins bypass feature gates
+      if (ctx.dbUser.role === "Admin") return next({ ctx });
+
+      const permission = await ctx.db.query.rolePermissions.findFirst({
+        where: and(
+          eq(rolePermissions.role, ctx.dbUser.role),
+          eq(rolePermissions.featureKey, featureKey)
+        ),
+      });
+
+      if (permission && !permission.isEnabled) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: `The feature '${featureKey}' is disabled for your role.`,
+        });
+      }
+
+      return next({ ctx });
+    })
+  );
+};
 
 /**
  * Admin (authenticated + admin permission) procedure
@@ -160,10 +205,7 @@ const isAdmin = t.middleware(async ({ ctx, next }) => {
   return next({ ctx });
 });
 
-export const adminProcedure = t.procedure
-  .use(timingMiddleware)
-  .use(isAuthed)
-  .use(isAdmin);
+export const adminProcedure = protectedProcedure.use(isAdmin);
 
 /**
  * Manager (authenticated + manager or admin permission) procedure
@@ -178,7 +220,4 @@ const isManager = t.middleware(async ({ ctx, next }) => {
   return next({ ctx });
 });
 
-export const managerProcedure = t.procedure
-  .use(timingMiddleware)
-  .use(isAuthed)
-  .use(isManager);
+export const managerProcedure = protectedProcedure.use(isManager);

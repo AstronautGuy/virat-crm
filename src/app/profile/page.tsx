@@ -54,7 +54,7 @@ export default function ProfilePage() {
                   <Badge variant="secondary" className="px-3 py-0.5">
                     {user.role}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">ID: {user.id.slice(0, 8)}...</span>
+                  <span className="text-xs text-muted-foreground">ID: {user.id?.slice(0, 8)}...</span>
                 </div>
               </div>
             </div>

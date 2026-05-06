@@ -10,6 +10,7 @@ import { storageRouter } from "./routers/storage";
 import { analyticsRouter } from "./routers/analytics";
 import { leavesRouter } from "./routers/leaves";
 import { reportsRouter } from "./routers/reports";
+import { permissionsRouter } from "./routers/permissions";
 
 /**
  * This is the primary router for your server.
@@ -27,6 +28,7 @@ export const appRouter = createTRPCRouter({
   analytics: analyticsRouter,
   leaves: leavesRouter,
   reports: reportsRouter,
+  permissions: permissionsRouter,
 });
 
 // export type definition of API

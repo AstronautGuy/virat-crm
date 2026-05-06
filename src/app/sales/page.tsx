@@ -1,5 +1,7 @@
 "use client";
 
+import { FeatureGate } from "@/app/_components/auth/FeatureGate";
+
 import { DashboardLayout } from "../_components/layout/DashboardLayout";
 import { api } from "@/trpc/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -33,7 +35,8 @@ export default function SalesDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col space-y-4">
+      <FeatureGate featureKey="sales">
+        <div className="flex flex-col space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Sales Register</h1>
           <Link href="/sales/new">
@@ -136,7 +139,8 @@ export default function SalesDashboard() {
             ))}
           </div>
         )}
-      </div>
+        </div>
+      </FeatureGate>
     </DashboardLayout>
   );
 }

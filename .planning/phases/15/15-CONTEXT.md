@@ -1,16 +1,16 @@
-# Phase 15 Context: Centralized Warehouse Management
+# Phase 15 Context: Dynamic Role-Based Access Control
 
 ## Goals
-- **Inventory Foundation**: Implement the core data structures for multi-warehouse management.
-- **Warehouse Management UI**: Create a dashboard for tracking inventory levels across different physical locations.
-- **Inter-branch Transfers**: Support moving stock between warehouses or from warehouse to branch.
+- **Granular Permissions**: Move from hardcoded role checks to a dynamic feature-access system.
+- **Admin Management**: Create a UI for admins to toggle app features for specific roles.
+- **Dynamic UI**: Ensure the sidebar and navigation adapt based on these dynamic permissions.
 
 ## Initial Assessment
-- **Schema**: We need a `warehouses` table and an `inventory` table (linking products to warehouses).
-- **Existing Products**: We should ensure the current `products` schema supports warehouse tracking.
-- **Stock Movements**: We need a `stock_movements` table to log every addition, removal, or transfer for audit purposes.
+- **Schema**: We need a `role_permissions` table that maps a `role` (Admin, Manager, User) to a `feature_id` (string) with an `isEnabled` (boolean) flag.
+- **Feature Registry**: We need a list of all togglable features (e.g., `live-map`, `reports`, `attendance`, `documents`).
+- **Middleware**: Our tRPC procedures and Next.js layouts should check this table.
 
 ## Decisions Needed
-1.  **Warehouse Roles**: Should we have a specific "Warehouse Manager" role, or just use the "Admin" role for now?
-2.  **Stock Deductions**: When a sale is made at a branch, which warehouse should it deduct from? (Default to nearest, or explicit selection?)
-3.  **Transfer Workflow**: Should transfers require an "Approval" step (Request -> Approved -> Shipped -> Received)?
+1.  **Feature Granularity**: Do we toggle entire modules (e.g., "Reports") or specific actions within them (e.g., "Export Reports")? (I suggest starting with modules).
+2.  **Storage Strategy**: Should we cache these permissions in the user's session (Kinde) or fetch them from the DB on every request/page load? (DB fetch with React Query/tRPC caching is safer).
+3.  **Default State**: What happens if a feature is not explicitly defined for a role? (Default to disabled).

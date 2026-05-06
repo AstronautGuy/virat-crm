@@ -1,23 +1,25 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
+import { TRPCError } from "@trpc/server";
 import { leaves } from "@/server/db/schema/leaves";
 import { users } from "@/server/db/schema/users";
 import { eq, sql, inArray } from "drizzle-orm";
 import { sendNotificationToUser } from "@/server/lib/push";
 
 export const leavesRouter = createTRPCRouter({
-  createLeave: protectedProcedure
+  createLeave: featureProtectedProcedure("workforce")
     .input(
       z.object({
         startDate: z.string(),
         endDate: z.string(),
         reason: z.string(),
-        type: z.enum(["Casual", "Sick", "Annual", "Other"]),
+        type: z.enum(["Sick", "Vacation", "Unpaid"]),
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
       const currentUser = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.user.id),
+        where: eq(users.kindeId, ctx.dbUser!.kindeId),
       });
 
       if (!currentUser) throw new Error("User not found");
@@ -26,9 +28,8 @@ export const leavesRouter = createTRPCRouter({
         .insert(leaves)
         .values({
           userId: currentUser.id,
-          managerId: currentUser.managerId,
-          startDate: new Date(input.startDate),
-          endDate: new Date(input.endDate),
+          startDate: input.startDate,
+          endDate: input.endDate,
           reason: input.reason,
           type: input.type,
           status: "Pending",
@@ -38,9 +39,10 @@ export const leavesRouter = createTRPCRouter({
       return leave;
     }),
 
-  getMyLeaves: protectedProcedure.query(async ({ ctx }) => {
+  getMyLeaves: featureProtectedProcedure("workforce").query(async ({ ctx }) => {
+    if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
     const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.user.id),
+      where: eq(users.kindeId, ctx.dbUser!.kindeId),
     });
 
     if (!currentUser) return [];
@@ -51,9 +53,10 @@ export const leavesRouter = createTRPCRouter({
     });
   }),
 
-  getLeaves: protectedProcedure.query(async ({ ctx }) => {
+  getLeaves: featureProtectedProcedure("workforce").query(async ({ ctx }) => {
+    if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
     const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.user.id),
+      where: eq(users.kindeId, ctx.dbUser.kindeId),
       columns: { id: true, role: true },
     });
 
@@ -87,11 +90,12 @@ export const leavesRouter = createTRPCRouter({
     });
   }),
 
-  updateLeaveStatus: protectedProcedure
+  updateLeaveStatus: featureProtectedProcedure("workforce")
     .input(z.object({ leaveId: z.number(), status: z.enum(["Pending", "Approved", "Rejected"]) }))
     .mutation(async ({ ctx, input }) => {
+      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
       const currentUser = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.user.id),
+        where: eq(users.kindeId, ctx.dbUser!.kindeId),
       });
 
       if (!currentUser) throw new Error("User not found");
@@ -132,7 +136,7 @@ export const leavesRouter = createTRPCRouter({
       if (updated) {
         void sendNotificationToUser(updated.userId, {
           title: `Leave ${input.status}`,
-          body: `Your leave request from ${updated.startDate.toLocaleDateString()} has been ${input.status.toLowerCase()}.`,
+          body: `Your leave request from ${new Date(updated.startDate).toLocaleDateString()} has been ${input.status.toLowerCase()}.`,
           url: "/leaves",
         });
       }

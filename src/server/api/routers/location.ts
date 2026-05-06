@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, managerProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
+import { TRPCError } from "@trpc/server";
 import { locationLogs, breadcrumbs, users } from "@/server/db/schema";
 import { eq, and, desc, inArray, gte, lte, asc } from "drizzle-orm";
 
@@ -22,7 +23,7 @@ function getFormattedDate(date: Date = new Date()) {
 }
 
 export const locationRouter = createTRPCRouter({
-  ping: protectedProcedure
+  ping: featureProtectedProcedure("workforce")
     .input(
       z.object({
         latitude: z.number(),
@@ -31,8 +32,9 @@ export const locationRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
       const user = await ctx.db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.kindeId, ctx.user.id),
+        where: (users, { eq }) => eq(users.kindeId, ctx.dbUser!.kindeId),
       });
 
       if (!user) {
@@ -96,7 +98,7 @@ export const locationRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  getHistory: managerProcedure
+  getHistory: featureProtectedProcedure("live-map")
     .input(
       z.object({
         userId: z.string().uuid(),
@@ -117,7 +119,7 @@ export const locationRouter = createTRPCRouter({
       return logs;
     }),
 
-  logBreadcrumb: protectedProcedure
+  logBreadcrumb: featureProtectedProcedure("workforce")
     .input(
       z.object({
         latitude: z.number(),
@@ -126,8 +128,9 @@ export const locationRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
       const user = await ctx.db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.kindeId, ctx.user.id),
+        where: (users, { eq }) => eq(users.kindeId, ctx.dbUser!.kindeId),
       });
 
       if (!user) {
@@ -144,10 +147,11 @@ export const locationRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  getLiveTeam: managerProcedure
+  getLiveTeam: featureProtectedProcedure("live-map")
     .query(async ({ ctx }) => {
+      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
       const currentUser = await ctx.db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.kindeId, ctx.user.id),
+        where: (users, { eq }) => eq(users.kindeId, ctx.dbUser!.kindeId),
       });
 
       if (!currentUser) throw new Error("User not found");
@@ -197,7 +201,7 @@ export const locationRouter = createTRPCRouter({
       return Array.from(userMap.values());
     }),
 
-  getRoutePlayback: managerProcedure
+  getRoutePlayback: featureProtectedProcedure("live-map")
     .input(
       z.object({
         userId: z.string().uuid(),
@@ -205,8 +209,9 @@ export const locationRouter = createTRPCRouter({
       })
     )
     .query(async ({ ctx, input }) => {
+      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
       const currentUser = await ctx.db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.kindeId, ctx.user.id),
+        where: (users, { eq }) => eq(users.kindeId, ctx.dbUser!.kindeId),
       });
 
       if (!currentUser) throw new Error("User not found");

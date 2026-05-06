@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { createTRPCRouter, managerProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { sales, branches, locationLogs, leaves, users } from "@/server/db/schema";
 import { and, gte, lte, sum, count, eq, sql } from "drizzle-orm";
-import { getDateRange, DateRangePreset } from "@/server/lib/date";
+import { getDateRange, type DateRangePreset } from "@/server/lib/date";
 
 export const analyticsRouter = createTRPCRouter({
-  getSalesSummary: managerProcedure
+  getSalesSummary: featureProtectedProcedure("dashboard")
     .input(z.object({ preset: z.enum(["today", "7d", "30d", "all"]) }))
     .query(async ({ ctx, input }) => {
       const { start, end } = getDateRange(input.preset as DateRangePreset);
@@ -36,7 +36,7 @@ export const analyticsRouter = createTRPCRouter({
       };
     }),
 
-  getBranchComparison: managerProcedure
+  getBranchComparison: featureProtectedProcedure("dashboard")
     .input(z.object({ preset: z.enum(["today", "7d", "30d", "all"]) }))
     .query(async ({ ctx, input }) => {
       const { start, end } = getDateRange(input.preset as DateRangePreset);
@@ -65,7 +65,7 @@ export const analyticsRouter = createTRPCRouter({
       }));
     }),
 
-  getWorkforceSummary: managerProcedure
+  getWorkforceSummary: featureProtectedProcedure("dashboard")
     .query(async ({ ctx }) => {
       const today = new Date();
       const dateStr = today.toISOString().split('T')[0];
@@ -86,14 +86,14 @@ export const analyticsRouter = createTRPCRouter({
       };
     }),
 
-  getAttendancePerformance: managerProcedure
+  getAttendancePerformance: featureProtectedProcedure("dashboard")
     .input(z.object({ preset: z.enum(["today", "7d", "30d", "all"]) }))
     .query(async ({ ctx, input }) => {
       const { start, end } = getDateRange(input.preset as DateRangePreset);
 
       const stats = await ctx.db
         .select({
-          userName: users.name,
+          userName: users.firstName,
           logCount: count(locationLogs.id),
         })
         .from(locationLogs)
@@ -104,12 +104,12 @@ export const analyticsRouter = createTRPCRouter({
             lte(locationLogs.recordedAt, end)
           )
         )
-        .groupBy(users.name);
+        .groupBy(users.firstName);
 
       return stats;
     }),
 
-  getSalesExport: managerProcedure
+  getSalesExport: featureProtectedProcedure("dashboard")
     .input(z.object({ preset: z.enum(["today", "7d", "30d", "all"]) }))
     .query(async ({ ctx, input }) => {
       const { start, end } = getDateRange(input.preset as DateRangePreset);

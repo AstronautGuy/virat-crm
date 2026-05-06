@@ -1,3 +1,5 @@
+/// <reference lib="webworker" />
+// @ts-expect-error - Serwist module resolution issue in some environments
 import { defaultCache } from "@serwist/next/browser";
 import { type PrecacheEntry, Serwist } from "serwist";
 
@@ -28,7 +30,7 @@ const serwist = new Serwist({
 
 serwist.addEventListeners();
 
-self.addEventListener("push", (event) => {
+self.addEventListener("push", (event: PushEvent) => {
   const data = event.data?.json();
   if (!data) return;
 
@@ -45,7 +47,7 @@ self.addEventListener("push", (event) => {
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-self.addEventListener("notificationclick", (event) => {
+self.addEventListener("notificationclick", (event: NotificationEvent) => {
   event.notification.close();
   event.waitUntil(
     self.clients.openWindow(event.notification.data.url)

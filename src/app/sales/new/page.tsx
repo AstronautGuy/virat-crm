@@ -1,5 +1,7 @@
 "use client";
 
+import { FeatureGate } from "@/app/_components/auth/FeatureGate";
+
 import { DashboardLayout } from "../../_components/layout/DashboardLayout";
 import { api } from "@/trpc/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,9 +73,11 @@ export default function NewSale() {
 
   const { mutate: createSale, isPending } = api.sales.createSale.useMutation({
     onSuccess: (data) => {
-      setSuccess(true);
-      setNewSaleId(data.id);
-      router.refresh();
+      if (data) {
+        setSuccess(true);
+        setNewSaleId(data.id);
+        router.refresh();
+      }
     },
     onError: (error) => {
       alert(`Error creating sale: ${error.message}`);
@@ -132,7 +136,8 @@ export default function NewSale() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col space-y-4 max-w-2xl mx-auto">
+      <FeatureGate featureKey="sales">
+        <div className="flex flex-col space-y-4 max-w-2xl mx-auto">
         <div className="flex items-center space-x-2">
           <Link href="/sales">
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -315,7 +320,8 @@ export default function NewSale() {
             </Button>
           </form>
         )}
-      </div>
+        </div>
+      </FeatureGate>
     </DashboardLayout>
   );
 }

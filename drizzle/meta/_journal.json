@@ -15,6 +15,13 @@
       "when": 1777792598339,
       "tag": "0001_odd_ben_urich",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778051545604,
+      "tag": "0002_silly_warlock",
+      "breakpoints": true
     }
   ]
 }

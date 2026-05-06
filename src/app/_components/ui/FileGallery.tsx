@@ -20,10 +20,10 @@ export function FileGallery({ entityType, entityId, initialFiles }: FileGalleryP
   const getUrlMutation = api.storage.getFileUrl.useMutation();
   const [downloading, setDownloading] = useState<string | null>(null);
 
-  const handleDownload = async (key: string, originalName: string) => {
+  const handleDownload = async (fileId: string, originalName: string) => {
     try {
-      setDownloading(key);
-      const { url } = await getUrlMutation.mutateAsync({ key });
+      setDownloading(fileId);
+      const { url } = await getUrlMutation.mutateAsync({ fileId });
       
       // Open in new tab or trigger download
       const link = document.createElement("a");
@@ -79,10 +79,10 @@ export function FileGallery({ entityType, entityId, initialFiles }: FileGalleryP
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-primary"
-            onClick={() => handleDownload(file.key, file.originalName)}
-            disabled={downloading === file.key}
+            onClick={() => handleDownload(file.id, file.originalName)}
+            disabled={downloading === file.id}
           >
-            {downloading === file.key ? (
+            {downloading === file.id ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Download className="h-3.5 w-3.5" />

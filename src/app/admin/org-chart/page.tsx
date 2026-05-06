@@ -1,0 +1,58 @@
+"use client";
+
+import { FeatureGate } from "@/app/_components/auth/FeatureGate";
+
+import { DashboardLayout } from "@/app/_components/layout/DashboardLayout";
+import { OrgFlowchart } from "@/app/_components/workforce/OrgFlowchart";
+import { Network, Users, LayoutGrid, GitBranch } from "lucide-react";
+import { useState } from "react";
+import { OrgTree } from "@/app/_components/workforce/OrgTree";
+
+export default function OrgChartPage() {
+  const [activeTab, setActiveTab] = useState("flowchart");
+
+  return (
+    <DashboardLayout>
+      <FeatureGate featureKey="org-chart">
+        <div className="flex flex-col space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-3">
+            <Network className="w-8 h-8 text-indigo-600" />
+            <span>Organization Hierarchy</span>
+          </h1>
+          <p className="mt-2 text-lg text-gray-500">Visualize reporting lines and team structures.</p>
+        </div>
+
+        <div className="flex bg-gray-100/50 p-1.5 rounded-2xl w-fit">
+          <button
+            onClick={() => setActiveTab("hierarchy")}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+              activeTab === "hierarchy" ? "bg-white shadow-md text-indigo-600" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <LayoutGrid className="h-4 w-4" />
+            Tree View
+          </button>
+          <button
+            onClick={() => setActiveTab("flowchart")}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+              activeTab === "flowchart" ? "bg-white shadow-md text-indigo-600" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <GitBranch className="h-4 w-4" />
+            Flowchart View
+          </button>
+        </div>
+
+        <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm min-h-[600px] animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {activeTab === "hierarchy" ? (
+            <OrgTree />
+          ) : (
+            <OrgFlowchart />
+          )}
+        </div>
+        </div>
+      </FeatureGate>
+    </DashboardLayout>
+  );
+}

@@ -1,5 +1,7 @@
 "use client";
 
+import { FeatureGate } from "@/app/_components/auth/FeatureGate";
+
 import { useState } from "react";
 import { api } from "@/trpc/react";
 import { DashboardLayout } from "@/app/_components/layout/DashboardLayout";
@@ -61,7 +63,8 @@ export default function ReportsPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col space-y-8">
+      <FeatureGate featureKey="reports">
+        <div className="flex flex-col space-y-8">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Intelligence Reports</h1>
@@ -284,6 +287,7 @@ export default function ReportsPage() {
           </div>
         </div>
       </div>
+      </FeatureGate>
     </DashboardLayout>
   );
 }

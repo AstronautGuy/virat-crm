@@ -2,38 +2,57 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingBag, Users, FileText, User, MapPin, BarChart3 } from "lucide-react";
+import { Home, ShoppingBag, Users, FileText, User, MapPin, BarChart3, Network, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
+import { api } from "@/trpc/react";
 
 export function DesktopSidebar() {
   const pathname = usePathname();
-  const { getPermission, getPermissions, isAuthenticated, isLoading } = useKindeBrowserClient();
+  const { data: user, isLoading: userLoading } = api.users.getMe.useQuery();
+  const { data: rolePermissions, isLoading: permissionsLoading } = api.permissions.getForRole.useQuery(
+    { role: user?.role ?? "Employee" },
+    { enabled: !!user?.role }
+  );
 
-  const permissions = getPermissions()?.permissions ?? [];
-  const isManager = permissions.includes("manager:access") || getPermission("manager:access")?.isGranted;
-  const isAdmin = permissions.includes("admin:access") || getPermission("admin:access")?.isGranted;
+  const isAdmin = user?.permissions.isAdmin;
+  const isManager = user?.permissions.isManager;
   
-  // Show if manager/admin OR if in dev and still loading/mocked
-  const canViewMap = isManager || isAdmin || (process.env.NODE_ENV === "development");
+  const getIsFeatureEnabled = (key: string) => {
+    if (userLoading || permissionsLoading) return true; // Default to showing while loading to avoid flicker?
+    const p = rolePermissions?.find(p => p.featureKey === key);
+    if (p) return p.isEnabled;
+    return user?.role === "Admin"; // Default for Admins
+  };
 
   const links = [
-    { href: "/", label: "Dashboard", icon: Home },
-    { href: "/sales", label: "Sales Register", icon: ShoppingBag },
-    { href: "/attendance", label: "Workforce", icon: Users },
+    { href: "/", label: "Dashboard", icon: Home, hidden: !getIsFeatureEnabled("dashboard") },
+    { href: "/sales", label: "Sales Register", icon: ShoppingBag, hidden: !getIsFeatureEnabled("sales") },
+    { href: "/attendance", label: "Workforce", icon: Users, hidden: !getIsFeatureEnabled("workforce") },
     { 
       href: "/admin/live-map", 
       label: "Live Field View", 
       icon: MapPin,
-      hidden: !canViewMap 
+      hidden: !getIsFeatureEnabled("live-map") || !(isManager || isAdmin)
     },
     { 
       href: "/admin/reports", 
       label: "Intelligence Reports", 
       icon: BarChart3,
-      hidden: !canViewMap 
+      hidden: !getIsFeatureEnabled("reports") || !(isManager || isAdmin)
     },
-    { href: "/documents", label: "Documents", icon: FileText },
+    { 
+      href: "/admin/org-chart", 
+      label: "Org Chart", 
+      icon: Network,
+      hidden: !getIsFeatureEnabled("org-chart") || !(isManager || isAdmin)
+    },
+    { href: "/documents", label: "Documents", icon: FileText, hidden: !getIsFeatureEnabled("documents") },
+    { 
+      href: "/admin/feature-access", 
+      label: "Feature Access", 
+      icon: ShieldCheck,
+      hidden: !isAdmin 
+    },
     { href: "/profile", label: "My Profile", icon: User },
   ];
 

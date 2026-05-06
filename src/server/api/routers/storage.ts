@@ -55,7 +55,7 @@ export const storageRouter = createTRPCRouter({
           originalName: input.originalName,
           mimeType: input.mimeType,
           size: input.size,
-          uploadedBy: ctx.session.user.id,
+          uploadedBy: ctx.dbUser.id,
         })
         .returning();
 
@@ -64,7 +64,7 @@ export const storageRouter = createTRPCRouter({
 
   getFileUrl: protectedProcedure
     .input(z.object({ fileId: z.string().uuid() }))
-    .query(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       const file = await ctx.db.query.files.findFirst({
         where: eq(files.id, input.fileId),
       });
@@ -75,7 +75,7 @@ export const storageRouter = createTRPCRouter({
 
       // RBAC Check
       const user = await ctx.db.query.users.findFirst({
-        where: eq(users.id, ctx.session.user.id),
+        where: eq(users.id, ctx.dbUser!.id),
       });
 
       if (!user) {
@@ -92,14 +92,14 @@ export const storageRouter = createTRPCRouter({
           });
 
           if (sale) {
-            if (sale.userId === ctx.session.user.id) {
+            if (sale.userId === ctx.dbUser!.id) {
               hasAccess = true;
             } else {
               // Manager check (simplified for now: check if sale's user has this user as manager)
               const saleOwner = await ctx.db.query.users.findFirst({
                 where: eq(users.id, sale.userId),
               });
-              if (saleOwner?.managerId === ctx.session.user.id) {
+              if (saleOwner?.managerId === ctx.dbUser!.id) {
                 hasAccess = true;
               }
             }
@@ -108,7 +108,7 @@ export const storageRouter = createTRPCRouter({
           const replacement = await ctx.db.query.replacements.findFirst({
             where: eq(replacements.id, file.entityId),
           });
-          if (replacement && replacement.userId === ctx.session.user.id) {
+          if (replacement && replacement.userId === ctx.dbUser!.id) {
             hasAccess = true;
           }
           // Note: Add manager check for replacements if needed

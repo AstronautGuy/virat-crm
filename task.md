@@ -1,25 +1,17 @@
-# Milestone 3: Field Intelligence & Advanced Reporting
+# Milestone 4: Advanced Access Control & UX Refinement
 
-## Phase 11: Real-time Location Intelligence
-- `[x]` GPS Breadcrumbs & Live Tracking
-- `[x]` Live Map View (Leaflet)
-- `[x]` Route Playback
+## Phase 15: Dynamic Role-Based Access Control
+- `[x]` Create `rolePermissions` table in schema
+- `[x]` Implement `permissions` tRPC router
+- `[x]` Develop Admin UI at `/admin/feature-access`
+- `[x]` Refactor `DesktopSidebar` to use dynamic permissions
+- `[/]` Verify role-based toggling (Manager/Admin/User)
+- `[ ]` Phase 15 Summary & Audit
 
-## Phase 12: Visual Team Hierarchy
-- `[x]` Recursive Organization Tree
-- `[x]` Org-wide Manager views
-- `[x]` Manager-Subordinate reporting visualization
-
-## Phase 13: Advanced Automated Reporting Engine
-- `[x]` Multi-scope aggregation (Individual, Team, Subtree)
-- `[x]` Professional XLSX Exports (Sales & Attendance)
-- `[x]` Flexible timeframes (Daily to Lifetime)
-
-## Phase 14: Milestone 3 Audit & Hardening
-- `[x]` Consolidate package manager (standardize on `pnpm`)
-- `[x]` Restrict map data to single-day visibility
-- `[x]` Implement yearly aggregation for Lifetime reports
-- `[ ]` Verify map data restriction in Live Field View
-- `[ ]` Verify yearly grouping in Lifetime XLSX exports
-- `[ ]` Final security audit of tRPC procedures
-- `[ ]` Milestone 3 Completion Summary
+## Phase 16: Granular Feature Gating
+- [ ] Implement `featureProtectedProcedure` in tRPC
+- [ ] Create `FeatureGate` component for page-level blocking
+- [ ] Wrap sensitive routes (Maps, Reports, etc.) with `FeatureGate`
+- [ ] Apply `featureProtectedProcedure` to existing routers
+- [ ] Verify hard-blocking for disabled features
+- [ ] Phase 16 Summary & Audit

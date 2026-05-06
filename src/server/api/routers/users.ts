@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, featureProtectedProcedure } from "@/server/api/trpc";
 import { users } from "@/server/db/schema/users";
 import { eq } from "drizzle-orm";
 
@@ -23,7 +23,7 @@ export const usersRouter = createTRPCRouter({
     };
   }),
 
-  getOrgTree: protectedProcedure.query(async ({ ctx }) => {
+  getOrgTree: featureProtectedProcedure("org-chart").query(async ({ ctx }) => {
     // Fetch all active users
     const allUsers = await ctx.db.query.users.findMany({
       where: eq(users.isActive, true),
@@ -60,7 +60,7 @@ export const usersRouter = createTRPCRouter({
     if (isAdmin) return roots;
 
     // If Manager, find the node for current user and return its subtree
-    const currentUser = allUsers.find(u => u.kindeId === ctx.user.id);
+    const currentUser = allUsers.find(u => u.kindeId === ctx.user?.id);
     if (isManager && currentUser) {
       const myNode = userMap.get(currentUser.id);
       return myNode ? [myNode] : [];

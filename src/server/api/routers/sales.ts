@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
+import { TRPCError } from "@trpc/server";
 import { sales } from "@/server/db/schema/sales";
 import { saleItems } from "@/server/db/schema/saleItems";
 import { users } from "@/server/db/schema/users";
@@ -7,7 +8,7 @@ import { eq, inArray, sql } from "drizzle-orm";
 import { sendNotificationToUser } from "@/server/lib/push";
 
 export const salesRouter = createTRPCRouter({
-  createSale: protectedProcedure
+  createSale: featureProtectedProcedure("sales")
     .input(
       z.object({
         branchId: z.number(),
@@ -32,8 +33,9 @@ export const salesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
       const currentUser = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.user.id),
+        where: eq(users.kindeId, ctx.dbUser!.kindeId),
       });
 
       if (!currentUser) throw new Error("User not found");
@@ -111,9 +113,10 @@ export const salesRouter = createTRPCRouter({
       return newSale;
     }),
 
-  getSales: protectedProcedure.query(async ({ ctx }) => {
+  getSales: featureProtectedProcedure("sales").query(async ({ ctx }) => {
+    if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
     const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.user.id),
+      where: eq(users.kindeId, ctx.dbUser!.kindeId),
       columns: { id: true, role: true },
     });
 
@@ -163,11 +166,12 @@ export const salesRouter = createTRPCRouter({
     });
   }),
 
-  updateSaleStatus: protectedProcedure
+  updateSaleStatus: featureProtectedProcedure("sales")
     .input(z.object({ saleId: z.number(), status: z.enum(["Pending", "Approved", "Rejected"]) }))
     .mutation(async ({ ctx, input }) => {
+      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
       const currentUser = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.user.id),
+        where: eq(users.kindeId, ctx.dbUser!.kindeId),
       });
 
       if (!currentUser) throw new Error("User not found");

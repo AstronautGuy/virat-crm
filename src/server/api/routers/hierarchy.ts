@@ -1,13 +1,13 @@
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { users } from "@/server/db/schema/users";
 import { eq, sql } from "drizzle-orm";
 
 export const hierarchyRouter = createTRPCRouter({
   // Fetch immediate team members (direct reports)
-  getMyTeam: protectedProcedure.query(async ({ ctx }) => {
+  getMyTeam: featureProtectedProcedure("org-chart").query(async ({ ctx }) => {
     // We first need the current user's DB id, since Kinde uses kindeId
     const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.user.id),
+      where: eq(users.kindeId, ctx.dbUser!.kindeId),
       columns: { id: true, role: true },
     });
 
@@ -31,9 +31,9 @@ export const hierarchyRouter = createTRPCRouter({
   }),
 
   // Fetch full N-level hierarchy tree (CTE)
-  getFullHierarchy: protectedProcedure.query(async ({ ctx }) => {
+  getFullHierarchy: featureProtectedProcedure("org-chart").query(async ({ ctx }) => {
     const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.user.id),
+      where: eq(users.kindeId, ctx.dbUser!.kindeId),
       columns: { id: true, role: true },
     });
 

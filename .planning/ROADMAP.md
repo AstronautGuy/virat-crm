@@ -15,13 +15,11 @@
 - **[x] Phase 14: Milestone 3 Audit & Hardening**
   - Performance optimization for maps, Security review
 
-## Milestone 4: Inventory & Warehouse Intelligence
+## Milestone 4: Advanced Access Control & UX Refinement
 
-- **Phase 15: Centralized Warehouse Management**
-  - Multi-warehouse schema, Warehouse Manager UI, Inter-branch transfers
-- **Phase 16: Stock Tracking & Replenishment Alerts**
-  - Real-time inventory levels, Low stock triggers, Automatic reorder logic
-- **Phase 17: Product Variants & Batch Tracking**
-  - Expiry dates, Batch numbers, SKU management
-- **Phase 18: Milestone 4 Audit & Hardening**
-  - Inventory reconciliation tools, Physical audit logs
+- **Phase 15: Dynamic Role-Based Access Control**
+  - Permission schema, Feature Registry, Admin Toggle UI
+- **Phase 16: Granular Feature Gating**
+  - Refactor sidebar and routers to use dynamic permissions
+- **Phase 17: Milestone 4 Audit & Hardening**
+  - Performance audit, Final RBAC verification

@@ -1,14 +1,16 @@
 import { z } from "zod";
-import { createTRPCRouter, managerProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
+import { TRPCError } from "@trpc/server";
 import { sales, branches, locationLogs, users } from "@/server/db/schema";
 import { and, gte, lte, eq, sql, inArray } from "drizzle-orm";
-import { getDateRange, DateRangePreset } from "@/server/lib/date";
+import { getDateRange, type DateRangePreset } from "@/server/lib/date";
 
 export const reportsRouter = createTRPCRouter({
   // Fetch users for selection (Admins see everyone, Managers see their team)
-  getSelectableUsers: managerProcedure.query(async ({ ctx }) => {
+  getSelectableUsers: featureProtectedProcedure("reports").query(async ({ ctx }) => {
+    if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
     const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.user.id),
+      where: eq(users.kindeId, ctx.dbUser!.kindeId),
       columns: { id: true, role: true },
     });
 
@@ -27,7 +29,7 @@ export const reportsRouter = createTRPCRouter({
     });
   }),
 
-  getReportData: managerProcedure
+  getReportData: featureProtectedProcedure("reports")
     .input(z.object({
       preset: z.enum(["today", "7d", "30d", "quarter", "year", "all"]),
       scope: z.enum(["individual", "team", "management"]),
@@ -36,8 +38,9 @@ export const reportsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const { start, end } = getDateRange(input.preset as DateRangePreset);
       
+      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
       const currentUser = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.user.id),
+        where: eq(users.kindeId, ctx.dbUser!.kindeId),
         columns: { id: true },
       });
 
@@ -87,7 +90,7 @@ export const reportsRouter = createTRPCRouter({
           status: sales.status,
           date: sales.createdAt,
           branchName: branches.name,
-          userName: sql`${users.firstName} || ' ' || ${users.lastName}`,
+          userName: sql<string>`${users.firstName} || ' ' || ${users.lastName}`,
         })
         .from(sales)
         .innerJoin(branches, eq(sales.branchId, branches.id))
@@ -103,7 +106,7 @@ export const reportsRouter = createTRPCRouter({
       // 3. Fetch Attendance/Visits
       const attendanceData = await ctx.db
         .select({
-          userName: sql`${users.firstName} || ' ' || ${users.lastName}`,
+          userName: sql<string>`${users.firstName} || ' ' || ${users.lastName}`,
           date: locationLogs.date,
           recordedAt: locationLogs.recordedAt,
         })
