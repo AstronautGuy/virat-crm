@@ -182,7 +182,8 @@ export const featureProtectedProcedure = (featureKey: string) => {
         ),
       });
 
-      if (permission && !permission.isEnabled) {
+      if (!permission || !permission.isEnabled) {
+        console.warn(`[SECURITY] Access denied for user ${ctx.dbUser.id} (${ctx.dbUser.role}) to feature '${featureKey}'`);
         throw new TRPCError({
           code: "FORBIDDEN",
           message: `The feature '${featureKey}' is disabled for your role.`,
