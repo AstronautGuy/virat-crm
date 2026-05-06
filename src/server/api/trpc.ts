@@ -173,7 +173,14 @@ export const featureProtectedProcedure = (featureKey: string) => {
       }
 
       // Admins bypass feature gates
-      if (ctx.dbUser.role === "Admin") return next({ ctx });
+      if (ctx.dbUser.role === "Admin") {
+        return next({
+          ctx: {
+            ...ctx,
+            dbUser: ctx.dbUser,
+          },
+        });
+      }
 
       const permission = await ctx.db.query.rolePermissions.findFirst({
         where: and(
@@ -190,7 +197,12 @@ export const featureProtectedProcedure = (featureKey: string) => {
         });
       }
 
-      return next({ ctx });
+      return next({
+        ctx: {
+          ...ctx,
+          dbUser: ctx.dbUser,
+        },
+      });
     })
   );
 };

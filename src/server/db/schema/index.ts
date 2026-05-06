@@ -10,4 +10,7 @@ export { notifications, notificationsRelations } from "./notifications";
 export { files, filesRelations, fileEntityTypeEnum } from "./files";
 export { pushSubscriptions, pushSubscriptionsRelations } from "./pushSubscriptions";
 export { breadcrumbs, breadcrumbRelations } from "./breadcrumbs";
+export { inventory, inventoryRelations } from "./inventory";
+export { inventoryTransactions, inventoryTransactionsRelations } from "./inventoryTransactions";
+export { stockTransfers, stockTransfersRelations } from "./stockTransfers";
 export { rolePermissions } from "./rolePermissions";

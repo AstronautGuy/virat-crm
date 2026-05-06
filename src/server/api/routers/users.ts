@@ -8,6 +8,7 @@ export const usersRouter = createTRPCRouter({
       where: eq(users.kindeId, ctx.user.id),
       with: {
         manager: true,
+        branch: true,
       },
     });
 

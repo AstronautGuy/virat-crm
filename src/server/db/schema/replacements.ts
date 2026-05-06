@@ -4,11 +4,14 @@ import { sales } from "./sales";
 import { users } from "./users";
 import { files } from "./files";
 
+import { branches } from "./branches";
+
 export const createTable = pgTableCreator((name) => `virat-crm_${name}`);
 
 export const replacements = createTable("replacement", {
   id: serial("id").primaryKey(),
   originalSaleId: integer("original_sale_id").references(() => sales.id).notNull(),
+  branchId: integer("branch_id").references(() => branches.id).notNull(),
   userId: uuid("user_id").references(() => users.id).notNull(),
   reason: text("reason").notNull(),
   status: varchar("status", { length: 50 }).default("Pending").notNull(),

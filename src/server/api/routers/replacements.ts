@@ -1,13 +1,12 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { replacements } from "@/server/db/schema/replacements";
-import { users } from "@/server/db/schema/users";
+import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
+import { replacements, users, sales } from "@/server/db/schema";
 import { eq, sql, inArray } from "drizzle-orm";
-import { sales } from "@/server/db/schema/sales";
 import { sendNotificationToUser } from "@/server/lib/push";
+import { TRPCError } from "@trpc/server";
 
 export const replacementsRouter = createTRPCRouter({
-  createReplacement: protectedProcedure
+  createReplacement: featureProtectedProcedure("sales")
     .input(
       z.object({
         originalSaleId: z.number(),
@@ -15,22 +14,16 @@ export const replacementsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const currentUser = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.user.id),
-      });
-
-      if (!currentUser) throw new Error("User not found");
-
       const originalSale = await ctx.db.query.sales.findFirst({
         where: eq(sales.id, input.originalSaleId),
       });
 
-      if (!originalSale) throw new Error("Original sale not found");
+      if (!originalSale) throw new TRPCError({ code: "NOT_FOUND", message: "Original sale not found" });
       
-      if (currentUser.role !== "Admin" && originalSale.userId !== currentUser.id) {
+      if (ctx.dbUser.role !== "Admin" && originalSale.userId !== ctx.dbUser.id) {
         const descendantsQuery = sql`
           WITH RECURSIVE subordinates AS (
-            SELECT id FROM "virat-crm_user" WHERE manager_id = ${currentUser.id}
+            SELECT id FROM "virat-crm_user" WHERE manager_id = ${ctx.dbUser.id}
             UNION
             SELECT e.id FROM "virat-crm_user" e
             INNER JOIN subordinates s ON s.id = e.manager_id
@@ -40,32 +33,29 @@ export const replacementsRouter = createTRPCRouter({
 
         const rows = await ctx.db.execute(descendantsQuery);
         if (rows.length === 0) {
-          throw new Error("Unauthorized");
+          throw new TRPCError({ code: "FORBIDDEN", message: "Unauthorized to create replacement for this sale" });
         }
       }
 
+      const newReplacement = {
+        originalSaleId: input.originalSaleId,
+        branchId: originalSale.branchId,
+        userId: ctx.dbUser.id,
+        reason: input.reason,
+        status: "Pending" as const,
+      };
+
       const [replacement] = await ctx.db
         .insert(replacements)
-        .values({
-          originalSaleId: input.originalSaleId,
-          userId: currentUser.id,
-          reason: input.reason,
-          status: "Pending",
-        })
+        .values(newReplacement)
         .returning();
 
       return replacement;
     }),
 
-  getMyReplacements: protectedProcedure.query(async ({ ctx }) => {
-    const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.user.id),
-    });
-
-    if (!currentUser) return [];
-
+  getMyReplacements: featureProtectedProcedure("sales").query(async ({ ctx }) => {
     return ctx.db.query.replacements.findMany({
-      where: eq(replacements.userId, currentUser.id),
+      where: eq(replacements.userId, ctx.dbUser.id),
       with: {
         sale: true,
         files: {
@@ -76,15 +66,8 @@ export const replacementsRouter = createTRPCRouter({
     });
   }),
 
-  getReplacements: protectedProcedure.query(async ({ ctx }) => {
-    const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.user.id),
-      columns: { id: true, role: true },
-    });
-
-    if (!currentUser) return [];
-
-    if (currentUser.role === "Admin") {
+  getReplacements: featureProtectedProcedure("sales").query(async ({ ctx }) => {
+    if (ctx.dbUser.role === "Admin") {
       return ctx.db.query.replacements.findMany({
         with: { 
           sale: true, 
@@ -97,22 +80,9 @@ export const replacementsRouter = createTRPCRouter({
       });
     }
 
-    const descendantsQuery = sql`
-      WITH RECURSIVE subordinates AS (
-        SELECT id FROM "virat-crm_user" WHERE manager_id = ${currentUser.id}
-        UNION
-        SELECT e.id FROM "virat-crm_user" e
-        INNER JOIN subordinates s ON s.id = e.manager_id
-      )
-      SELECT id FROM subordinates;
-    `;
-
-    const rows = await ctx.db.execute(descendantsQuery);
-    const descendantIds = rows.map((row: any) => String(row.id));
-    const allowedIds = [currentUser.id, ...descendantIds];
-
+    // Filter by branch for non-admins
     return ctx.db.query.replacements.findMany({
-      where: inArray(replacements.userId, allowedIds),
+      where: eq(replacements.branchId, ctx.dbUser.branchId!),
       with: { 
         sale: true, 
         user: true, 
@@ -124,39 +94,23 @@ export const replacementsRouter = createTRPCRouter({
     });
   }),
 
-  updateReplacementStatus: protectedProcedure
+  updateReplacementStatus: featureProtectedProcedure("sales")
     .input(z.object({ replacementId: z.number(), status: z.enum(["Pending", "Approved", "Rejected"]) }))
     .mutation(async ({ ctx, input }) => {
-      const currentUser = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.user.id),
-      });
-
-      if (!currentUser) throw new Error("User not found");
-
       const targetReplacement = await ctx.db.query.replacements.findFirst({
         where: eq(replacements.id, input.replacementId),
       });
 
-      if (!targetReplacement) throw new Error("Replacement not found");
+      if (!targetReplacement) throw new TRPCError({ code: "NOT_FOUND", message: "Replacement not found" });
 
-      if (currentUser.role !== "Admin") {
-        if (currentUser.role !== "Manager") {
-          throw new Error("Unauthorized to update status");
+      if (ctx.dbUser.role !== "Admin") {
+        if (ctx.dbUser.role !== "Manager") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Unauthorized to update status" });
         }
 
-        const descendantsQuery = sql`
-          WITH RECURSIVE subordinates AS (
-            SELECT id FROM "virat-crm_user" WHERE manager_id = ${currentUser.id}
-            UNION
-            SELECT e.id FROM "virat-crm_user" e
-            INNER JOIN subordinates s ON s.id = e.manager_id
-          )
-          SELECT id FROM subordinates WHERE id = ${targetReplacement.userId} LIMIT 1;
-        `;
-
-        const rows = await ctx.db.execute(descendantsQuery);
-        if (rows.length === 0) {
-          throw new Error("Unauthorized");
+        // Managers can only update if it's in their branch
+        if (targetReplacement.branchId !== ctx.dbUser.branchId) {
+           throw new TRPCError({ code: "FORBIDDEN", message: "Unauthorized: Replacement does not belong to your branch" });
         }
       }
 

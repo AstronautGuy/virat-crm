@@ -1,11 +1,14 @@
 import { db } from "./index";
-import { branches, users, products, sales, saleItems, replacements } from "./schema";
+import { branches, users, products, sales, saleItems, replacements, inventory } from "./schema";
 import { sql } from "drizzle-orm";
 
 async function main() {
   console.log("Seeding database...");
 
   // Truncate tables to allow re-seeding
+  await db.execute(sql`TRUNCATE TABLE "virat-crm_stock_transfer" CASCADE;`);
+  await db.execute(sql`TRUNCATE TABLE "virat-crm_inventory_transaction" CASCADE;`);
+  await db.execute(sql`TRUNCATE TABLE "virat-crm_inventory" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_replacement" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_sale_item" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_sale" CASCADE;`);
@@ -85,9 +88,9 @@ async function main() {
   const insertedProducts = await db
     .insert(products)
     .values([
-      { name: "Virat Premium Cement", sku: "VPC-001", price: "350.00", stock: 1000 },
-      { name: "Virat Standard Cement", sku: "VSC-002", price: "280.00", stock: 2000 },
-      { name: "Virat Quick-Dry", sku: "VQD-003", price: "400.00", stock: 500 },
+      { name: "Virat Premium Cement", sku: "VPC-001", price: "350.00" },
+      { name: "Virat Standard Cement", sku: "VSC-002", price: "280.00" },
+      { name: "Virat Quick-Dry", sku: "VQD-003", price: "400.00" },
     ])
     .returning();
   
@@ -147,16 +150,26 @@ async function main() {
   ]);
   console.log("Sale Items seeded");
 
+  // Seed Inventory
+  await db.insert(inventory).values([
+    { productId: p1.id, branchId: hq.id, quantity: 1000 },
+    { productId: p2.id, branchId: hq.id, quantity: 2000 },
+    { productId: insertedProducts[2]!.id, branchId: hq.id, quantity: 500 },
+  ]);
+  console.log("Inventory seeded");
+
   // Seed Replacements
   await db.insert(replacements).values([
     {
       originalSaleId: sale1.id,
+      branchId: hq.id,
       userId: employee!.id,
       reason: "Bags were torn during transit",
       status: "Pending",
     },
     {
       originalSaleId: sale2.id,
+      branchId: hq.id,
       userId: employee!.id,
       reason: "Quality check failed",
       status: "Approved",

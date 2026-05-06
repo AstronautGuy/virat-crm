@@ -27,6 +27,7 @@ export function DesktopSidebar() {
   const links = [
     { href: "/", label: "Dashboard", icon: Home, hidden: !getIsFeatureEnabled("dashboard") },
     { href: "/sales", label: "Sales Register", icon: ShoppingBag, hidden: !getIsFeatureEnabled("sales") },
+    { href: "/inventory", label: "Inventory", icon: FileText, hidden: !getIsFeatureEnabled("inventory") },
     { href: "/attendance", label: "Workforce", icon: Users, hidden: !getIsFeatureEnabled("workforce") },
     { 
       href: "/admin/live-map", 

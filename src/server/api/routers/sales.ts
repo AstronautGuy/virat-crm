@@ -1,11 +1,9 @@
 import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
-import { TRPCError } from "@trpc/server";
-import { sales } from "@/server/db/schema/sales";
-import { saleItems } from "@/server/db/schema/saleItems";
-import { users } from "@/server/db/schema/users";
-import { eq, inArray, sql } from "drizzle-orm";
+import { sales, saleItems, inventory, inventoryTransactions, users } from "@/server/db/schema";
+import { eq, inArray, sql, and } from "drizzle-orm";
 import { sendNotificationToUser } from "@/server/lib/push";
+import { TRPCError } from "@trpc/server";
 
 export const salesRouter = createTRPCRouter({
   createSale: featureProtectedProcedure("sales")
@@ -34,90 +32,133 @@ export const salesRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
+      
       const currentUser = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.dbUser!.kindeId),
+        where: eq(users.kindeId, ctx.dbUser.kindeId),
       });
 
-      if (!currentUser) throw new Error("User not found");
+      if (!currentUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
 
-      let deliveryAddress = "";
-      if (input.pincode) {
-        try {
-          const res = await fetch(`https://api.postalpincode.in/pincode/${input.pincode}`);
-          const data = (await res.json()) as any;
-          if (Array.isArray(data) && data[0]?.Status === "Success") {
-            const postOffice = data[0].PostOffice?.[0];
-            if (postOffice) {
-              deliveryAddress = `${postOffice.Name}, ${postOffice.District}, ${postOffice.State}`;
-            }
+      return await ctx.db.transaction(async (tx) => {
+        // 1. Stock Check & Decrement
+        for (const item of input.items) {
+          const stockEntry = await tx.query.inventory.findFirst({
+            where: and(
+              eq(inventory.productId, item.productId),
+              eq(inventory.branchId, input.branchId)
+            ),
+          });
+
+          if (!stockEntry || stockEntry.quantity < item.quantity) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Insufficient stock for product ID ${item.productId} at this branch.`,
+            });
           }
-        } catch (e) {
-          console.error("Failed to fetch pincode details", e);
+
+          // Update inventory
+          await tx
+            .update(inventory)
+            .set({ quantity: stockEntry.quantity - item.quantity })
+            .where(eq(inventory.id, stockEntry.id));
         }
-      }
 
-      let mainQty = 0;
-      let freeQty = 0;
-      for (const item of input.items) {
-        if (item.isFree) freeQty += item.quantity;
-        else mainQty += item.quantity;
-      }
-      const totalQty = mainQty + freeQty;
+        // 2. Fetch Pincode Details (Outside transaction if possible, but kept here for simplicity if needed)
+        let deliveryAddress = "";
+        if (input.pincode) {
+          try {
+            const res = await fetch(`https://api.postalpincode.in/pincode/${input.pincode}`);
+            const data = (await res.json()) as any;
+            if (Array.isArray(data) && data[0]?.Status === "Success") {
+              const postOffice = data[0].PostOffice?.[0];
+              if (postOffice) {
+                deliveryAddress = `${postOffice.Name}, ${postOffice.District}, ${postOffice.State}`;
+              }
+            }
+          } catch (e) {
+            console.error("Failed to fetch pincode details", e);
+          }
+        }
 
-      const invoiceAmt = parseFloat(input.invoiceAmount ?? "0");
-      const advanceAmt = parseFloat(input.advancePaymentAmount ?? "0");
-      const receivedAmt = parseFloat(input.receivedAmount ?? "0");
-      const balanceAmt = invoiceAmt - advanceAmt - receivedAmt;
+        let mainQty = 0;
+        let freeQty = 0;
+        for (const item of input.items) {
+          if (item.isFree) freeQty += item.quantity;
+          else mainQty += item.quantity;
+        }
+        const totalQty = mainQty + freeQty;
 
-      const orderNumber = `ORD-${Date.now()}`;
-      const transactionNumber = `TXN-${Date.now()}`;
+        const invoiceAmt = parseFloat(input.invoiceAmount ?? "0");
+        const advanceAmt = parseFloat(input.advancePaymentAmount ?? "0");
+        const receivedAmt = parseFloat(input.receivedAmount ?? "0");
+        const balanceAmt = invoiceAmt - advanceAmt - receivedAmt;
 
-      const [newSale] = await ctx.db
-        .insert(sales)
-        .values({
-          branchId: input.branchId,
-          userId: currentUser.id,
-          managerId: currentUser.managerId,
-          orderNumber,
-          transactionNumber,
-          pincode: input.pincode,
-          addressLine1: input.addressLine1,
-          landmark: input.landmark,
-          area: input.area,
-          city: input.city,
-          state: input.state,
-          deliveryAddress: deliveryAddress || undefined,
-          customerName: input.customerName,
-          customerAddress: input.customerAddress,
-          mainQty,
-          freeQty,
-          totalQty,
-          invoiceAmount: invoiceAmt.toString(),
-          advancePaymentAmount: advanceAmt.toString(),
-          receivedAmount: receivedAmt.toString(),
-          balanceAmount: balanceAmt.toString(),
-        })
-        .returning();
+        const orderNumber = `ORD-${Date.now()}`;
+        const transactionNumber = `TXN-${Date.now()}`;
 
-      if (input.items.length > 0 && newSale) {
-        await ctx.db.insert(saleItems).values(
-          input.items.map((item) => ({
-            saleId: newSale.id,
-            productId: item.productId,
-            quantity: item.quantity,
-            isFree: item.isFree,
-          }))
-        );
-      }
+        // 3. Insert Sale
+        const [newSale] = await tx
+          .insert(sales)
+          .values({
+            branchId: input.branchId,
+            userId: currentUser.id,
+            managerId: currentUser.managerId,
+            orderNumber,
+            transactionNumber,
+            pincode: input.pincode,
+            addressLine1: input.addressLine1,
+            landmark: input.landmark,
+            area: input.area,
+            city: input.city,
+            state: input.state,
+            deliveryAddress: deliveryAddress || undefined,
+            customerName: input.customerName,
+            customerAddress: input.customerAddress,
+            mainQty,
+            freeQty,
+            totalQty,
+            invoiceAmount: invoiceAmt.toString(),
+            advancePaymentAmount: advanceAmt.toString(),
+            receivedAmount: receivedAmt.toString(),
+            balanceAmount: balanceAmt.toString(),
+          })
+          .returning();
 
-      return newSale;
+        if (!newSale) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create sale" });
+
+        // 4. Insert Sale Items & Transactions
+        if (input.items.length > 0) {
+          await tx.insert(saleItems).values(
+            input.items.map((item) => ({
+              saleId: newSale.id,
+              productId: item.productId,
+              quantity: item.quantity,
+              isFree: item.isFree,
+            }))
+          );
+
+          await tx.insert(inventoryTransactions).values(
+            input.items.map((item) => ({
+              productId: item.productId,
+              branchId: input.branchId,
+              userId: currentUser.id,
+              type: "Sale",
+              quantity: -item.quantity,
+              referenceId: newSale.id.toString(),
+              reason: `Sale ${newSale.orderNumber}`,
+            }))
+          );
+        }
+
+        return newSale;
+      });
     }),
 
   getSales: featureProtectedProcedure("sales").query(async ({ ctx }) => {
     if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
     const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.dbUser!.kindeId),
-      columns: { id: true, role: true },
+      where: eq(users.kindeId, ctx.dbUser.kindeId),
+      columns: { id: true, role: true, branchId: true },
     });
 
     if (!currentUser) return [];
@@ -137,22 +178,9 @@ export const salesRouter = createTRPCRouter({
       });
     }
 
-    const descendantsQuery = sql`
-      WITH RECURSIVE subordinates AS (
-        SELECT id FROM "virat-crm_user" WHERE manager_id = ${currentUser.id}
-        UNION
-        SELECT e.id FROM "virat-crm_user" e
-        INNER JOIN subordinates s ON s.id = e.manager_id
-      )
-      SELECT id FROM subordinates;
-    `;
-
-    const rows = await ctx.db.execute(descendantsQuery);
-    const descendantIds = rows.map((row: any) => String(row.id));
-    const allowedIds = [currentUser.id, ...descendantIds];
-
+    // Filter by branch for non-admins
     return ctx.db.query.sales.findMany({
-      where: inArray(sales.userId, allowedIds),
+      where: eq(sales.branchId, currentUser.branchId!),
       with: { 
         user: true, 
         manager: true, 

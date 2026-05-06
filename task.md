@@ -10,13 +10,21 @@
 
 ## Phase 16: Granular Feature Gating
 - `[x]` Implement `featureProtectedProcedure` in tRPC
-- `[x]` Create `FeatureGate` component for page-level blocking
-- `[x]` Fix TypeScript compilation errors in tRPC routers
-    - `[x]` Consolidate duplicate imports in `sales.ts`
-    - `[x]` Standardize `ctx.dbUser` usage with null safety
-    - `[x]` Fix `DateRangePreset` type imports
-    - `[x]` Resolve `leaves.ts` schema and enum mismatches
-    - `[x]` Exclude `scratch` from `tsconfig.json`
+- `[x]` Create `FeatureGate` component- [x] Multi-Branch Inventory Logic & Schema
+    - [x] Schema: Inventory, Transactions, Transfers
+    - [x] Router: `inventory.ts` with atomic procedures
+    - [x] Logic: Branch-isolated stock management
+- [x] Inventory Management UI
+    - [x] Page: `/inventory` Dashboard
+    - [x] Page: `/inventory/transfers` Center
+- [x] Module Isolation & Security
+    - [x] Feature gating for inventory
+    - [x] Sidebar integration
+- [x] Refinement & Verification
+    - [x] Atomic transactions verification
+    - [x] Type safety (tsc clean)
+    - [x] Seed data update
+ `scratch` from `tsconfig.json`
 - `[x]` Verify clean build with `tsc --noEmit`
 - `[x]` Wrap sensitive routes (Maps, Reports, etc.) with `FeatureGate`
 - `[x]` Apply `featureProtectedProcedure` to existing routers
