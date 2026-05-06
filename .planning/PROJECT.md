@@ -18,31 +18,25 @@ Secure, mobile-first operations management that ensures authenticated access and
 - ✓ Manage leave requests
 - ✓ Upload and store staff documents
 - ✓ Mobile-first PWA with bottom navigation
-- ✓ Analytics & Business Intelligence dashboards (M2)
-- ✓ Web Push Notifications for system alerts (M2)
-- ✓ Advanced Offline Data Synchronization (M2)
+- ✓ Advanced Field Intelligence (M3)
+- ✓ Dynamic RBAC & Feature Gating (M4)
 
-### Active (Milestone 3: Field Intelligence & Advanced Reporting)
+### Active (Milestone 5: Inventory Orchestration & Operational Scaling)
 
-- [ ] Real-time Location Tracking (Breadcrumbs & Live Maps)
-- [ ] Visual Team Hierarchy & Territory Mapping
-- [ ] Advanced Automated Reporting (PDF/Excel scheduled reports)
-- [ ] Performance Heatmaps (Sales vs. Location data)
+- [ ] Multi-Branch Inventory Management (Stock tracking, transfers)
+- [ ] Data Archival Engine (Trimming map data, yearly report summaries)
+- [ ] Supply Chain Logic (Purchase orders, vendor tracking)
 
 ### Out of Scope
-
-- [LLM / AI Features] — Removed per explicit requirement.
-- [Base44 SDK] — Entirely replaced by custom tRPC backend.
-- [Client-Side Auth] — Replaced due to critical security vulnerability.
-
-## Context
-
+...
 ### Shipped Milestones
 - **v1: Foundations**: Auth, DB, Geofencing, Storage, PWA.
 - **v2: Intelligence**: Analytics, Push, Offline Sync, Hardening.
+- **v3: Field Intelligence**: Location Tracking, Org Charts, Automated Reports.
+- **v4: Access Control**: Dynamic RBAC, Feature Gating, Security Hardening.
 
-### Next Milestone: M3 (Field Intelligence & Advanced Reporting)
-- Goal: Establish real-time field visibility, visual team mapping, and automated reporting engines.
+### Next Milestone: M5 (Inventory Orchestration & Operational Scaling)
+- Goal: Implement robust stock management across multiple branches and optimize long-term data retention for performance.
 
 ## Constraints
 

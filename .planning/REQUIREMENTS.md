@@ -1,29 +1,31 @@
-# Requirements: Milestone 3 (Field Intelligence & Advanced Reporting)
+# Requirements: Milestone 5 (Inventory Orchestration & Operational Scaling)
+
+**Status**: DRAFT 📝
+**Date**: 2026-05-06
 
 ## Goal
-Establish a "Command Center" capability for managers and admins to monitor field operations in real-time and automate the generation of performance reports.
+Implement a robust, multi-branch inventory management system that ensures data integrity for stock levels and optimizes long-term system performance via data archival.
 
-## 1. Real-time Location Intelligence
-- **R1.1: GPS Breadcrumbs**: Agents' devices should periodically (e.g., every 5-10 mins) ping their location to the server while the app is active.
-- **R1.2: Live Map View**: A manager-only map view showing the current location of all active subordinates.
-- **R1.3: Route Playback**: Ability to select an agent and a date to see their movement path for that day.
+## 1. Multi-Branch Inventory Management
+- **R1.1: Product Catalog**: Centralized registry of products with SKU, categories, and unit management.
+- **R1.2: Real-time Stock Tracking**: View current stock levels for any product across all branches.
+- **R1.3: Stock Adjustments**: Manual corrections for breakage, loss, or initial count with mandatory reason codes.
 
-## 2. Visual Team Hierarchy & Territory Mapping
-- **R2.1: Organizational Tree View**: An interactive visual representation of the Manager -> Agent hierarchy.
-- **R2.2: Territory Boundaries**: Define circular or polygonal zones on the map to represent sales territories.
-- **R2.3: Visual Mapping**: Overlay team members' current locations and sales data on top of defined territories.
+## 2. Stock Transfer Workflow
+- **R2.1: Transfer Requests**: Branch A can request stock from Branch B.
+- **R2.2: Approval & Shipping**: Manager approval required to release stock; system generates a "Dispatch Note".
+- **R2.3: Receiving & Verification**: Branch A verifies received quantities; discrepancies are logged for audit.
 
-## 3. Advanced Automated Reporting
-- **R3.1: Scheduled Reports**: Daily "End of Day" PDF summaries automatically emailed or available via Push for managers.
-- **R3.2: Custom Report Builder**: A UI to select metrics (Sales, Attendance, Visits), date ranges, and branch filters to generate on-demand reports.
-- **R3.3: Export Formats**: Full support for PDF and Excel (XLSX) exports with professional branding.
+## 3. Data Archival & Optimization
+- **R3.1: Map Data Trimming**: Automatically archive location breadcrumbs older than 30 days to a cold storage table.
+- **R3.2: Yearly Summaries**: Convert high-frequency transaction data into yearly performance snapshots for lifetime reporting.
+- **R3.3: Reporting Latency**: Ensure complex reports load in < 2s by utilizing materialized views or summary tables.
 
-## 4. Performance Heatmaps
-- **R4.1: Sales Heatmap**: Visual overlay on the map showing high-density sales areas vs. low-density areas.
-- **R4.2: Coverage Audit**: Identify "blind spots" where agents haven't visited or logged sales within a specific timeframe.
+## 4. Supply Chain & Vendor Logic
+- **R4.1: Vendor Registry**: Manage supplier contact info and category specializations.
+- **R4.2: Purchase Orders**: Generate POs for external stock procurement.
+- **R4.3: Stock-In Flow**: Update inventory automatically when POs are marked as "Delivered".
 
-## Constraints & Security
-## 5. Mobile & Native Wrapper Optimization
-- **R5.1: Touch-First Mapping**: Map markers and overlays must be easily interactable via touch (min 44px tap targets).
-- **R5.2: Battery-Optimized Pings**: Background location updates must use adaptive intervals to minimize battery drain on mobile devices.
-- **R5.3: In-App Report Viewing**: Provide an in-browser PDF viewer instead of relying on external PDF apps, ensuring compatibility with mobile WebViews.
+## Constraints
+- **Atomic Updates**: Inventory changes must be wrapped in database transactions to prevent race conditions during simultaneous branch updates.
+- **Offline Resilience**: Stock transfers must be initiatable offline and synced when connectivity returns.

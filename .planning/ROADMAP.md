@@ -15,11 +15,8 @@
 - **[x] Phase 14: Milestone 3 Audit & Hardening**
   - Performance optimization for maps, Security review
 
-## Milestone 4: Advanced Access Control & UX Refinement
-
-- **Phase 15: Dynamic Role-Based Access Control**
-  - Permission schema, Feature Registry, Admin Toggle UI
-- **Phase 16: Granular Feature Gating**
-  - Refactor sidebar and routers to use dynamic permissions
-- **Phase 17: Milestone 4 Audit & Hardening**
-  - Performance audit, Final RBAC verification
+- **[x] v4: Advanced Access Control & UX Refinement** ([Details](file:///.planning/milestones/v4-ROADMAP.md))
+- **[ ] v5: Inventory Orchestration & Operational Scaling**
+    - Phase 18: Multi-Branch Inventory Management (Stock tracking, transfers)
+    - Phase 19: Data Archival & Reporting Optimization (Trimming map data, yearly summaries)
+    - Phase 20: Milestone 5 Audit & Hardening
