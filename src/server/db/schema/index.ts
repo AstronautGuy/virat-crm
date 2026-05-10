@@ -16,3 +16,6 @@ export { stockTransfers, stockTransfersRelations } from "./stockTransfers";
 export { rolePermissions } from "./rolePermissions";
 export { performanceSnapshots } from "./performance";
 export { salesArchive, replacementsArchive } from "./archive";
+export { customers, customersRelations, customerStatusEnum } from "./customers";
+export { dailyReports, dailyReportsRelations } from "./daily_reports";
+
