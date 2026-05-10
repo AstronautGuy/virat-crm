@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingBag, Users, FileText, User, MapPin, BarChart3, Network, ShieldCheck } from "lucide-react";
+import { Home, ShoppingBag, Users, FileText, User, MapPin, BarChart3, Network, ShieldCheck, Contact } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 
@@ -28,7 +29,11 @@ export function DesktopSidebar() {
     { href: "/", label: "Dashboard", icon: Home, hidden: !getIsFeatureEnabled("dashboard") },
     { href: "/sales", label: "Sales Register", icon: ShoppingBag, hidden: !getIsFeatureEnabled("sales") },
     { href: "/inventory", label: "Inventory", icon: FileText, hidden: !getIsFeatureEnabled("inventory") },
+    { href: "/crm", label: "Customer Master", icon: Contact, hidden: !getIsFeatureEnabled("crm") },
+    { href: "/reports", label: "Daily Reports", icon: FileText, hidden: !getIsFeatureEnabled("reports") },
     { href: "/attendance", label: "Workforce", icon: Users, hidden: !getIsFeatureEnabled("workforce") },
+
+
     { 
       href: "/admin/live-map", 
       label: "Live Field View", 

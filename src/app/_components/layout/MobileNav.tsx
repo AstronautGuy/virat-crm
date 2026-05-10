@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingBag, Users, FileText, User, MapPin } from "lucide-react";
+import { Home, ShoppingBag, Users, FileText, User, MapPin, Contact } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 
@@ -19,7 +20,11 @@ export function MobileNav() {
   const links = [
     { href: "/", label: "Home", icon: Home },
     { href: "/sales", label: "Sales", icon: ShoppingBag },
+    { href: "/crm", label: "CRM", icon: Contact },
+    { href: "/reports", label: "Reports", icon: FileText },
     { href: "/attendance", label: "Staff", icon: Users },
+
+
     { 
       href: "/admin/live-map", 
       label: "Live", 
