@@ -13,7 +13,8 @@ import {
   MapPin,
   BarChart3,
   FileText,
-  Network
+  Network,
+  Contact
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -21,14 +22,17 @@ import { useState } from "react";
 const FEATURES = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, description: "Main overview and summary stats" },
   { key: "sales", label: "Sales Register", icon: ShoppingBag, description: "Log and view sales transactions" },
+  { key: "crm", label: "Customer Master", icon: Contact, description: "Manage customers and financial balances" },
+  { key: "reports", label: "Daily Reports", icon: FileText, description: "Submit and review daily activity narratives" },
   { key: "workforce", label: "Workforce", icon: Users, description: "Attendance, leave, and field visit logs" },
   { key: "live-map", label: "Live Field View", icon: MapPin, description: "Real-time location tracking for managers" },
-  { key: "reports", label: "Intelligence Reports", icon: BarChart3, description: "Exportable XLSX performance reports" },
+  { key: "analytics", label: "Intelligence Reports", icon: BarChart3, description: "Exportable XLSX performance reports" },
   { key: "documents", label: "Documents", icon: FileText, description: "Staff document storage and viewing" },
   { key: "org-chart", label: "Org Chart", icon: Network, description: "Visual team hierarchy and reporting lines" },
 ];
 
 const ROLES = ["Admin", "Manager", "Employee"] as const;
+
 
 export default function FeatureAccessPage() {
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
