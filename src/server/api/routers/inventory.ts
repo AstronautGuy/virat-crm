@@ -8,7 +8,9 @@ export const inventoryRouter = createTRPCRouter({
   getBranchStock: featureProtectedProcedure("inventory")
     .input(z.object({ branchId: z.number().optional() }))
     .query(async ({ ctx, input }) => {
-      const branchId = input.branchId ?? ctx.dbUser.branchId;
+      const isAdmin = (await ctx.getPermission("admin:access"))?.isGranted;
+      const branchId = isAdmin ? (input.branchId ?? ctx.dbUser.branchId) : ctx.dbUser.branchId;
+      
       if (!branchId) throw new TRPCError({ code: "BAD_REQUEST", message: "Branch ID is required" });
 
       return ctx.db.query.inventory.findMany({
@@ -29,28 +31,25 @@ export const inventoryRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const isAdmin = (await ctx.getPermission("admin:access"))?.isGranted;
+      if (!isAdmin && input.branchId !== ctx.dbUser.branchId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to adjust stock for this branch" });
+      }
+
       return await ctx.db.transaction(async (tx) => {
-        const existing = await tx.query.inventory.findFirst({
-          where: and(
-            eq(inventory.productId, input.productId),
-            eq(inventory.branchId, input.branchId)
-          ),
-        });
-
-        const newQuantity = (existing?.quantity ?? 0) + input.quantity;
-
-        if (existing) {
-          await tx
-            .update(inventory)
-            .set({ quantity: newQuantity })
-            .where(eq(inventory.id, existing.id));
-        } else {
-          await tx.insert(inventory).values({
+        // Atomic Upsert: Update quantity or Insert if not exists
+        const result = await tx
+          .insert(inventory)
+          .values({
             productId: input.productId,
             branchId: input.branchId,
-            quantity: newQuantity,
-          });
-        }
+            quantity: input.quantity,
+          })
+          .onConflictDoUpdate({
+            target: [inventory.productId, inventory.branchId],
+            set: { quantity: sql`${inventory.quantity} + ${input.quantity}` },
+          })
+          .returning();
 
         await tx.insert(inventoryTransactions).values({
           productId: input.productId,
@@ -61,7 +60,7 @@ export const inventoryRouter = createTRPCRouter({
           reason: input.reason,
         });
 
-        return { success: true, newQuantity };
+        return { success: true, newQuantity: result[0]?.quantity };
       });
     }),
 
@@ -75,6 +74,10 @@ export const inventoryRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (input.fromBranchId !== ctx.dbUser.branchId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Origin branch must be your assigned branch" });
+      }
+
       const [transfer] = await ctx.db
         .insert(stockTransfers)
         .values({
@@ -105,35 +108,40 @@ export const inventoryRouter = createTRPCRouter({
 
         if (!transfer) throw new TRPCError({ code: "NOT_FOUND" });
 
-        // If Received, move stock
+        // Authorization: User must belong to either origin (to ship/cancel) or destination (to receive)
+        const isOriginUser = ctx.dbUser.branchId === transfer.fromBranchId;
+        const isDestUser = ctx.dbUser.branchId === transfer.toBranchId;
+        const isAdmin = (await ctx.getPermission("admin:access"))?.isGranted;
+
+        if (!isAdmin && !isOriginUser && !isDestUser) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to update this transfer" });
+        }
+
+        // Logic for Received
         if (input.status === "Received" && transfer.status === "Shipped") {
+          if (!isAdmin && !isDestUser) throw new TRPCError({ code: "FORBIDDEN", message: "Only destination branch can mark as Received" });
+
           const items = transfer.items as { productId: number; quantity: number }[];
           
           for (const item of items) {
+            // Atomic decrements and increments
             // Decrement from Origin
-            const fromEntry = await tx.query.inventory.findFirst({
-              where: and(
-                eq(inventory.productId, item.productId),
-                eq(inventory.branchId, transfer.fromBranchId)
-              ),
-            });
-            if (!fromEntry || fromEntry.quantity < item.quantity) {
-              throw new TRPCError({ code: "BAD_REQUEST", message: `Origin branch lacks stock for product ${item.productId}` });
-            }
-            await tx.update(inventory).set({ quantity: fromEntry.quantity - item.quantity }).where(eq(inventory.id, fromEntry.id));
+            const decr = await tx.update(inventory)
+              .set({ quantity: sql`${inventory.quantity} - ${item.quantity}` })
+              .where(and(eq(inventory.productId, item.productId), eq(inventory.branchId, transfer.fromBranchId)))
+              .returning();
 
-            // Increment at Destination
-            const toEntry = await tx.query.inventory.findFirst({
-              where: and(
-                eq(inventory.productId, item.productId),
-                eq(inventory.branchId, transfer.toBranchId)
-              ),
-            });
-            if (toEntry) {
-              await tx.update(inventory).set({ quantity: toEntry.quantity + item.quantity }).where(eq(inventory.id, toEntry.id));
-            } else {
-              await tx.insert(inventory).values({ productId: item.productId, branchId: transfer.toBranchId, quantity: item.quantity });
+            if (!decr[0] || decr[0].quantity < 0) {
+              throw new TRPCError({ code: "BAD_REQUEST", message: `Stock level fell below zero for product ${item.productId} at origin` });
             }
+
+            // Increment at Destination (Upsert)
+            await tx.insert(inventory)
+              .values({ productId: item.productId, branchId: transfer.toBranchId, quantity: item.quantity })
+              .onConflictDoUpdate({
+                target: [inventory.productId, inventory.branchId],
+                set: { quantity: sql`${inventory.quantity} + ${item.quantity}` }
+              });
 
             // Log transactions
             await tx.insert(inventoryTransactions).values([
@@ -160,7 +168,10 @@ export const inventoryRouter = createTRPCRouter({
         }
 
         const updateData: any = { status: input.status };
-        if (input.status === "Shipped") updateData.approvedById = ctx.dbUser.id;
+        if (input.status === "Shipped") {
+          if (!isAdmin && !isOriginUser) throw new TRPCError({ code: "FORBIDDEN", message: "Only origin branch can ship" });
+          updateData.approvedById = ctx.dbUser.id;
+        }
         if (input.status === "Received") updateData.receivedById = ctx.dbUser.id;
 
         return await tx.update(stockTransfers).set(updateData).where(eq(stockTransfers.id, input.transferId)).returning();

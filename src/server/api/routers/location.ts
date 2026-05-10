@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { locationLogs, breadcrumbs, users } from "@/server/db/schema";
-import { eq, and, desc, inArray, gte, lte, asc } from "drizzle-orm";
+import { eq, and, desc, inArray, gte, lte, asc, lt } from "drizzle-orm";
 
 function getCurrentSlab() {
   const now = new Date();
@@ -22,6 +22,21 @@ function getFormattedDate(date: Date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371e3; // Earth radius in meters
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // in meters
+}
+
 export const locationRouter = createTRPCRouter({
   ping: featureProtectedProcedure("workforce")
     .input(
@@ -35,10 +50,35 @@ export const locationRouter = createTRPCRouter({
       if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
       const user = await ctx.db.query.users.findFirst({
         where: (users, { eq }) => eq(users.kindeId, ctx.dbUser!.kindeId),
+        with: {
+          branch: true,
+        },
       });
 
-      if (!user) {
-        throw new Error("User not found in database");
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      if (!user.branchId || !user.branch) throw new TRPCError({ code: "BAD_REQUEST", message: "User is not assigned to a branch" });
+
+      // 1. Server-Side Geofencing Validation
+      const distance = haversineDistance(
+        input.latitude,
+        input.longitude,
+        parseFloat(user.branch.latitude),
+        parseFloat(user.branch.longitude)
+      );
+
+      const isWithinRadius = distance <= user.branch.radiusMeters;
+      
+      // We log the ping regardless for route playback, but we only mark "Attendance" (slab logs) 
+      // if they are within the geofence to prevent spoofing.
+      if (!isWithinRadius) {
+        // Log as breadcrumb only, don't update locationLogs (Attendance)
+        await ctx.db.insert(breadcrumbs).values({
+          userId: user.id,
+          latitude: input.latitude,
+          longitude: input.longitude,
+          accuracy: input.accuracy,
+        });
+        return { success: true, warning: "Location outside branch geofence. Attendance not recorded." };
       }
 
       const slabName = getCurrentSlab();
@@ -64,6 +104,12 @@ export const locationRouter = createTRPCRouter({
 
       // Increment frequency for current location
       frequencyMap[coordsKey] = (frequencyMap[coordsKey] ?? 0) + 1;
+
+      // EOD Cleanup: Clear breadcrumbs older than 24 hours
+      if (!existingSlab) {
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        await ctx.db.delete(breadcrumbs).where(lt(breadcrumbs.createdAt, twentyFourHoursAgo));
+      }
 
       // Find the most frequent location in the slab
       let maxCount = 0;
@@ -94,6 +140,14 @@ export const locationRouter = createTRPCRouter({
           longitude: finalLng!,
         });
       }
+
+      // Also log breadcrumb for high-resolution tracking
+      await ctx.db.insert(breadcrumbs).values({
+        userId: user.id,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        accuracy: input.accuracy,
+      });
 
       return { success: true };
     }),

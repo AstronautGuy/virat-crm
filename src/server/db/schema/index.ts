@@ -14,3 +14,5 @@ export { inventory, inventoryRelations } from "./inventory";
 export { inventoryTransactions, inventoryTransactionsRelations } from "./inventoryTransactions";
 export { stockTransfers, stockTransfersRelations } from "./stockTransfers";
 export { rolePermissions } from "./rolePermissions";
+export { performanceSnapshots } from "./performance";
+export { salesArchive, replacementsArchive } from "./archive";

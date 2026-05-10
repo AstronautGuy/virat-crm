@@ -103,9 +103,8 @@ export default function LiveTeamMap() {
           <Polyline 
             positions={playbackPath.map(p => [p.latitude, p.longitude])} 
             color="#2563eb"
-            weight={3}
-            opacity={0.6}
-            dashArray="10, 10"
+            weight={5}
+            opacity={0.9}
           />
         )}
       </MapContainer>

@@ -43,9 +43,14 @@ export const storageRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Basic check: User must be authenticated (protectedProcedure)
-      // Future: Verify if user has write access to the entity
-      
+      const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+      if (input.size > MAX_SIZE) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "File size exceeds the 5MB limit",
+        });
+      }
+
       const [newFile] = await ctx.db
         .insert(files)
         .values({

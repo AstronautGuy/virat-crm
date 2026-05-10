@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, uuid, timestamp, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, uuid, timestamp, doublePrecision, index } from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { relations } from "drizzle-orm";
 
@@ -11,7 +11,9 @@ export const breadcrumbs = pgTable("virat-crm_breadcrumbs", {
   longitude: doublePrecision("longitude").notNull(),
   accuracy: doublePrecision("accuracy"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  createdAtIndex: index("breadcrumbs_created_at_idx").on(table.createdAt),
+}));
 
 export const breadcrumbRelations = relations(breadcrumbs, ({ one }) => ({
   user: one(users, {

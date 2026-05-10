@@ -202,49 +202,91 @@ export const salesRouter = createTRPCRouter({
         where: eq(users.kindeId, ctx.dbUser!.kindeId),
       });
 
-      if (!currentUser) throw new Error("User not found");
+      if (!currentUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
 
-      const targetSale = await ctx.db.query.sales.findFirst({
-        where: eq(sales.id, input.saleId),
-      });
-
-      if (!targetSale) throw new Error("Sale not found");
-
-      if (currentUser.role !== "Admin") {
-        if (currentUser.role !== "Manager") {
-          throw new Error("Unauthorized to update status");
-        }
-
-        const descendantsQuery = sql`
-          WITH RECURSIVE subordinates AS (
-            SELECT id FROM "virat-crm_user" WHERE manager_id = ${currentUser.id}
-            UNION
-            SELECT e.id FROM "virat-crm_user" e
-            INNER JOIN subordinates s ON s.id = e.manager_id
-          )
-          SELECT id FROM subordinates WHERE id = ${targetSale.userId} LIMIT 1;
-        `;
-
-        const rows = await ctx.db.execute(descendantsQuery);
-        if (rows.length === 0) {
-          throw new Error("Unauthorized: Sale does not belong to your team");
-        }
-      }
-
-      const [updated] = await ctx.db
-        .update(sales)
-        .set({ status: input.status })
-        .where(eq(sales.id, input.saleId))
-        .returning();
-
-      if (updated) {
-        void sendNotificationToUser(updated.userId, {
-          title: `Sale ${input.status}`,
-          body: `Your order ${updated.orderNumber} has been ${input.status.toLowerCase()}.`,
-          url: "/sales",
+      return await ctx.db.transaction(async (tx) => {
+        const targetSale = await tx.query.sales.findFirst({
+          where: eq(sales.id, input.saleId),
+          with: { items: true }
         });
-      }
 
-      return updated;
+        if (!targetSale) throw new TRPCError({ code: "NOT_FOUND", message: "Sale not found" });
+
+        // RBAC Check for Managers/Admins
+        if (currentUser.role !== "Admin") {
+          if (currentUser.role !== "Manager") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Unauthorized to update status" });
+          }
+
+          // Check if sale belongs to manager's team (Simplified recursive check)
+          const isOwnTeam = targetSale.managerId === currentUser.id;
+          if (!isOwnTeam) {
+             throw new TRPCError({ code: "FORBIDDEN", message: "Unauthorized: Sale does not belong to your team" });
+          }
+        }
+
+        // Logic for "Rejected": Replenish inventory
+        if (input.status === "Rejected" && targetSale.status !== "Rejected") {
+          for (const item of targetSale.items) {
+            await tx.insert(inventory)
+              .values({ productId: item.productId, branchId: targetSale.branchId, quantity: item.quantity })
+              .onConflictDoUpdate({
+                target: [inventory.productId, inventory.branchId],
+                set: { quantity: sql`${inventory.quantity} + ${item.quantity}` }
+              });
+
+            await tx.insert(inventoryTransactions).values({
+              productId: item.productId,
+              branchId: targetSale.branchId,
+              userId: ctx.dbUser.id,
+              type: "Adjustment",
+              quantity: item.quantity,
+              reason: `Sale ${targetSale.orderNumber} Rejected - Stock Reclaimed`,
+              referenceId: targetSale.id.toString(),
+            });
+          }
+        }
+
+        // Logic for moving AWAY from Rejected back to Pending/Approved: Deduct inventory again
+        if (targetSale.status === "Rejected" && (input.status === "Pending" || input.status === "Approved")) {
+           for (const item of targetSale.items) {
+             // Atomic decrement
+             const decr = await tx.update(inventory)
+               .set({ quantity: sql`${inventory.quantity} - ${item.quantity}` })
+               .where(and(eq(inventory.productId, item.productId), eq(inventory.branchId, targetSale.branchId)))
+               .returning();
+
+             if (!decr[0] || decr[0].quantity < 0) {
+               throw new TRPCError({ code: "BAD_REQUEST", message: `Insufficient stock to re-activate sale for product ${item.productId}` });
+             }
+
+             await tx.insert(inventoryTransactions).values({
+               productId: item.productId,
+               branchId: targetSale.branchId,
+               userId: ctx.dbUser.id,
+               type: "Sale",
+               quantity: -item.quantity,
+               reason: `Sale ${targetSale.orderNumber} Re-activated - Stock Deducted`,
+               referenceId: targetSale.id.toString(),
+             });
+           }
+        }
+
+        const [updated] = await tx
+          .update(sales)
+          .set({ status: input.status })
+          .where(eq(sales.id, input.saleId))
+          .returning();
+
+        if (updated) {
+          void sendNotificationToUser(updated.userId, {
+            title: `Sale ${input.status}`,
+            body: `Your order ${updated.orderNumber} has been ${input.status.toLowerCase()}.`,
+            url: "/sales",
+          });
+        }
+
+        return updated;
+      });
     }),
 });

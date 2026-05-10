@@ -1,14 +1,59 @@
 import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
-import { sales, branches, locationLogs, leaves, users } from "@/server/db/schema";
+import { sales, branches, locationLogs, leaves, users, performanceSnapshots } from "@/server/db/schema";
 import { and, gte, lte, sum, count, eq, sql } from "drizzle-orm";
 import { getDateRange, type DateRangePreset } from "@/server/lib/date";
 
 export const analyticsRouter = createTRPCRouter({
   getSalesSummary: featureProtectedProcedure("dashboard")
-    .input(z.object({ preset: z.enum(["today", "7d", "30d", "all"]) }))
+    .input(z.object({ 
+      preset: z.enum(["today", "7d", "30d", "all"]),
+      branchId: z.number().optional()
+    }))
     .query(async ({ ctx, input }) => {
+      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.kindeId, ctx.dbUser!.kindeId),
+      });
+      if (!user) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // RBAC: Non-admins are locked to their own branch
+      const effectiveBranchId = user.role === "Admin" ? input.branchId : user.branchId;
+
+      if (input.preset === "all") {
+        const filters = [eq(performanceSnapshots.entityType, "branch")];
+        if (effectiveBranchId) {
+          filters.push(eq(performanceSnapshots.entityId, effectiveBranchId.toString()));
+        }
+
+        const snapshots = await ctx.db
+          .select({
+            revenue: sql<string>`sum((metrics->>'revenue')::numeric)`,
+            count: sql<string>`sum((metrics->>'salesCount')::numeric)`,
+            qty: sql<string>`sum((metrics->>'totalQty')::numeric)`,
+          })
+          .from(performanceSnapshots)
+          .where(and(...filters));
+
+        const s = snapshots[0];
+        return {
+          revenue: parseFloat(s?.revenue ?? "0"),
+          balance: 0,
+          count: parseInt(s?.count ?? "0"),
+          quantity: parseInt(s?.qty ?? "0"),
+        };
+      }
+
       const { start, end } = getDateRange(input.preset as DateRangePreset);
+      const filters = [
+        gte(sales.createdAt, start),
+        lte(sales.createdAt, end),
+        eq(sales.status, "Approved")
+      ];
+
+      if (effectiveBranchId) {
+        filters.push(eq(sales.branchId, effectiveBranchId));
+      }
 
       const result = await ctx.db
         .select({
@@ -18,13 +63,7 @@ export const analyticsRouter = createTRPCRouter({
           totalQty: sum(sales.totalQty),
         })
         .from(sales)
-        .where(
-          and(
-            gte(sales.createdAt, start),
-            lte(sales.createdAt, end),
-            eq(sales.status, "Approved")
-          )
-        );
+        .where(and(...filters));
 
       const stats = result[0];
 
@@ -39,6 +78,35 @@ export const analyticsRouter = createTRPCRouter({
   getBranchComparison: featureProtectedProcedure("dashboard")
     .input(z.object({ preset: z.enum(["today", "7d", "30d", "all"]) }))
     .query(async ({ ctx, input }) => {
+      // Branch comparison is strictly for Admins or Regional Managers
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.kindeId, ctx.dbUser!.kindeId),
+      });
+      if (user?.role !== "Admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only Admins can view branch comparisons" });
+      }
+
+      if (input.preset === "all") {
+        const result = await ctx.db
+          .select({
+            branchId: performanceSnapshots.entityId,
+            revenue: sql<string>`sum((metrics->>'revenue')::numeric)`,
+            count: sql<string>`sum((metrics->>'salesCount')::numeric)`,
+          })
+          .from(performanceSnapshots)
+          .where(eq(performanceSnapshots.entityType, "branch"))
+          .groupBy(performanceSnapshots.entityId);
+
+        const branchList = await ctx.db.query.branches.findMany();
+        const branchMap = new Map(branchList.map(b => [b.id.toString(), b.name]));
+
+        return result.map(r => ({
+          name: branchMap.get(r.branchId!) ?? "Unknown",
+          revenue: parseFloat(r.revenue ?? "0"),
+          count: parseInt(r.count ?? "0"),
+        }));
+      }
+
       const { start, end } = getDateRange(input.preset as DateRangePreset);
 
       const result = await ctx.db
@@ -66,19 +134,52 @@ export const analyticsRouter = createTRPCRouter({
     }),
 
   getWorkforceSummary: featureProtectedProcedure("dashboard")
-    .query(async ({ ctx }) => {
+    .input(z.object({ branchId: z.number().optional() }))
+    .query(async ({ ctx, input }) => {
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.kindeId, ctx.dbUser!.kindeId),
+      });
+      const effectiveBranchId = user?.role === "Admin" ? input.branchId : user?.branchId;
+
       const today = new Date();
       const dateStr = today.toISOString().split('T')[0];
+
+      const filters = [eq(locationLogs.date, dateStr!)];
+      if (effectiveBranchId) {
+        const branchUsers = await ctx.db.query.users.findMany({
+          where: eq(users.branchId, effectiveBranchId),
+          columns: { id: true }
+        });
+        const branchUserIds = branchUsers.map(u => u.id);
+        if (branchUserIds.length > 0) {
+          filters.push(inArray(locationLogs.userId, branchUserIds));
+        } else {
+          return { activeToday: 0, pendingLeaves: 0 };
+        }
+      }
 
       const [activeStaff] = await ctx.db
         .select({ count: count(locationLogs.id) })
         .from(locationLogs)
-        .where(eq(locationLogs.date, dateStr!));
+        .where(and(...filters));
+
+      // Leaves are branch-specific
+      const leaveFilters = [eq(leaves.status, "Pending")];
+      if (effectiveBranchId) {
+        const branchUsers = await ctx.db.query.users.findMany({
+          where: eq(users.branchId, effectiveBranchId),
+          columns: { id: true }
+        });
+        const branchUserIds = branchUsers.map(u => u.id);
+        if (branchUserIds.length > 0) {
+          leaveFilters.push(inArray(leaves.userId, branchUserIds));
+        }
+      }
 
       const [pendingLeaves] = await ctx.db
         .select({ count: count(leaves.id) })
         .from(leaves)
-        .where(eq(leaves.status, "Pending"));
+        .where(and(...leaveFilters));
 
       return {
         activeToday: activeStaff?.count ?? 0,
