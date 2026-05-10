@@ -13,6 +13,10 @@ import { reportsRouter } from "./routers/reports";
 import { permissionsRouter } from "./routers/permissions";
 import { inventoryRouter } from "./routers/inventory";
 import { maintenanceRouter } from "./routers/maintenance";
+import { crmRouter } from "./routers/crm";
+import { dailyReportsRouter } from "./routers/dailyReports";
+
+
 
 /**
  * This is the primary router for your server.
@@ -33,6 +37,10 @@ export const appRouter = createTRPCRouter({
   permissions: permissionsRouter,
   inventory: inventoryRouter,
   maintenance: maintenanceRouter,
+  crm: crmRouter,
+  dailyReports: dailyReportsRouter,
+
+
 });
 
 // export type definition of API
