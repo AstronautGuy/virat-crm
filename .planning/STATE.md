@@ -1,11 +1,18 @@
 status: active
-current_milestone: 5
+current_milestone: 6
 current_phase: 20
-progress: 100%
+progress: 0%
 # Project State
 
+## Current Position
+
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-05-10 — Milestone v6.0 started
+
 ## Current Focus
-- Milestone 5 Audit & Hardening (Phase 20)
+- Milestone 6: CRM & Bulk Operations
 
 ## Active Development
 - Milestone 4: Archived & Verified
@@ -20,5 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-03)
 - [x] Performance audit for Sidebar and FeatureGate
 - [x] Harden inventory system (atomic updates)
 - [x] Refactor archival for high-performance execution
+- [ ] Verify Feature Toggling and Role Management
+
 
 **Core value:** Transforming field data into actionable intelligence while ensuring robust offline resilience and real-time operational alerts.
