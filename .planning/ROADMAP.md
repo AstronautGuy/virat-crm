@@ -1,22 +1,38 @@
 # Roadmap: Virat ERP
 
 ## Completed Milestones
-- **[x] v1: Modernization & Security Rewrite** ([Details](file:///.planning/milestones/v1-ROADMAP.md))
-- **[x] v2: Intelligence & Advanced Workflows** ([Details](file:///.planning/milestones/v2-ROADMAP.md))
+- **[x] v1: Modernization & Security Rewrite**
+- **[x] v2: Intelligence & Advanced Workflows**
+- **[x] v3: Field Intelligence & Advanced Reporting**
+- **[x] v4: Advanced Access Control & UX Refinement**
+- **[x] v5: Inventory Orchestration & Operational Scaling**
 
-## Milestone 3: Field Intelligence & Advanced Reporting
+## Milestone 6: CRM & Bulk Operations
 
-- **Phase 11: Real-time Location Intelligence**
-  - GPS Breadcrumbs, Live Map View, Route Playback
-- **Phase 12: Visual Team Hierarchy**
-  - Interactive Org Tree, Manager-Subordinate reporting visualization
-- **Phase 13: Advanced Automated Reporting Engine**
-  - Scheduled PDF/Excel reports, Custom Report Builder UI
-- **[x] Phase 14: Milestone 3 Audit & Hardening**
-  - Performance optimization for maps, Security review
+- **Phase 21: CRM Foundation & RBAC**
+  - **Goal**: Establish the customer database with strict manager-only editing rights.
+  - **Requirements**: CRM-01, CRM-02, CRM-03
+  - **Success Criteria**:
+    - Managers can create/edit customers; Field staff can only view.
+    - Global search for customers by Name/Phone is fast and isolated by branch.
 
-- **[x] v4: Advanced Access Control & UX Refinement** ([Details](file:///.planning/milestones/v4-ROADMAP.md))
-- **[ ] v5: Inventory Orchestration & Operational Scaling**
-    - Phase 18: Multi-Branch Inventory Management (Stock tracking, transfers)
-    - Phase 19: Data Archival & Reporting Optimization (Trimming map data, yearly summaries)
-    - Phase 20: Milestone 5 Audit & Hardening
+- **Phase 22: Interaction Logging & Credit Tracking**
+  - **Goal**: Enable field staff to log customer visits and track financial credit limits.
+  - **Requirements**: CRM-04, CRM-05
+  - **Success Criteria**:
+    - Users can log calls/visits against any customer record.
+    - Customer balance updates correctly when credit is extended/settled.
+
+- **Phase 23: Bulk Data Export Utility**
+  - **Goal**: Implement a robust Excel/CSV export engine for high-level auditing.
+  - **Requirements**: BULK-01, BULK-02, BULK-04
+  - **Success Criteria**:
+    - Admin can download full inventory and sales reports in .xlsx format.
+    - Exports respect branch-isolation and date filtering.
+
+- **Phase 24: Bulk Product Import & Audit**
+  - **Goal**: Streamline product catalog management and finalize the milestone.
+  - **Requirements**: BULK-03
+  - **Success Criteria**:
+    - Admin can bulk-update 500+ products via a single Excel upload.
+    - Milestone 6 Audit passes (RBAC, Privacy, and Data Integrity).

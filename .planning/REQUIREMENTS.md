@@ -1,31 +1,33 @@
-# Requirements: Milestone 5 (Inventory Orchestration & Operational Scaling)
+# Requirements: Milestone 6 (CRM & Bulk Operations)
 
-**Status**: DRAFT 📝
-**Date**: 2026-05-06
+## CRM & Customer Master
 
-## Goal
-Implement a robust, multi-branch inventory management system that ensures data integrity for stock levels and optimizes long-term system performance via data archival.
+- [ ] **CRM-01**: Centralized Customer table (Name, Phone, Email, Address, BranchId).
+- [ ] **CRM-02**: Restricted Access: Only Managers and Admins can Create, Update, or Delete customers.
+- [ ] **CRM-03**: Field Staff can view customer profiles and search by Name/Phone.
+- [ ] **CRM-04**: Interaction Logging: Users can log Calls, Visits, and Notes against a customer.
+- [ ] **CRM-05**: Credit Tracking: Support for Customer credit limits and current balance tracking.
 
-## 1. Multi-Branch Inventory Management
-- **R1.1: Product Catalog**: Centralized registry of products with SKU, categories, and unit management.
-- **R1.2: Real-time Stock Tracking**: View current stock levels for any product across all branches.
-- **R1.3: Stock Adjustments**: Manual corrections for breakage, loss, or initial count with mandatory reason codes.
+## Bulk Operations
 
-## 2. Stock Transfer Workflow
-- **R2.1: Transfer Requests**: Branch A can request stock from Branch B.
-- **R2.2: Approval & Shipping**: Manager approval required to release stock; system generates a "Dispatch Note".
-- **R2.3: Receiving & Verification**: Branch A verifies received quantities; discrepancies are logged for audit.
+- [ ] **BULK-01**: Inventory Export: Admin can download current stock as Excel/CSV.
+- [ ] **BULK-02**: Sales Export: Admin can download historical sales data with date filtering.
+- [ ] **BULK-03**: Product Import: Admin can upload Excel files to bulk-create or update products.
+- [ ] **BULK-04**: Customer Export: Managers can export customer lists for external marketing/audits.
 
-## 3. Data Archival & Optimization
-- **R3.1: Map Data Trimming**: Automatically archive location breadcrumbs older than 30 days to a cold storage table.
-- **R3.2: Yearly Summaries**: Convert high-frequency transaction data into yearly performance snapshots for lifetime reporting.
-- **R3.3: Reporting Latency**: Ensure complex reports load in < 2s by utilizing materialized views or summary tables.
+## Out of Scope
+- Automated Email/SMS marketing (Deferred to M7).
+- Payment Gateway integration for credit settlement (Deferred to M7).
 
-## 4. Supply Chain & Vendor Logic
-- **R4.1: Vendor Registry**: Manage supplier contact info and category specializations.
-- **R4.2: Purchase Orders**: Generate POs for external stock procurement.
-- **R4.3: Stock-In Flow**: Update inventory automatically when POs are marked as "Delivered".
-
-## Constraints
-- **Atomic Updates**: Inventory changes must be wrapped in database transactions to prevent race conditions during simultaneous branch updates.
-- **Offline Resilience**: Stock transfers must be initiatable offline and synced when connectivity returns.
+## Traceability
+| REQ-ID | Phase | Status |
+|--------|-------|--------|
+| CRM-01 | 21    | [ ]    |
+| CRM-02 | 21    | [ ]    |
+| CRM-03 | 21    | [ ]    |
+| CRM-04 | 22    | [ ]    |
+| CRM-05 | 22    | [ ]    |
+| BULK-01| 23    | [ ]    |
+| BULK-02| 23    | [ ]    |
+| BULK-03| 24    | [ ]    |
+| BULK-04| 23    | [ ]    |
