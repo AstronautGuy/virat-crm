@@ -2,7 +2,6 @@ import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { sales, performanceSnapshots, salesArchive, saleItems, replacements } from "@/server/db/schema";
 import { and, gte, lte, sum, count, eq, sql, lt, inArray } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
 
 export const maintenanceRouter = createTRPCRouter({
   rebuildSnapshots: featureProtectedProcedure("admin")

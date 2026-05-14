@@ -13,7 +13,7 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState("list");
   const { data: user } = api.users.getMe.useQuery();
   
-  const isManager = user?.permissions.isManager || user?.permissions.isAdmin;
+  const isManager = user?.permissions.isManager ?? user?.permissions.isAdmin ?? false;
 
   return (
     <DashboardLayout>

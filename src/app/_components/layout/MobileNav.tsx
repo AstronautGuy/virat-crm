@@ -35,7 +35,7 @@ export function MobileNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-around border-t border-gray-100 bg-white/80 backdrop-blur-md px-2 pb-safe md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-around border-t border-border bg-card/80 backdrop-blur-xl px-2 pb-safe md:hidden shadow-[0_-1px_3px_0_rgb(0,0,0,0.02)]">
       {links.filter(l => !l.hidden).map((link) => {
         const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
         const Icon = link.icon;
@@ -44,12 +44,22 @@ export function MobileNav() {
             key={link.href}
             href={link.href}
             className={cn(
-              "flex flex-col items-center justify-center gap-1 w-full h-full transition-colors",
-              isActive ? "text-blue-600" : "text-gray-400 hover:text-gray-600"
+              "flex flex-col items-center justify-center gap-1 w-full h-full transition-all duration-300",
+              isActive ? "text-primary scale-105" : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <Icon className={cn("h-5 w-5", isActive ? "stroke-[2.5px]" : "stroke-[2px]")} />
-            <span className="text-[10px] font-medium leading-none">{link.label}</span>
+            <div className={cn(
+              "flex items-center justify-center rounded-full p-1.5 transition-colors duration-300",
+              isActive ? "bg-primary/10" : ""
+            )}>
+              <Icon className={cn("h-5 w-5", isActive ? "stroke-[2.5px]" : "stroke-[2px]")} />
+            </div>
+            <span className={cn(
+              "text-[10px] font-bold leading-none tracking-tight transition-all duration-300",
+              isActive ? "opacity-100" : "opacity-70"
+            )}>
+              {link.label}
+            </span>
           </Link>
         );
       })}

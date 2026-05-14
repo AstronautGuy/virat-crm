@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
-import { TRPCError } from "@trpc/server";
 import { leaves } from "@/server/db/schema/leaves";
-import { users } from "@/server/db/schema/users";
 import { eq, sql, inArray } from "drizzle-orm";
 import { sendNotificationToUser } from "@/server/lib/push";
 
@@ -58,7 +56,7 @@ export const leavesRouter = createTRPCRouter({
     `;
 
     const rows = await ctx.db.execute(descendantsQuery);
-    const descendantIds = rows.map((row: any) => String(row.id));
+    const descendantIds = rows.map((row) => String(row.id));
     const allowedIds = [ctx.dbUser.id, ...descendantIds];
 
     return ctx.db.query.leaves.findMany({

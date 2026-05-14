@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { inventory, inventoryTransactions, stockTransfers, products, branches } from "@/server/db/schema";
+import { inventory, inventoryTransactions, stockTransfers } from "@/server/db/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 
 export const inventoryRouter = createTRPCRouter({
@@ -175,7 +175,7 @@ export const inventoryRouter = createTRPCRouter({
           }
         }
 
-        const updateData: any = { status: input.status };
+        const updateData: { status: "Shipped" | "Received" | "Cancelled"; approvedById?: string; receivedById?: string } = { status: input.status };
         if (input.status === "Shipped") {
           if (!isAdmin && !isOriginUser) throw new TRPCError({ code: "FORBIDDEN", message: "Only origin branch can ship" });
           updateData.approvedById = ctx.dbUser.id;

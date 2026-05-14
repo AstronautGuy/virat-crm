@@ -20,16 +20,16 @@ Implement field reporting and individual order financial tracking.
 
 ## Phase 23: Bulk Export Utilities
 High-performance data extraction for Admins.
-- [ ] **Task 23.1**: Excel/CSV export for Inventory (BULK-01).
-- [ ] **Task 23.2**: Excel/CSV export for Sales (BULK-02).
-- [ ] **Task 23.3**: Excel/CSV export for Customers (BULK-04).
+- [x] **Task 23.1**: Excel/CSV export for Inventory (BULK-01).
+- [x] **Task 23.2**: Excel/CSV export for Sales (BULK-02).
+- [x] **Task 23.3**: Excel/CSV export for Customers (BULK-04).
 - **Deliverable**: Downloadable business reports.
 
 ## Phase 24: Bulk Import & Audit
 Excel-based product management and final M6 hardening.
-- [ ] **Task 24.1**: Excel import for Products (BULK-03).
-- [ ] **Task 24.2**: Validation & Error handling for large uploads.
-- [ ] **Task 24.3**: Milestone 6 UAT and performance audit.
+- [x] **Task 24.1**: Excel import for Products (BULK-03).
+- [x] **Task 24.2**: Validation & Error handling for large uploads.
+- [x] **Task 24.3**: Milestone 6 UAT and performance audit.
 ## Phase 25: UI/UX Rework & Stitch MCP
 Slick, robust UI using modern fonts and Stitch MCP design system.
 - [ ] **Task 25.1**: Integrate Stitch MCP for UI components.

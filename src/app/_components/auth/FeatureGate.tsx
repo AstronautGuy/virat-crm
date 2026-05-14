@@ -59,7 +59,7 @@ export function FeatureGate({ featureKey, children, fallback, className }: Featu
         <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-3">Access Restricted</h2>
         
         <p className="text-gray-500 max-w-md leading-relaxed mb-10 text-lg">
-          The <span className="text-gray-900 font-semibold italic">"{featureKey.replace("-", " ")}"</span> module is currently restricted for your access level. Please contact your system administrator to request access.
+          The <span className="text-gray-900 font-semibold italic">&quot;{featureKey.replace("-", " ")}&quot;</span> module is currently restricted for your access level. Please contact your system administrator to request access.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-5">

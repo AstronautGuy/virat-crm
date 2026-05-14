@@ -3,8 +3,8 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { r2Client, BUCKET_NAME } from "@/server/lib/r2";
-import { files, fileEntityTypeEnum, sales, replacements, users } from "@/server/db/schema";
-import { eq, and, or, sql } from "drizzle-orm";
+import { files, sales, replacements, users } from "@/server/db/schema";
+import { eq, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 export const storageRouter = createTRPCRouter({
@@ -80,7 +80,7 @@ export const storageRouter = createTRPCRouter({
 
       // RBAC Check
       const user = await ctx.db.query.users.findFirst({
-        where: eq(users.id, ctx.dbUser!.id),
+        where: eq(users.id, ctx.dbUser.id),
       });
 
       if (!user) {
@@ -97,14 +97,14 @@ export const storageRouter = createTRPCRouter({
           });
 
           if (sale) {
-            if (sale.userId === ctx.dbUser!.id) {
+            if (sale.userId === ctx.dbUser.id) {
               hasAccess = true;
             } else {
               // Manager check (simplified for now: check if sale's user has this user as manager)
               const saleOwner = await ctx.db.query.users.findFirst({
                 where: eq(users.id, sale.userId),
               });
-              if (saleOwner?.managerId === ctx.dbUser!.id) {
+              if (saleOwner?.managerId === ctx.dbUser.id) {
                 hasAccess = true;
               }
             }
@@ -113,7 +113,7 @@ export const storageRouter = createTRPCRouter({
           const replacement = await ctx.db.query.replacements.findFirst({
             where: eq(replacements.id, file.entityId),
           });
-          if (replacement && replacement.userId === ctx.dbUser!.id) {
+          if (replacement?.userId === ctx.dbUser.id) {
             hasAccess = true;
           }
           // Note: Add manager check for replacements if needed

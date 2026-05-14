@@ -5,7 +5,7 @@ const DB_VERSION = 1;
 export interface PendingOp {
   id?: number;
   type: "createSale" | "createReplacement";
-  data: any;
+  data: unknown;
   createdAt: number;
 }
 
@@ -21,7 +21,7 @@ export async function openDB(): Promise<IDBDatabase> {
     };
 
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onerror = () => reject(request.error ?? new Error("IndexedDB error"));
   });
 }
 
@@ -33,7 +33,7 @@ export async function addToOfflineQueue(op: PendingOp): Promise<number> {
     const request = store.add(op);
 
     request.onsuccess = () => resolve(request.result as number);
-    request.onerror = () => reject(request.error);
+    request.onerror = () => reject(request.error ?? new Error("IndexedDB error"));
   });
 }
 
@@ -45,7 +45,7 @@ export async function getOfflineQueue(): Promise<PendingOp[]> {
     const request = store.getAll();
 
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onerror = () => reject(request.error ?? new Error("IndexedDB error"));
   });
 }
 
@@ -57,6 +57,6 @@ export async function removeFromOfflineQueue(id: number): Promise<void> {
     const request = store.delete(id);
 
     request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
+    request.onerror = () => reject(request.error ?? new Error("IndexedDB error"));
   });
 }

@@ -3,7 +3,7 @@ import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { sales, branches, locationLogs, users } from "@/server/db/schema";
 import { and, gte, lte, eq, sql, inArray } from "drizzle-orm";
-import { getDateRange, type DateRangePreset } from "@/server/lib/date";
+import { getDateRange } from "@/server/lib/date";
 
 export const reportsRouter = createTRPCRouter({
   // Fetch users for selection (Admins see everyone, Managers see their team)
@@ -31,7 +31,7 @@ export const reportsRouter = createTRPCRouter({
       branchId: z.number().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const { start, end } = getDateRange(input.preset as DateRangePreset);
+      const { start, end } = getDateRange(input.preset);
       const currentUser = ctx.dbUser;
 
       // 1. Identify Target Users based on Scope
@@ -65,8 +65,8 @@ export const reportsRouter = createTRPCRouter({
           )
           SELECT id FROM subordinates;
         `;
-        const rows = await ctx.db.execute(descendantsQuery);
-        targetUserIds = rows.map((r: any) => String(r.id));
+        const rows = await ctx.db.execute(descendantsQuery) as unknown as { id: string }[];
+        targetUserIds = rows.map((r) => String(r.id));
         // Include the manager themselves if it's management scope? 
         // User request: "reports of all the teams under him" - usually excludes the manager unless asked.
         // But for completeness, we'll focus on the subordinates.
@@ -117,7 +117,13 @@ export const reportsRouter = createTRPCRouter({
         );
 
       // 4. Yearly Aggregation (for Lifetime reports)
-      let yearlyStats: any[] = [];
+      let yearlyStats: {
+        year: number;
+        revenue: number;
+        balance: number;
+        orders: number;
+        visits: number;
+      }[] = [];
       if (input.preset === "all") {
         const years = new Set<number>();
         salesData.forEach(s => years.add(new Date(s.date).getFullYear()));

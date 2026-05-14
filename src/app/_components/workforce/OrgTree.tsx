@@ -6,8 +6,15 @@ import { Users, ChevronRight, ChevronDown, MapPin, Shield, User } from "lucide-r
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
+interface OrgNodeData {
+  id: string;
+  name: string;
+  role: string | null;
+  children?: OrgNodeData[];
+}
+
 interface OrgNodeProps {
-  node: any;
+  node: OrgNodeData;
   level: number;
 }
 
@@ -62,7 +69,7 @@ const OrgNode: React.FC<OrgNodeProps> = ({ node, level }) => {
             exit={{ opacity: 0, height: 0 }}
             className="flex flex-col gap-2 mt-2 overflow-hidden"
           >
-            {node.children.map((child: any) => (
+            {node.children.map((child) => (
               <OrgNode key={child.id} node={child} level={level + 1} />
             ))}
           </motion.div>
@@ -96,7 +103,7 @@ export function OrgTree() {
 
   return (
     <div className="flex flex-col gap-4 max-w-3xl mx-auto py-4">
-      {roots.map((root: any) => (
+      {(roots as unknown as OrgNodeData[]).map((root) => (
         <OrgNode key={root.id} node={root} level={0} />
       ))}
     </div>

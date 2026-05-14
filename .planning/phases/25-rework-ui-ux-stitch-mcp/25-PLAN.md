@@ -1,31 +1,29 @@
-# Phase 25 Plan: UI/UX Rework & Stitch MCP (Light Mode Focus)
+# Plan: Phase 25 — UI/UX Rework & Stitch MCP
 
-Rework the Virat CRM UI/UX to be "slick and robust" with a premium, fixed light mode aesthetic.
+**Status:** Ready for execution
+**Created:** 2026-05-14
 
-## Wave 1: Foundation (Visual Tokens)
-- [ ] **Task 25.1**: Integrate **Inter** font in `src/app/layout.tsx`.
-- [ ] **Task 25.2**: Refactor `src/styles/globals.css` for **Fixed Light Mode**:
-    - Remove dark mode variable blocks.
-    - Set background to `slate-50`.
-    - Define crisp border and shadow tokens for white surfaces.
-- [ ] **Task 25.3**: Remove any theme-switching logic or providers if present.
+## Goal
+Transform the Virat CRM into a premium, consistent, and robust enterprise application with a fixed light theme and modern typography.
 
-## Wave 2: Core Component Overhaul
-- [ ] **Task 25.4**: Refactor `src/components/ui/button.tsx` for premium Light Mode appearance.
-- [ ] **Task 25.5**: Refactor `src/components/ui/card.tsx` (White background, Slate-200 border, soft shadow).
-- [ ] **Task 25.6**: Refactor `src/components/ui/input.tsx` and `textarea.tsx` (Slate-50 backgrounds on focus, clean borders).
+## Context
+The user requested a "Fixed Light Mode Only" experience and the integration of the Stitch MCP design system.
 
-## Wave 3: Layout & Interaction Refinement
-- [ ] **Task 25.7**: Refine the **Sidebar** for a clean, light enterprise look.
-- [ ] **Task 25.8**: Add subtle **Framer Motion** transitions to main content containers.
-- [ ] **Task 25.9**: Clean up dashboard widgets for a "Modern SaaS" look (high contrast, clear labels).
+## Proposed Changes
 
-## Wave 4: Page-Specific Polish & Audit
-- [ ] **Task 25.10**: Audit **CRM Directory** and **Reports** pages for alignment and readability.
-- [ ] **Task 25.11**: Remove legacy "Dark Mode" classes across the codebase.
-- [ ] **Task 25.12**: Performance check for animations.
+### [25.1] Design System Initialization
+- [ ] Initialize Stitch MCP design system with primary blue (#2563eb).
+- [ ] Update `src/styles/globals.css` with the new design tokens.
+- [ ] Force light mode in `src/app/layout.tsx`.
+
+### [25.2] Layout & Typography
+- [ ] Standardize typography on the Inter font family.
+- [ ] Refine `DesktopSidebar` and `MobileHeader` components.
+
+### [25.3] Component Skinning
+- [ ] Apply the new theme to core dashboard and list views.
+- [ ] Update forms and tables across the CRM.
 
 ## Verification
-- [ ] `npm run build` check.
-- [ ] Visual walkthrough (Ensuring no dark mode "leaks").
-- [ ] Mobile readability audit (High contrast check).
+- [ ] `npm run build`
+- [ ] Visual audit of all core pages.

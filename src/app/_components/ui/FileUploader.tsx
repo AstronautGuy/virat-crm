@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 interface FileUploaderProps {
   entityType: "sale" | "replacement";
   entityId: number;
-  onUploadComplete?: (file: any) => void;
+  onUploadComplete?: (file: unknown) => void;
   maxFiles?: number;
 }
 

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { decrypt } from "@/server/lib/auth";
 
 // Add paths that should be accessible without authentication
@@ -23,12 +23,12 @@ export async function middleware(request: NextRequest) {
 
   try {
     // Verify session
-    const payload = await decrypt(session);
+    await decrypt(session);
     
     // If we're at the root or a dashboard path, we can optionally refresh the token here
     // For now, just let it pass if valid
     return NextResponse.next();
-  } catch (error) {
+  } catch {
     // Session invalid or expired
     return NextResponse.redirect(new URL("/login", request.url));
   }

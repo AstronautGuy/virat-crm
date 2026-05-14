@@ -14,8 +14,10 @@ const Marker = dynamic(() => import("react-leaflet").then((mod) => mod.Marker), 
 const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), { ssr: false });
 const Polyline = dynamic(() => import("react-leaflet").then((mod) => mod.Polyline), { ssr: false });
 
+import type * as Leaflet from "leaflet";
+
 export default function LiveTeamMap() {
-  const [L, setL] = useState<any>(null);
+  const [L, setL] = useState<typeof Leaflet | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [playbackDate, setPlaybackDate] = useState<string>(new Date().toISOString().split("T")[0]!);
 
@@ -29,7 +31,7 @@ export default function LiveTeamMap() {
   );
 
   useEffect(() => {
-    import("leaflet").then((leaflet) => {
+    void import("leaflet").then((leaflet) => {
       setL(leaflet);
     });
   }, []);
@@ -46,7 +48,7 @@ export default function LiveTeamMap() {
   }
 
   // Create a custom div icon using Lucide
-  const createIcon = (name: string) => {
+  const createIcon = (_name: string) => {
     const html = renderToString(
       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg ring-2 ring-white">
         <User className="h-5 w-5" />
@@ -91,7 +93,7 @@ export default function LiveTeamMap() {
                     onClick={() => setSelectedUserId(loc.userId)}
                     className="w-full bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest py-1.5 rounded-lg shadow-sm"
                   >
-                    View Today's Route
+                    View Today&apos;s Route
                   </button>
                 </div>
               </div>

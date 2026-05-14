@@ -1,9 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { locationLogs, breadcrumbs, users } from "@/server/db/schema";
-import { branches } from "@/server/db/schema/branches";
-import { eq, and, desc, inArray, gte, lte, asc, lt } from "drizzle-orm";
+import { breadcrumbs, users, locationLogs, branches } from "@/server/db/schema";
+import { eq, and, desc, inArray, gte, lte, asc, lt, type SQL } from "drizzle-orm";
 
 function getCurrentSlab() {
   const now = new Date();
@@ -124,19 +123,21 @@ export const locationRouter = createTRPCRouter({
       if (existingSlab) {
         await ctx.db.update(locationLogs).set({
           frequencyMap,
-          latitude: finalLat!,
-          longitude: finalLng!,
+          latitude: finalLat,
+          longitude: finalLng,
           recordedAt: new Date(),
         }).where(eq(locationLogs.id, existingSlab.id));
       } else {
+        /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
         await ctx.db.insert(locationLogs).values({
           userId: user.id,
           date: dateStr,
           slab: slabName,
           frequencyMap,
-          latitude: finalLat!,
-          longitude: finalLng!,
-        });
+          latitude: finalLat,
+          longitude: finalLng,
+        } as any);
+        /* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
       }
 
       // Also log breadcrumb for high-resolution tracking
@@ -204,7 +205,7 @@ export const locationRouter = createTRPCRouter({
       // 1. Identify Visible Users based on RBAC and Branch
       let visibleUserIds: string[] = [];
       
-      const filters: any[] = [];
+      const filters: SQL[] = [];
       if (!isSystemAdmin) {
         // Manager sees their branch + subordinates
         if (currentUser.branchId) {
@@ -235,7 +236,7 @@ export const locationRouter = createTRPCRouter({
         orderBy: (breadcrumbs, { desc }) => [desc(breadcrumbs.createdAt)],
       });
 
-      const userMap = new Map();
+      const userMap = new Map<string, typeof latestBreadcrumbs[number]>();
       latestBreadcrumbs.forEach((b) => {
         if (!userMap.has(b.userId)) {
           userMap.set(b.userId, b);

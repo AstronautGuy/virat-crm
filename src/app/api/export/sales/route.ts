@@ -66,11 +66,11 @@ export async function GET() {
         status: s.status,
         employee: s.user ? `${s.user.firstName} ${s.user.lastName}` : "Unknown",
         customerName: s.customer?.name ?? s.customerName ?? "N/A",
-        pincode: s.pincode || "N/A",
+        pincode: s.pincode ?? "N/A",
         totalQty: s.totalQty,
-        invoiceAmount: Number(s.invoiceAmount || 0),
-        advancePaymentAmount: Number(s.advancePaymentAmount || 0),
-        balanceAmount: Number(s.balanceAmount || 0),
+        invoiceAmount: Number(s.invoiceAmount ?? 0),
+        advancePaymentAmount: Number(s.advancePaymentAmount ?? 0),
+        balanceAmount: Number(s.balanceAmount ?? 0),
         itemsSummary,
       });
     });

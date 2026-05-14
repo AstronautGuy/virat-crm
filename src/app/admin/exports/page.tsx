@@ -30,7 +30,7 @@ export default function ExportsPage() {
       // Get filename from Content-Disposition header if possible
       const contentDisposition = response.headers.get("Content-Disposition");
       let filename = `${type}-export.xlsx`;
-      if (contentDisposition && contentDisposition.includes("filename=")) {
+      if (contentDisposition?.includes("filename=")) {
         filename = (contentDisposition.split("filename=")[1] ?? filename).replace(/"/g, "");
       }
       

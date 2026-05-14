@@ -24,14 +24,20 @@ const NodeStyles = {
   Employee: "border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300",
 };
 
-const CustomNode = ({ data }: any) => {
+interface NodeData {
+  id: string;
+  name: string;
+  role: "Admin" | "Manager" | "Employee";
+}
+
+const CustomNode = ({ data }: { data: NodeData }) => {
   const Icon = data.role === "Admin" ? Shield : data.role === "Manager" ? Users : User;
   
   return (
-    <div className={`px-5 py-4 shadow-lg rounded-2xl border-2 min-w-[220px] bg-white transition-all duration-300 group ${NodeStyles[data.role as keyof typeof NodeStyles]}`}>
+    <div className={`px-5 py-4 shadow-lg rounded-2xl border-2 min-w-[220px] bg-white transition-all duration-300 group ${NodeStyles[data.role]}`}>
       <Handle type="target" position={Position.Top} className="!w-3 !h-3 !bg-gray-300 !border-2 !border-white" />
       <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-xl transition-colors ${NodeStyles[data.role as keyof typeof NodeStyles]}`}>
+        <div className={`p-3 rounded-xl transition-colors ${NodeStyles[data.role]}`}>
           <Icon className="h-6 w-6" />
         </div>
         <div className="flex-1 min-w-0">
@@ -116,13 +122,13 @@ export function OrgFlowchart() {
     const initialNodes: Node[] = [];
     const initialEdges: Edge[] = [];
 
-    const traverse = (node: any, parentId: string | null = null) => {
-      const id = node.id.toString();
+    const traverse = (node: { id: string; name: string; role: string | null; children?: unknown[] }, parentId: string | null = null) => {
+      const id = node.id;
       
       initialNodes.push({
         id,
         type: "custom",
-        data: { name: node.name, role: node.role, id: node.id },
+        data: { name: node.name, role: (node.role ?? "Employee") as "Admin" | "Manager" | "Employee", id: node.id },
         position: { x: 0, y: 0 }, // Positioned by dagre
       });
 
@@ -138,7 +144,7 @@ export function OrgFlowchart() {
       }
 
       if (node.children) {
-        node.children.forEach((child: any) => traverse(child, id));
+        (node.children as any[]).forEach((child) => traverse(child, id));
       }
     };
 

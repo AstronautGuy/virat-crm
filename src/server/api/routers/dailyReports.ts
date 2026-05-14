@@ -4,8 +4,8 @@ import {
   protectedProcedure,
   managerProcedure,
 } from "@/server/api/trpc";
-import { dailyReports, customers, users } from "@/server/db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { dailyReports } from "@/server/db/schema";
+import { eq, and, desc, sql, type SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 export const dailyReportsRouter = createTRPCRouter({
@@ -69,7 +69,7 @@ export const dailyReportsRouter = createTRPCRouter({
       const { db, dbUser } = ctx;
       if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
 
-      const filters = [eq(dailyReports.branchId, dbUser.branchId!)];
+      const filters: SQL[] = [eq(dailyReports.branchId, dbUser.branchId!)];
 
       if (input?.date) {
         const startOfDay = new Date(input.date);

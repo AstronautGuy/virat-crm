@@ -6,17 +6,18 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
-  const { employeeCode, password } = await request.json();
+  const body = (await request.json()) as { employeeCode?: string; password?: string };
+  const { employeeCode, password } = body;
 
   if (!employeeCode || !password) {
     return NextResponse.json({ error: "Missing credentials" }, { status: 400 });
   }
 
   const user = await db.query.users.findFirst({
-    where: eq(users.employeeCode, employeeCode),
+    where: employeeCode ? eq(users.employeeCode, employeeCode) : undefined,
   });
 
-  if (!user || !user.isActive) {
+  if (!user?.isActive) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 

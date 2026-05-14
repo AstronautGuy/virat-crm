@@ -41,8 +41,8 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable}`}>
-      <body className="min-h-screen bg-white text-gray-900">
+    <html lang="en" className={`light ${inter.variable}`}>
+      <body className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/10 selection:text-primary">
         <TRPCReactProvider>
           {children}
         </TRPCReactProvider>

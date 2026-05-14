@@ -5,7 +5,7 @@ import {
   managerProcedure,
 } from "@/server/api/trpc";
 import { customers, sales } from "@/server/db/schema";
-import { eq, and, sql, desc, or } from "drizzle-orm";
+import { eq, and, sql, desc, or, type SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 export const crmRouter = createTRPCRouter({
@@ -16,7 +16,7 @@ export const crmRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
       
-      const filters = [];
+      const filters: SQL[] = [];
       
       // Branch isolation: Employees and Managers only see their branch
       if (dbUser.role !== "Admin") {
@@ -28,7 +28,7 @@ export const crmRouter = createTRPCRouter({
           or(
             sql`LOWER(${customers.name}) LIKE ${`%${input.search.toLowerCase()}%`}`,
             sql`${customers.mobile} LIKE ${`%${input.search}%`}`
-          )
+          )!
         );
       }
 

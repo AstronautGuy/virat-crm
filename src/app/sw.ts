@@ -26,16 +26,16 @@ const serwist = new Serwist({
 serwist.addEventListeners();
 
 self.addEventListener("push", (event: PushEvent) => {
-  const data = event.data?.json();
+  const data = event.data?.json() as { title?: string; body?: string; url?: string } | undefined;
   if (!data) return;
 
-  const title = data.title || "New Notification";
+  const title = data.title ?? "New Notification";
   const options = {
-    body: data.body || "You have a new update in Virat CRM.",
+    body: data.body ?? "You have a new update in Virat CRM.",
     icon: "/icons/icon-192x192.png",
     badge: "/icons/badge-96x96.png",
     data: {
-      url: data.url || "/",
+      url: data.url ?? "/",
     },
   };
 
@@ -45,6 +45,6 @@ self.addEventListener("push", (event: PushEvent) => {
 self.addEventListener("notificationclick", (event: NotificationEvent) => {
   event.notification.close();
   event.waitUntil(
-    self.clients.openWindow(event.notification.data.url)
+    self.clients.openWindow((event.notification.data as { url: string }).url)
   );
 });

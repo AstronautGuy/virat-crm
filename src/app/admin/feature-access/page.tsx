@@ -40,7 +40,7 @@ export default function FeatureAccessPage() {
   const { data: permissions, refetch } = api.permissions.getAll.useQuery();
   const toggleMutation = api.permissions.toggle.useMutation({
     onSuccess: () => {
-      refetch();
+      void refetch();
       setIsUpdating(null);
     }
   });
@@ -76,7 +76,7 @@ export default function FeatureAccessPage() {
             <p className="mt-2 text-lg text-gray-500">Enable or disable core modules for specific user roles.</p>
           </div>
           <button 
-            onClick={() => refetch()}
+            onClick={() => { void refetch(); }}
             className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-200 transition-all w-fit"
           >
             <RefreshCcw className="w-4 h-4" />

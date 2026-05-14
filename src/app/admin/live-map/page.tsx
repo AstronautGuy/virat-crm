@@ -62,7 +62,7 @@ export default function LiveMapPage() {
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <h3 className="text-sm font-semibold mb-4">Tracking Privacy Notice</h3>
             <p className="text-xs text-gray-500 leading-relaxed">
-              Location data is collected exclusively during active "Checked-In" hours. 
+              Location data is collected exclusively during active &quot;Checked-In&quot; hours. 
               Background tracking is battery-optimized and only visible to assigned managers.
               Historical data is purged after 30 days per company data retention policies.
             </p>

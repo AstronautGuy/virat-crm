@@ -5,10 +5,22 @@ import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
+interface StorageFile {
+  id: string;
+  createdAt: Date;
+  entityType: "sale" | "replacement";
+  entityId: number;
+  key: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  uploadedBy: string;
+}
+
 interface FileGalleryProps {
   entityType: "sale" | "replacement";
   entityId: number;
-  initialFiles?: any[];
+  initialFiles?: StorageFile[];
 }
 
 export function FileGallery({ entityType, entityId, initialFiles }: FileGalleryProps) {

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
-import { sales, saleItems, inventory, inventoryTransactions, users } from "@/server/db/schema";
-import { eq, inArray, sql, and } from "drizzle-orm";
+import { sales, saleItems, inventory, inventoryTransactions } from "@/server/db/schema";
+import { eq, sql, and } from "drizzle-orm";
 import { sendNotificationToUser } from "@/server/lib/push";
 import { TRPCError } from "@trpc/server";
 
@@ -62,7 +62,10 @@ export const salesRouter = createTRPCRouter({
         if (input.pincode) {
           try {
             const res = await fetch(`https://api.postalpincode.in/pincode/${input.pincode}`);
-            const data = (await res.json()) as any;
+            const data = (await res.json()) as {
+              Status: string;
+              PostOffice: { Name: string; District: string; State: string }[];
+            }[];
             if (Array.isArray(data) && data[0]?.Status === "Success") {
               const postOffice = data[0].PostOffice?.[0];
               if (postOffice) {

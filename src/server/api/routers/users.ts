@@ -71,7 +71,7 @@ export const usersRouter = createTRPCRouter({
         where: eq(users.id, ctx.dbUser.id),
       });
 
-      if (!user || !user.password) {
+      if (!user?.password) {
         throw new Error("User not found or password not set");
       }
 

@@ -37,7 +37,7 @@ export function ReportList({ isManager = false }: ReportListProps) {
 
   const filteredReports = reports?.filter(report => 
     report.content.toLowerCase().includes(search.toLowerCase()) ||
-    (report.customer?.name.toLowerCase().includes(search.toLowerCase())) ||
+    (report.customer?.name.toLowerCase().includes(search.toLowerCase()) ?? false) ||
     (isManager && `${report.user.firstName} ${report.user.lastName}`.toLowerCase().includes(search.toLowerCase()))
   );
 

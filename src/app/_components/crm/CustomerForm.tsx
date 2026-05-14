@@ -69,19 +69,20 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
         setIsFetchingPincode(true);
         try {
           const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
-          const data = await res.json();
+          const data = (await res.json()) as { Status: string; PostOffice: { Name: string; District: string; State: string }[] }[];
           if (Array.isArray(data) && data[0]?.Status === "Success") {
             const postOffices = data[0].PostOffice;
-            if (postOffices && postOffices.length > 0) {
-              const district = postOffices[0].District;
-              const state = postOffices[0].State;
-              const villageList = postOffices.map((po: any) => po.Name);
+            const firstPostOffice = postOffices[0];
+            if (firstPostOffice) {
+              const district = firstPostOffice.District;
+              const state = firstPostOffice.State;
+              const villageList = postOffices.map((po) => po.Name);
               
               form.setValue("district", district);
               form.setValue("state", state);
               setVillages(villageList);
               
-              if (villageList.length === 1) {
+              if (villageList.length === 1 && villageList[0]) {
                 form.setValue("village", villageList[0]);
               }
             }

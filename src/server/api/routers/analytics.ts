@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { sales, branches, locationLogs, leaves, users, performanceSnapshots } from "@/server/db/schema";
-import { and, gte, lte, sum, count, eq, sql, inArray } from "drizzle-orm";
-import { getDateRange, type DateRangePreset } from "@/server/lib/date";
+import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
+import { branches, locationLogs, leaves, performanceSnapshots, sales, users } from "@/server/db/schema";
+import { and, gte, lte, sum, count, eq, sql, inArray, type SQL } from "drizzle-orm";
+import { getDateRange } from "@/server/lib/date";
 
 export const analyticsRouter = createTRPCRouter({
   getSalesSummary: featureProtectedProcedure("dashboard")
@@ -16,7 +16,7 @@ export const analyticsRouter = createTRPCRouter({
       const effectiveBranchId = ctx.dbUser.role === "Admin" ? input.branchId : ctx.dbUser.branchId;
 
       if (input.preset === "all") {
-        const filters: any[] = [eq(performanceSnapshots.entityType, "branch")];
+        const filters: SQL[] = [eq(performanceSnapshots.entityType, "branch")];
         if (effectiveBranchId) {
           filters.push(eq(performanceSnapshots.entityId, effectiveBranchId.toString()));
         }
@@ -39,8 +39,8 @@ export const analyticsRouter = createTRPCRouter({
         };
       }
 
-      const { start, end } = getDateRange(input.preset as DateRangePreset);
-      const filters: any[] = [
+      const { start, end } = getDateRange(input.preset);
+      const filters: SQL[] = [
         gte(sales.createdAt, start),
         lte(sales.createdAt, end),
         eq(sales.status, "Approved")
@@ -99,7 +99,7 @@ export const analyticsRouter = createTRPCRouter({
         }));
       }
 
-      const { start, end } = getDateRange(input.preset as DateRangePreset);
+      const { start, end } = getDateRange(input.preset);
 
       const result = await ctx.db
         .select({
@@ -133,7 +133,7 @@ export const analyticsRouter = createTRPCRouter({
       const today = new Date();
       const dateStr = today.toISOString().split('T')[0];
 
-      const filters: any[] = [eq(locationLogs.date, dateStr!)];
+      const filters: SQL[] = [eq(locationLogs.date, dateStr!)];
       if (effectiveBranchId) {
         const branchUsers = await ctx.db.query.users.findMany({
           where: eq(users.branchId, effectiveBranchId),
@@ -153,7 +153,7 @@ export const analyticsRouter = createTRPCRouter({
         .where(and(...filters));
 
       // Leaves are branch-specific
-      const leaveFilters: any[] = [eq(leaves.status, "Pending")];
+      const leaveFilters: SQL[] = [eq(leaves.status, "Pending")];
       if (effectiveBranchId) {
         const branchUsers = await ctx.db.query.users.findMany({
           where: eq(users.branchId, effectiveBranchId),
@@ -179,7 +179,7 @@ export const analyticsRouter = createTRPCRouter({
   getAttendancePerformance: featureProtectedProcedure("dashboard")
     .input(z.object({ preset: z.enum(["today", "7d", "30d", "all"]) }))
     .query(async ({ ctx, input }) => {
-      const { start, end } = getDateRange(input.preset as DateRangePreset);
+      const { start, end } = getDateRange(input.preset);
 
       const stats = await ctx.db
         .select({
@@ -202,7 +202,7 @@ export const analyticsRouter = createTRPCRouter({
   getSalesExport: featureProtectedProcedure("dashboard")
     .input(z.object({ preset: z.enum(["today", "7d", "30d", "all"]) }))
     .query(async ({ ctx, input }) => {
-      const { start, end } = getDateRange(input.preset as DateRangePreset);
+      const { start, end } = getDateRange(input.preset);
 
       const data = await ctx.db
         .select({

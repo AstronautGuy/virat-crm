@@ -33,13 +33,13 @@ function LoginContent() {
         body: JSON.stringify({ employeeCode, password }),
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as { error?: string };
 
       if (res.ok) {
         router.push("/");
         router.refresh();
       } else {
-        setError(data.error || "Login failed");
+        setError(data.error ?? "Login failed");
       }
     } catch (err) {
       setError("An unexpected error occurred");

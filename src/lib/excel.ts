@@ -1,7 +1,18 @@
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
-export async function generateSalesXLSX(data: any[], filename: string) {
+interface SalesExportData {
+  orderNumber: string;
+  customerName: string | null;
+  invoiceAmount: string | number;
+  balanceAmount: string | number;
+  status: string;
+  date: Date | string;
+  branchName: string;
+  userName: string;
+}
+
+export async function generateSalesXLSX(data: SalesExportData[], filename: string) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Sales Report");
 
@@ -29,9 +40,9 @@ export async function generateSalesXLSX(data: any[], filename: string) {
   data.forEach((item) => {
     sheet.addRow({
       ...item,
-      date: item.date instanceof Date ? item.date.toLocaleString() : item.date,
-      invoiceAmount: parseFloat(item.invoiceAmount),
-      balanceAmount: parseFloat(item.balanceAmount),
+      date: item.date instanceof Date ? item.date.toLocaleString() : String(item.date),
+      invoiceAmount: typeof item.invoiceAmount === "string" ? parseFloat(item.invoiceAmount) : item.invoiceAmount,
+      balanceAmount: typeof item.balanceAmount === "string" ? parseFloat(item.balanceAmount) : item.balanceAmount,
     });
   });
 
@@ -45,7 +56,13 @@ export async function generateSalesXLSX(data: any[], filename: string) {
   saveAs(blob, `${filename}.xlsx`);
 }
 
-export async function generateAttendanceXLSX(data: any[], filename: string) {
+interface AttendanceExportData {
+  userName: string;
+  date: string;
+  recordedAt: Date | string;
+}
+
+export async function generateAttendanceXLSX(data: AttendanceExportData[], filename: string) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Attendance Report");
 
@@ -65,7 +82,7 @@ export async function generateAttendanceXLSX(data: any[], filename: string) {
   data.forEach((item) => {
     sheet.addRow({
       ...item,
-      recordedAt: item.recordedAt instanceof Date ? item.recordedAt.toLocaleString() : item.recordedAt,
+      recordedAt: item.recordedAt instanceof Date ? item.recordedAt.toLocaleString() : String(item.recordedAt),
     });
   });
 

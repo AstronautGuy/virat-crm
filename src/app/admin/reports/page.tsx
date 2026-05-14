@@ -19,6 +19,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateSalesXLSX, generateAttendanceXLSX } from "@/lib/excel";
+import { type LucideIcon } from "lucide-react";
+
+interface YearlyStat {
+  year: number;
+  revenue: number;
+  orders: number;
+  visits: number;
+}
 
 const PRESETS = [
   { value: "today", label: "Daily" },
@@ -35,15 +43,15 @@ const SCOPES = [
 ];
 
 export default function ReportsPage() {
-  const [preset, setPreset] = useState("30d");
-  const [scope, setScope] = useState("individual");
+  const [preset, setPreset] = useState<"today" | "7d" | "30d" | "quarter" | "year" | "all">("30d");
+  const [scope, setScope] = useState<"individual" | "team" | "management" | "branch">("individual");
   const [targetId, setTargetId] = useState<string | null>(null);
 
   const { data: selectableUsers } = api.reports.getSelectableUsers.useQuery();
   const { data: reportData, isLoading } = api.reports.getReportData.useQuery(
     { 
-      preset: preset as any, 
-      scope: scope as any, 
+      preset, 
+      scope, 
       targetId: targetId ?? undefined 
     },
     { enabled: !!scope }
@@ -178,7 +186,7 @@ export default function ReportsPage() {
               <span>Yearly Performance Snapshot</span>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {reportData.yearlyStats.map((year: any) => (
+              {(reportData.yearlyStats as unknown as YearlyStat[]).map((year) => (
                 <div key={year.year} className="p-6 rounded-2xl bg-gray-50 border border-gray-100 space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-2xl font-black text-gray-900">{year.year}</span>
@@ -292,7 +300,7 @@ export default function ReportsPage() {
   );
 }
 
-function StatCard({ title, value, icon: Icon, color }: { title: string, value: string | number, icon: any, color: string }) {
+function StatCard({ title, value, icon: Icon, color }: { title: string, value: string | number, icon: LucideIcon, color: string }) {
   const colors = {
     blue: "bg-blue-50 text-blue-600",
     red: "bg-red-50 text-red-600",

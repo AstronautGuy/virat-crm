@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
-import { replacements, users, sales } from "@/server/db/schema";
-import { eq, sql, inArray } from "drizzle-orm";
+import { replacements, sales } from "@/server/db/schema";
+import { eq, sql } from "drizzle-orm";
 import { sendNotificationToUser } from "@/server/lib/push";
 import { TRPCError } from "@trpc/server";
 

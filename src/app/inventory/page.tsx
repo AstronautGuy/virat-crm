@@ -69,15 +69,15 @@ export default function InventoryPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Inventory Command Center</h1>
-            <p className="text-slate-500">Real-time stock tracking for your branch</p>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Inventory Command Center</h1>
+            <p className="text-muted-foreground mt-1">Real-time stock tracking for your branch</p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+            <button className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-xl text-sm font-semibold text-foreground hover:bg-secondary transition-all shadow-sm">
               <ArrowRightLeft className="w-4 h-4" />
               Transfer Stock
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
+            <button className="flex items-center gap-2 px-5 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:opacity-90 transition-all shadow-[0_1px_3px_rgba(37,99,235,0.2)]">
               <Plus className="w-4 h-4" />
               Add Product
             </button>
@@ -85,35 +85,35 @@ export default function InventoryPage() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat) => (
-            <div key={stat.label} className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4">
-              <div className={cn("p-3 rounded-lg", stat.bg)}>
+            <div key={stat.label} className="premium-card p-6 flex items-center gap-4">
+              <div className={cn("p-3 rounded-xl transition-colors duration-300", stat.bg)}>
                 <stat.icon className={cn("w-6 h-6", stat.color)} />
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-500">{stat.label}</p>
-                <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{stat.label}</p>
+                <p className="text-2xl font-bold text-foreground tabular-nums">{stat.value}</p>
               </div>
             </div>
           ))}
         </div>
 
         {/* Inventory List */}
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="premium-card">
+          <div className="p-6 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card/50">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search by SKU or Product Name..."
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500 transition-all"
+                className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <div className="flex items-center gap-2">
-              <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
+              <button className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-muted-foreground hover:bg-secondary hover:text-foreground rounded-xl transition-all">
                 <Filter className="w-4 h-4" />
                 Filters
               </button>
@@ -122,46 +122,46 @@ export default function InventoryPage() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <tr>
-                  <th className="px-6 py-4 font-semibold">Product</th>
-                  <th className="px-6 py-4 font-semibold">SKU</th>
-                  <th className="px-6 py-4 font-semibold text-center">In Stock</th>
-                  <th className="px-6 py-4 font-semibold">Status</th>
-                  <th className="px-6 py-4 font-semibold text-right">Actions</th>
+              <thead>
+                <tr className="bg-secondary/50 text-muted-foreground text-[11px] uppercase font-bold tracking-[0.1em]">
+                  <th className="px-6 py-4">Product</th>
+                  <th className="px-6 py-4">SKU</th>
+                  <th className="px-6 py-4 text-center">In Stock</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
+              <tbody className="divide-y divide-border text-sm font-medium">
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="animate-pulse">
                       <td colSpan={5} className="px-6 py-4">
-                        <div className="h-4 bg-slate-100 rounded w-full" />
+                        <div className="h-4 bg-muted/20 rounded-full w-full" />
                       </td>
                     </tr>
                   ))
                 ) : filteredStock?.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground font-medium italic">
                       No products found matching your search.
                     </td>
                   </tr>
                 ) : (
                   filteredStock?.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-6 py-4 font-medium text-slate-900">{item.product.name}</td>
-                      <td className="px-6 py-4 text-slate-500 font-mono">{item.product.sku}</td>
-                      <td className="px-6 py-4 text-center font-semibold tabular-nums">
+                    <tr key={item.id} className="hover:bg-secondary/30 transition-colors group">
+                      <td className="px-6 py-5 text-foreground font-bold">{item.product.name}</td>
+                      <td className="px-6 py-5 text-muted-foreground font-mono text-xs">{item.product.sku}</td>
+                      <td className="px-6 py-5 text-center font-bold tabular-nums">
                         {item.quantity}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-5">
                         <span className={cn(
-                          "px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1",
+                          "px-3 py-1 rounded-full text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm",
                           item.quantity === 0 
-                            ? "bg-red-50 text-red-700" 
+                            ? "bg-red-50 text-red-700 border border-red-100" 
                             : item.quantity < 10 
-                              ? "bg-amber-50 text-amber-700" 
-                              : "bg-emerald-50 text-emerald-700"
+                              ? "bg-amber-50 text-amber-700 border border-amber-100" 
+                              : "bg-emerald-50 text-emerald-700 border border-emerald-100"
                         )}>
                           <span className={cn(
                             "w-1.5 h-1.5 rounded-full",
@@ -171,12 +171,12 @@ export default function InventoryPage() {
                                 ? "bg-amber-500" 
                                 : "bg-emerald-500"
                           )} />
-                          {item.quantity === 0 ? "Out of Stock" : item.quantity < 10 ? "Low Stock" : "In Stock"}
+                          {item.quantity === 0 ? "OUT OF STOCK" : item.quantity < 10 ? "LOW STOCK" : "IN STOCK"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <button className="text-blue-600 hover:text-blue-700 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                          Adjust
+                      <td className="px-6 py-5 text-right">
+                        <button className="text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg text-xs font-bold transition-all opacity-0 group-hover:opacity-100">
+                          ADJUST
                         </button>
                       </td>
                     </tr>
