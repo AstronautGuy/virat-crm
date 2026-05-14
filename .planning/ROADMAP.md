@@ -30,4 +30,27 @@ Excel-based product management and final M6 hardening.
 - [ ] **Task 24.1**: Excel import for Products (BULK-03).
 - [ ] **Task 24.2**: Validation & Error handling for large uploads.
 - [ ] **Task 24.3**: Milestone 6 UAT and performance audit.
-- **Deliverable**: Bulk data management and Milestone 6 sign-off.
+## Phase 25: UI/UX Rework & Stitch MCP
+Slick, robust UI using modern fonts and Stitch MCP design system.
+- [ ] **Task 25.1**: Integrate Stitch MCP for UI components.
+- [ ] **Task 25.2**: Update typography with premium fonts.
+- [ ] **Task 25.3**: Apply robust UI/UX patterns across all pages.
+- **Deliverable**: Modern, premium UI/UX for Virat CRM.
+
+## Backlog
+
+### Phase 999.1: Follow-up — Phase 21 incomplete plans (BACKLOG)
+
+**Goal:** Resolve plans that ran without producing summaries during Phase 21 execution
+**Source phase:** 21
+**Deferred at:** 2026-05-14 during /gsd-next advancement to Phase 23
+**Plans:**
+- [ ] 21-PLAN: (ran, no SUMMARY.md)
+
+### Phase 999.2: Follow-up — Phase 22 incomplete plans (BACKLOG)
+
+**Goal:** Resolve plans that ran without producing summaries during Phase 22 execution
+**Source phase:** 22
+**Deferred at:** 2026-05-14 during /gsd-next advancement to Phase 23
+**Plans:**
+- [ ] 22-04-PLAN: (ran, no SUMMARY.md)
