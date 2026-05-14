@@ -1,4 +1,4 @@
-import { varchar, uuid, integer, timestamp, text, serial } from "drizzle-orm/pg-core";
+import { uuid, integer, timestamp, text, serial } from "drizzle-orm/pg-core";
 import { createTable, users } from "./users";
 import { branches } from "./branches";
 import { customers } from "./customers";

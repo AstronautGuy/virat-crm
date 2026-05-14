@@ -1,24 +1,8 @@
 import { DashboardLayout } from "@/app/_components/layout/DashboardLayout";
 import LiveTeamMap from "@/app/_components/maps/LiveTeamMap";
 import { Users, MapPin, Activity } from "lucide-react";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import { redirect } from "next/navigation";
-
 import { FeatureGate } from "@/app/_components/auth/FeatureGate";
-
-export default async function LiveMapPage() {
-  const { getPermission, isAuthenticated } = getKindeServerSession();
-  const managerPermission = await getPermission("manager:access");
-  const adminPermission = await getPermission("admin:access");
-
-  const isAuth = await isAuthenticated();
-  const isAuthorized = managerPermission?.isGranted || adminPermission?.isGranted;
-
-  if (process.env.NODE_ENV !== "development") {
-    if (!isAuth || !isAuthorized) {
-      redirect("/");
-    }
-  }
+export default function LiveMapPage() {
 
   return (
     <DashboardLayout>

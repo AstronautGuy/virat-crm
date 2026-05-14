@@ -1,6 +1,7 @@
 import { db } from "./index";
 import { branches, users, products, sales, saleItems, replacements, inventory } from "./schema";
 import { sql } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 async function main() {
   console.log("Seeding database...");
@@ -15,6 +16,9 @@ async function main() {
   await db.execute(sql`TRUNCATE TABLE "virat-crm_product" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_user" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_branch" CASCADE;`);
+
+  // Hash passwords
+  const password = await bcrypt.hash("password123", 10);
 
   // Seed Branches
   const insertedBranches = await db
@@ -44,13 +48,12 @@ async function main() {
   if (!hq) {
     throw new Error("Failed to insert Headquarters branch");
   }
-
-  // Seed Users (Admin & Employee)
   const insertedUsers = await db
     .insert(users)
     .values([
       {
-        kindeId: "kp_c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6", // Example Kinde ID
+        employeeCode: "ADMIN001",
+        password: password,
         email: "admin@viraterp.com",
         firstName: "System",
         lastName: "Admin",
@@ -59,7 +62,8 @@ async function main() {
         isActive: true,
       },
       {
-        kindeId: "kp_mock_employee_123", 
+        employeeCode: "EMP001", 
+        password: password,
         email: "employee1@viraterp.com",
         firstName: "Test",
         lastName: "Employee",
@@ -68,7 +72,8 @@ async function main() {
         isActive: true,
       },
       {
-        kindeId: "kp_mock_manager_123",
+        employeeCode: "MGR001",
+        password: password,
         email: "manager@viraterp.com",
         firstName: "Mock",
         lastName: "Manager",
@@ -80,7 +85,6 @@ async function main() {
     .returning();
 
   console.log("Users seeded:", insertedUsers.length);
-  const admin = insertedUsers[0];
   const employee = insertedUsers[1];
   const manager = insertedUsers[2];
 

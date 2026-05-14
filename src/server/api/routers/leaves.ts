@@ -17,17 +17,10 @@ export const leavesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
-      const currentUser = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.dbUser!.kindeId),
-      });
-
-      if (!currentUser) throw new Error("User not found");
-
       const [leave] = await ctx.db
         .insert(leaves)
         .values({
-          userId: currentUser.id,
+          userId: ctx.dbUser.id,
           startDate: input.startDate,
           endDate: input.endDate,
           reason: input.reason,
@@ -40,29 +33,14 @@ export const leavesRouter = createTRPCRouter({
     }),
 
   getMyLeaves: featureProtectedProcedure("workforce").query(async ({ ctx }) => {
-    if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
-    const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.dbUser!.kindeId),
-    });
-
-    if (!currentUser) return [];
-
     return ctx.db.query.leaves.findMany({
-      where: eq(leaves.userId, currentUser.id),
+      where: eq(leaves.userId, ctx.dbUser.id),
       orderBy: (leaves, { desc }) => [desc(leaves.createdAt)],
     });
   }),
 
   getLeaves: featureProtectedProcedure("workforce").query(async ({ ctx }) => {
-    if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
-    const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.dbUser.kindeId),
-      columns: { id: true, role: true },
-    });
-
-    if (!currentUser) return [];
-
-    if (currentUser.role === "Admin") {
+    if (ctx.dbUser.role === "Admin") {
       return ctx.db.query.leaves.findMany({
         with: { user: true },
         orderBy: (leaves, { desc }) => [desc(leaves.createdAt)],
@@ -71,7 +49,7 @@ export const leavesRouter = createTRPCRouter({
 
     const descendantsQuery = sql`
       WITH RECURSIVE subordinates AS (
-        SELECT id FROM "virat-crm_user" WHERE manager_id = ${currentUser.id}
+        SELECT id FROM "virat-crm_user" WHERE manager_id = ${ctx.dbUser.id}
         UNION
         SELECT e.id FROM "virat-crm_user" e
         INNER JOIN subordinates s ON s.id = e.manager_id
@@ -81,7 +59,7 @@ export const leavesRouter = createTRPCRouter({
 
     const rows = await ctx.db.execute(descendantsQuery);
     const descendantIds = rows.map((row: any) => String(row.id));
-    const allowedIds = [currentUser.id, ...descendantIds];
+    const allowedIds = [ctx.dbUser.id, ...descendantIds];
 
     return ctx.db.query.leaves.findMany({
       where: inArray(leaves.userId, allowedIds),
@@ -93,27 +71,20 @@ export const leavesRouter = createTRPCRouter({
   updateLeaveStatus: featureProtectedProcedure("workforce")
     .input(z.object({ leaveId: z.number(), status: z.enum(["Pending", "Approved", "Rejected"]) }))
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
-      const currentUser = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.dbUser!.kindeId),
-      });
-
-      if (!currentUser) throw new Error("User not found");
-
       const targetLeave = await ctx.db.query.leaves.findFirst({
         where: eq(leaves.id, input.leaveId),
       });
 
       if (!targetLeave) throw new Error("Leave request not found");
 
-      if (currentUser.role !== "Admin") {
-        if (currentUser.role !== "Manager") {
+      if (ctx.dbUser.role !== "Admin") {
+        if (ctx.dbUser.role !== "Manager") {
           throw new Error("Unauthorized to update status");
         }
 
         const descendantsQuery = sql`
           WITH RECURSIVE subordinates AS (
-            SELECT id FROM "virat-crm_user" WHERE manager_id = ${currentUser.id}
+            SELECT id FROM "virat-crm_user" WHERE manager_id = ${ctx.dbUser.id}
             UNION
             SELECT e.id FROM "virat-crm_user" e
             INNER JOIN subordinates s ON s.id = e.manager_id

@@ -10,21 +10,29 @@
 
 ## Phase 16: Granular Feature Gating
 - `[x]` Implement `featureProtectedProcedure` in tRPC
-- `[x]` Create `FeatureGate` component- [x] Multi-Branch Inventory Logic & Schema
-    - [x] Schema: Inventory, Transactions, Transfers
-    - [x] Router: `inventory.ts` with atomic procedures
-    - [x] Logic: Branch-isolated stock management
-- [x] Inventory Management UI
-    - [x] Page: `/inventory` Dashboard
-    - [x] Page: `/inventory/transfers` Center
-- [x] Module Isolation & Security
-    - [x] Feature gating for inventory
-    - [x] Sidebar integration
-- [x] Refinement & Verification
-    - [x] Atomic transactions verification
-    - [x] Type safety (tsc clean)
-    - [x] Seed data update
- `scratch` from `tsconfig.json`
+- `[x]` Create `FeatureGate` component
+- `[x]` Multi-Branch Inventory Logic & Schema
+    - `[x]` Schema: Inventory, Transactions, Transfers
+    - `[x]` Router: `inventory.ts` with atomic procedures
+    - `[x]` Logic: Branch-isolated stock management
+- `[x]` Inventory Management UI
+    - `[x]` Page: `/inventory` Dashboard
+    - `[x]` Page: `/inventory/transfers` Center
+    - `[x]` Refactor all routers to use ctx.dbUser instead of Kinde lookups
+- `[x]` Clean up remaining Kinde references in LiveMapPage
+- `[x]` Delete legacy Kinde auth route
+- `[x]` Update seed file with new auth credentials
+- `[x]` Implement User Management dashboard for admins
+- `[x]` Implement "Change Password" in Profile page
+- `[x]` Deprecate kindeId in DB schema
+- `[x]` Module Isolation & Security
+    - `[x]` Feature gating for inventory
+    - `[x]` Sidebar integration
+- `[x]` Refinement & Verification
+    - `[x]` Atomic transactions verification
+    - `[x]` Type safety (tsc clean)
+    - `[x]` Seed data update
+    - `[x]` Remove `scratch` from `tsconfig.json`
 - `[x]` Verify clean build with `tsc --noEmit`
 - `[x]` Wrap sensitive routes (Maps, Reports, etc.) with `FeatureGate`
 - `[x]` Apply `featureProtectedProcedure` to existing routers

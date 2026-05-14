@@ -17,7 +17,7 @@ export default async function Home() {
     try {
       const [sales, workforce] = await Promise.all([
         api.analytics.getSalesSummary({ preset: "today" }),
-        api.analytics.getWorkforceSummary(),
+        api.analytics.getWorkforceSummary({}),
       ]);
       salesSummary = sales;
       workforceSummary = workforce;

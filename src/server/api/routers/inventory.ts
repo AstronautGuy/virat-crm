@@ -5,21 +5,29 @@ import { inventory, inventoryTransactions, stockTransfers, products, branches } 
 import { eq, and, sql, desc } from "drizzle-orm";
 
 export const inventoryRouter = createTRPCRouter({
+  getBranches: featureProtectedProcedure("admin")
+    .query(async ({ ctx }) => {
+      return ctx.db.query.branches.findMany();
+    }),
+
   getBranchStock: featureProtectedProcedure("inventory")
     .input(z.object({ branchId: z.number().optional() }))
     .query(async ({ ctx, input }) => {
-      const isAdmin = (await ctx.getPermission("admin:access"))?.isGranted;
-      const branchId = isAdmin ? (input.branchId ?? ctx.dbUser.branchId) : ctx.dbUser.branchId;
+      const isAdmin = ctx.dbUser.role === "Admin";
+      const branchId = isAdmin ? input.branchId : (input.branchId ?? ctx.dbUser.branchId);
       
-      if (!branchId) throw new TRPCError({ code: "BAD_REQUEST", message: "Branch ID is required" });
+      if (!branchId && !isAdmin) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Branch ID is required" });
+      }
 
       return ctx.db.query.inventory.findMany({
-        where: eq(inventory.branchId, branchId),
+        where: branchId ? eq(inventory.branchId, branchId) : undefined,
         with: {
           product: true,
         },
       });
     }),
+
 
   adjustStock: featureProtectedProcedure("inventory")
     .input(
@@ -31,7 +39,7 @@ export const inventoryRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const isAdmin = (await ctx.getPermission("admin:access"))?.isGranted;
+      const isAdmin = ctx.dbUser.role === "Admin";
       if (!isAdmin && input.branchId !== ctx.dbUser.branchId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to adjust stock for this branch" });
       }
@@ -111,7 +119,7 @@ export const inventoryRouter = createTRPCRouter({
         // Authorization: User must belong to either origin (to ship/cancel) or destination (to receive)
         const isOriginUser = ctx.dbUser.branchId === transfer.fromBranchId;
         const isDestUser = ctx.dbUser.branchId === transfer.toBranchId;
-        const isAdmin = (await ctx.getPermission("admin:access"))?.isGranted;
+        const isAdmin = ctx.dbUser.role === "Admin";
 
         if (!isAdmin && !isOriginUser && !isDestUser) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to update this transfer" });

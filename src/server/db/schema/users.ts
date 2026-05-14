@@ -9,9 +9,9 @@ export const roleEnum = pgEnum("virat-crm_role", ["Admin", "Manager", "Employee"
 
 export const users = createTable("user", {
   id: uuid("id").primaryKey().defaultRandom(),
-  kindeId: varchar("kinde_id", { length: 256 }).notNull().unique(),
   email: varchar("email", { length: 256 }).notNull().unique(),
-  employeeCode: varchar("employee_code", { length: 256 }).unique(),
+  employeeCode: varchar("employee_code", { length: 256 }).notNull().unique(),
+  password: varchar("password", { length: 256 }), // Nullable for existing users migration
   firstName: varchar("first_name", { length: 256 }).notNull(),
   lastName: varchar("last_name", { length: 256 }).notNull(),
   role: roleEnum("role").default("Employee").notNull(),

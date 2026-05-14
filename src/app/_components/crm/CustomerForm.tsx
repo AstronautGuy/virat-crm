@@ -1,0 +1,289 @@
+"use client";
+
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useState, useEffect } from "react";
+import { api } from "@/trpc/react";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner"; // Assuming sonner is used, if not I'll use alert
+
+const formSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  mobile: z.string().min(10, "Mobile must be at least 10 digits"),
+  dob: z.string().optional(),
+  pincode: z.string().length(6, "Pincode must be 6 digits"),
+  village: z.string().min(1, "Village is required"),
+  district: z.string().min(1, "District is required"),
+  state: z.string().min(1, "State is required"),
+  address: z.string().min(5, "Full address is required"),
+});
+
+interface CustomerFormProps {
+  onSuccess?: () => void;
+  isManager?: boolean;
+}
+
+export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps) {
+  const [isFetchingPincode, setIsFetchingPincode] = useState(false);
+  const [villages, setVillages] = useState<string[]>([]);
+  
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      mobile: "",
+      dob: "",
+      pincode: "",
+      village: "",
+      district: "",
+      state: "",
+      address: "",
+    },
+  });
+
+  const pincode = form.watch("pincode");
+
+  useEffect(() => {
+    if (pincode?.length === 6 && /^[1-9][0-9]{5}$/.test(pincode)) {
+      const fetchDetails = async () => {
+        setIsFetchingPincode(true);
+        try {
+          const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+          const data = await res.json();
+          if (Array.isArray(data) && data[0]?.Status === "Success") {
+            const postOffices = data[0].PostOffice;
+            if (postOffices && postOffices.length > 0) {
+              const district = postOffices[0].District;
+              const state = postOffices[0].State;
+              const villageList = postOffices.map((po: any) => po.Name);
+              
+              form.setValue("district", district);
+              form.setValue("state", state);
+              setVillages(villageList);
+              
+              if (villageList.length === 1) {
+                form.setValue("village", villageList[0]);
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Failed to fetch pincode details", e);
+        } finally {
+          setIsFetchingPincode(false);
+        }
+      };
+      void fetchDetails();
+    }
+  }, [pincode, form]);
+
+  const proposeMutation = api.crm.proposeCustomer.useMutation({
+    onSuccess: () => {
+      toast.success("Customer proposed successfully (Draft status)");
+      form.reset();
+      onSuccess?.();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const createMutation = api.crm.createCustomer.useMutation({
+    onSuccess: () => {
+      toast.success("Customer created successfully (Approved status)");
+      form.reset();
+      onSuccess?.();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    const formattedValues = {
+      ...values,
+      dob: values.dob ? new Date(values.dob) : undefined,
+    };
+    
+    if (isManager) {
+      createMutation.mutate(formattedValues);
+    } else {
+      proposeMutation.mutate(formattedValues);
+    }
+  }
+
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>{isManager ? "Add Approved Customer" : "Propose New Customer"}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="mobile"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mobile Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="9876543210" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="dob"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date of Birth (Optional)</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="pincode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      Pincode
+                      {isFetchingPincode && <Loader2 className="h-3 w-3 animate-spin" />}
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="110001" maxLength={6} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="village"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Village/Area</FormLabel>
+                    {villages.length > 0 ? (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Village" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {villages.map((v) => (
+                            <SelectItem key={v} value={v}>{v}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <FormControl>
+                        <Input placeholder="Enter Village" {...field} />
+                      </FormControl>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="district"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>District</FormLabel>
+                    <FormControl>
+                      <Input placeholder="District" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="state"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>State</FormLabel>
+                    <FormControl>
+                      <Input placeholder="State" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Address</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="House No, Landmark, etc." 
+                      className="min-h-[100px]"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={proposeMutation.isPending || createMutation.isPending}
+            >
+              {(proposeMutation.isPending || createMutation.isPending) && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {isManager ? "Create Customer" : "Propose Customer"}
+            </Button>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
+  );
+}

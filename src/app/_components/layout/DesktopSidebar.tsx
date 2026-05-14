@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingBag, Users, FileText, User, MapPin, BarChart3, Network, ShieldCheck, Contact } from "lucide-react";
+import { Home, ShoppingBag, Users, FileText, User, MapPin, BarChart3, Network, ShieldCheck, Contact, Download } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
@@ -57,6 +57,18 @@ export function DesktopSidebar() {
       href: "/admin/feature-access", 
       label: "Feature Access", 
       icon: ShieldCheck,
+      hidden: !isAdmin 
+    },
+    { 
+      href: "/admin/users", 
+      label: "User Management", 
+      icon: Users,
+      hidden: !isAdmin 
+    },
+    { 
+      href: "/admin/exports", 
+      label: "Bulk Exports", 
+      icon: Download,
       hidden: !isAdmin 
     },
     { href: "/profile", label: "My Profile", icon: User },

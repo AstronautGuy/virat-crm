@@ -13,7 +13,7 @@ export function MockLocationPinger() {
 
   const pingMutation = api.location.ping.useMutation({
     onSuccess: () => setLogsSent((prev) => prev + 1),
-    onError: (err) => console.error("Mock ping failed", err),
+    onError: (err: unknown) => console.error("Mock ping failed", err),
   });
 
   useEffect(() => {

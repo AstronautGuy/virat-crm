@@ -3,7 +3,7 @@
 Welcome to the Virat CRM. This guide covers the essential features for Field Agents, Managers, and Admins.
 
 ## 1. Getting Started
-- **Login**: Use your corporate Kinde account to sign in.
+- **Login**: Use your Employee Code and Password to sign in.
 - **Profile**: Visit the **Profile** page to update your details and manage notification settings.
 
 ## 2. Real-time Notifications

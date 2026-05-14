@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, featureProtectedProcedure, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { locationLogs, breadcrumbs, users } from "@/server/db/schema";
+import { branches } from "@/server/db/schema/branches";
 import { eq, and, desc, inArray, gte, lte, asc, lt } from "drizzle-orm";
 
 function getCurrentSlab() {
@@ -38,7 +39,7 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 export const locationRouter = createTRPCRouter({
-  ping: featureProtectedProcedure("workforce")
+  ping: protectedProcedure
     .input(
       z.object({
         latitude: z.number(),
@@ -47,26 +48,23 @@ export const locationRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
-      const user = await ctx.db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.kindeId, ctx.dbUser!.kindeId),
-        with: {
-          branch: true,
-        },
-      });
+      const user = ctx.dbUser;
+      if (user.role === "Admin") return { success: true, ignored: true }; // Admins are not tracked
+      if (!user.branchId) throw new TRPCError({ code: "BAD_REQUEST", message: "User is not assigned to a branch" });
 
-      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-      if (!user.branchId || !user.branch) throw new TRPCError({ code: "BAD_REQUEST", message: "User is not assigned to a branch" });
+      // Fetch branch data for geofencing
+      const branch = await ctx.db.query.branches.findFirst({ where: eq(branches.id, user.branchId) });
+      if (!branch) throw new TRPCError({ code: "BAD_REQUEST", message: "Branch not found" });
 
       // 1. Server-Side Geofencing Validation
       const distance = haversineDistance(
         input.latitude,
         input.longitude,
-        parseFloat(user.branch.latitude),
-        parseFloat(user.branch.longitude)
+        parseFloat(branch.latitude),
+        parseFloat(branch.longitude)
       );
 
-      const isWithinRadius = distance <= user.branch.radiusMeters;
+      const isWithinRadius = distance <= branch.radiusMeters;
       
       // We log the ping regardless for route playback, but we only mark "Attendance" (slab logs) 
       // if they are within the geofence to prevent spoofing.
@@ -173,7 +171,7 @@ export const locationRouter = createTRPCRouter({
       return logs;
     }),
 
-  logBreadcrumb: featureProtectedProcedure("workforce")
+  logBreadcrumb: protectedProcedure
     .input(
       z.object({
         latitude: z.number(),
@@ -182,14 +180,8 @@ export const locationRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
-      const user = await ctx.db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.kindeId, ctx.dbUser!.kindeId),
-      });
-
-      if (!user) {
-        throw new Error("User not found in database");
-      }
+      const user = ctx.dbUser;
+      if (user.role === "Admin") return { success: true, ignored: true }; // Admins are not tracked
 
       await ctx.db.insert(breadcrumbs).values({
         userId: user.id,
@@ -202,35 +194,33 @@ export const locationRouter = createTRPCRouter({
     }),
 
   getLiveTeam: featureProtectedProcedure("live-map")
-    .query(async ({ ctx }) => {
-      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
-      const currentUser = await ctx.db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.kindeId, ctx.dbUser!.kindeId),
-      });
-
-      if (!currentUser) throw new Error("User not found");
-
-      const adminPermission = await ctx.getPermission("admin:access");
-      const isSystemAdmin = adminPermission?.isGranted;
+    .input(z.object({ branchId: z.number().optional() }))
+    .query(async ({ ctx, input }) => {
+      const currentUser = ctx.dbUser;
+      const isSystemAdmin = currentUser.role === "Admin";
 
       const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
 
-      // Find all users this manager can see
+      // 1. Identify Visible Users based on RBAC and Branch
       let visibleUserIds: string[] = [];
-      if (isSystemAdmin) {
-        // Admin sees everyone
-        const allUsers = await ctx.db.query.users.findMany({
-          columns: { id: true },
-        });
-        visibleUserIds = allUsers.map(u => u.id);
-      } else {
-        // Manager sees their subordinates
-        const subordinates = await ctx.db.query.users.findMany({
-          where: eq(users.managerId, currentUser.id),
-          columns: { id: true },
-        });
-        visibleUserIds = subordinates.map(u => u.id);
+      
+      const filters: any[] = [];
+      if (!isSystemAdmin) {
+        // Manager sees their branch + subordinates
+        if (currentUser.branchId) {
+          filters.push(eq(users.branchId, currentUser.branchId));
+        }
+        filters.push(eq(users.managerId, currentUser.id));
+      } else if (input.branchId) {
+        // Admin filters by specific branch
+        filters.push(eq(users.branchId, input.branchId));
       }
+
+      const visibleUsers = await ctx.db.query.users.findMany({
+        where: filters.length > 0 ? and(...filters) : undefined,
+        columns: { id: true },
+      });
+      visibleUserIds = visibleUsers.map(u => u.id);
 
       if (visibleUserIds.length === 0) return [];
 
@@ -263,15 +253,8 @@ export const locationRouter = createTRPCRouter({
       })
     )
     .query(async ({ ctx, input }) => {
-      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
-      const currentUser = await ctx.db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.kindeId, ctx.dbUser!.kindeId),
-      });
-
-      if (!currentUser) throw new Error("User not found");
-
-      const adminPermission = await ctx.getPermission("admin:access");
-      const isSystemAdmin = adminPermission?.isGranted;
+      const currentUser = ctx.dbUser;
+      const isSystemAdmin = currentUser.role === "Admin";
 
       // Check if manager is authorized to see this user
       if (!isSystemAdmin) {

@@ -1,4 +1,4 @@
-import { pgTableCreator, serial, varchar, numeric, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTableCreator, serial, varchar, numeric, timestamp } from "drizzle-orm/pg-core";
 
 export const createTable = pgTableCreator((name) => `virat-crm_${name}`);
 

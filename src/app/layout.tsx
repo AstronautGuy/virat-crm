@@ -1,7 +1,7 @@
 import "@/styles/globals.css";
 
 import { type Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Inter } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
 
@@ -32,16 +32,16 @@ export const viewport = {
   userScalable: false,
 };
 
-const geist = Geist({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-geist-sans",
+  variable: "--font-inter",
 });
 
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geist.variable}`}>
+    <html lang="en" className={`${inter.variable}`}>
       <body className="min-h-screen bg-white text-gray-900">
         <TRPCReactProvider>
           {children}

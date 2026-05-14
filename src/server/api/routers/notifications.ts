@@ -6,14 +6,8 @@ import { eq, and } from "drizzle-orm";
 
 export const notificationsRouter = createTRPCRouter({
   getMyNotifications: protectedProcedure.query(async ({ ctx }) => {
-    const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.user.id),
-    });
-
-    if (!currentUser) return [];
-
     return ctx.db.query.notifications.findMany({
-      where: eq(notifications.userId, currentUser.id),
+      where: eq(notifications.userId, ctx.dbUser.id),
       orderBy: (notifications, { desc }) => [desc(notifications.createdAt)],
     });
   }),
@@ -21,19 +15,13 @@ export const notificationsRouter = createTRPCRouter({
   markAsRead: protectedProcedure
     .input(z.object({ notificationId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const currentUser = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.user.id),
-      });
-
-      if (!currentUser) throw new Error("User not found");
-
       await ctx.db
         .update(notifications)
         .set({ isRead: true })
         .where(
           and(
             eq(notifications.id, input.notificationId),
-            eq(notifications.userId, currentUser.id)
+            eq(notifications.userId, ctx.dbUser.id)
           )
         );
 
@@ -41,16 +29,10 @@ export const notificationsRouter = createTRPCRouter({
     }),
 
   markAllAsRead: protectedProcedure.mutation(async ({ ctx }) => {
-    const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.user.id),
-    });
-
-    if (!currentUser) throw new Error("User not found");
-
     await ctx.db
       .update(notifications)
       .set({ isRead: true })
-      .where(eq(notifications.userId, currentUser.id));
+      .where(eq(notifications.userId, ctx.dbUser.id));
 
     return { success: true };
   }),
@@ -65,16 +47,10 @@ export const notificationsRouter = createTRPCRouter({
       userAgent: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const currentUser = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.user.id),
-      });
-
-      if (!currentUser) throw new Error("User not found");
-
       await ctx.db
         .insert(pushSubscriptions)
         .values({
-          userId: currentUser.id,
+          userId: ctx.dbUser.id,
           endpoint: input.endpoint,
           p256dh: input.keys.p256dh,
           auth: input.keys.auth,
@@ -83,7 +59,7 @@ export const notificationsRouter = createTRPCRouter({
         .onConflictDoUpdate({
           target: pushSubscriptions.endpoint,
           set: {
-            userId: currentUser.id,
+            userId: ctx.dbUser.id,
             p256dh: input.keys.p256dh,
             auth: input.keys.auth,
             userAgent: input.userAgent,

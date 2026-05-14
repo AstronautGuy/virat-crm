@@ -5,15 +5,14 @@ import { usePathname } from "next/navigation";
 import { Home, ShoppingBag, Users, FileText, User, MapPin, Contact } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
+import { api } from "@/trpc/react";
 
 export function MobileNav() {
   const pathname = usePathname();
-  const { getPermission, getPermissions, isAuthenticated, isLoading } = useKindeBrowserClient();
+  const { data: user } = api.users.getMe.useQuery();
 
-  const permissions = getPermissions()?.permissions ?? [];
-  const isManager = permissions.includes("manager:access") || getPermission("manager:access")?.isGranted;
-  const isAdmin = permissions.includes("admin:access") || getPermission("admin:access")?.isGranted;
+  const isManager = user?.role === "Manager" || user?.role === "Admin";
+  const isAdmin = user?.role === "Admin";
   
   const canViewMap = isManager || isAdmin || (process.env.NODE_ENV === "development");
 

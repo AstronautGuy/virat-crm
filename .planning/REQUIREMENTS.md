@@ -2,11 +2,11 @@
 
 ## CRM & Customer Master
 
-- [ ] **CRM-01**: Centralized Customer table (Name, Phone, Email, Address, BranchId).
-- [ ] **CRM-02**: Restricted Access: Only Managers and Admins can Create, Update, or Delete customers.
-- [ ] **CRM-03**: Field Staff can view customer profiles and search by Name/Phone.
-- [ ] **CRM-04**: Interaction Logging: Users can log Calls, Visits, and Notes against a customer.
-- [ ] **CRM-05**: Credit Tracking: Support for Customer credit limits and current balance tracking.
+- [ ] **CRM-01**: Centralized Customer table (Name, Mobile, DOB, Address with Pincode-Village lookup, BranchId).
+- [ ] **CRM-02**: Restricted Editing: Only Managers/Admins can Approve/Edit/Delete. Employees can propose "Draft" customers.
+- [ ] **CRM-03**: Field Staff can view customer profiles, search by Name/Phone, and view past order history.
+- [ ] **CRM-04**: Daily Reporting: Staff submit a free-form "Daily Report" at EOD, with optional customer tagging.
+- [ ] **CRM-05**: Order-wise Financials: Track Total, Advance, and Balance per order. Compute "Total Pending" in UI.
 
 ## Bulk Operations
 
@@ -17,7 +17,8 @@
 
 ## Out of Scope
 - Automated Email/SMS marketing (Deferred to M7).
-- Payment Gateway integration for credit settlement (Deferred to M7).
+- Global credit limit enforcement (Order-wise tracking preferred).
+- Photo/GPS mandatory check-ins for interactions (Background tracking active).
 
 ## Traceability
 | REQ-ID | Phase | Status |

@@ -20,12 +20,13 @@ Secure, mobile-first operations management that ensures authenticated access and
 - ✓ Mobile-first PWA with bottom navigation
 - ✓ Advanced Field Intelligence (M3)
 - ✓ Dynamic RBAC & Feature Gating (M4)
+- ✓ Inventory Orchestration & Operational Scaling (M5)
 
-### Active (Milestone 5: Inventory Orchestration & Operational Scaling)
+### Active (Milestone 6: CRM & Bulk Operations)
 
-- [ ] Multi-Branch Inventory Management (Stock tracking, transfers)
-- [ ] Data Archival Engine (Trimming map data, yearly report summaries)
-- [ ] Supply Chain Logic (Purchase orders, vendor tracking)
+- [ ] CRM Master (Customer database, Interaction logs, Credit limits)
+- [ ] Manager-Only Customer Editing (RBAC restriction)
+- [ ] Bulk Operations Utility (Excel/CSV imports/exports)
 
 ### Out of Scope
 ...
@@ -34,9 +35,10 @@ Secure, mobile-first operations management that ensures authenticated access and
 - **v2: Intelligence**: Analytics, Push, Offline Sync, Hardening.
 - **v3: Field Intelligence**: Location Tracking, Org Charts, Automated Reports.
 - **v4: Access Control**: Dynamic RBAC, Feature Gating, Security Hardening.
+- **v5: Inventory**: Multi-branch stock transfers, atomic transactions, archival.
 
-### Next Milestone: M5 (Inventory Orchestration & Operational Scaling)
-- Goal: Implement robust stock management across multiple branches and optimize long-term data retention for performance.
+### Next Milestone: M6 (CRM & Bulk Operations)
+- Goal: Implement a centralized Customer Relationship Management system with Manager-only editing and robust Excel-based data import/export utilities.
 
 ## Constraints
 
@@ -65,4 +67,4 @@ Secure, mobile-first operations management that ensures authenticated access and
 This document evolves at phase transitions and milestone boundaries.
 
 ---
-*Last updated: 2026-05-03 after Milestone 2 Completion*
+*Last updated: 2026-05-10 after Milestone 5 Completion*

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { DashboardLayout } from "../_components/layout/DashboardLayout";
 import { api } from "@/trpc/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,6 +8,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, User, Mail, Shield, Briefcase, MapPin } from "lucide-react";
 import { PushSettings } from "../_components/PushSettings";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
   const { data: user, isLoading } = api.users.getMe.useQuery();
@@ -90,7 +95,7 @@ export default function ProfilePage() {
                   <div className="flex flex-col">
                     <span className="text-[10px] uppercase text-muted-foreground font-semibold">Manager</span>
                     <span className="font-medium">
-                      {user.manager ? `${user.manager.firstName} ${user.manager.lastName}` : "Direct Report / Admin"}
+                      {user.managerId ? "Manager Assigned" : "Direct Report / Admin"}
                     </span>
                   </div>
                 </div>
@@ -121,29 +126,110 @@ export default function ProfilePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Account Permissions</CardTitle>
-            <CardDescription>Based on your {user.role} role</CardDescription>
+            <CardTitle className="text-lg">Security Settings</CardTitle>
+            <CardDescription>Update your account password</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-              <span className="text-sm">Create Sales Records</span>
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Enabled</Badge>
-            </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-              <span className="text-sm">Request Product Replacements</span>
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Enabled</Badge>
-            </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-              <span className="text-sm">Approve/Reject Sales Status</span>
-              {user.role === "Admin" || user.role === "Manager" ? (
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Enabled</Badge>
-              ) : (
-                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Disabled</Badge>
-              )}
+          <CardContent>
+            <PasswordChangeForm />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg text-red-600">Account Session</CardTitle>
+            <CardDescription>Manage your current access</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-xl border border-red-100 bg-red-50/30">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-slate-900">Sign Out</p>
+                <p className="text-xs text-slate-500">End your current session on this device</p>
+              </div>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={async () => {
+                  await fetch("/api/auth/logout", { method: "POST" });
+                  window.location.href = "/login";
+                }}
+              >
+                Logout
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div>
     </DashboardLayout>
+  );
+}
+
+function PasswordChangeForm() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [status, setStatus] = useState<{ type: "success" | "error", message: string } | null>(null);
+
+  const mutation = api.users.updatePassword.useMutation({
+    onSuccess: () => {
+      setStatus({ type: "success", message: "Password updated successfully!" });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (err) => {
+      setStatus({ type: "error", message: err.message });
+    }
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setStatus({ type: "error", message: "New passwords do not match" });
+      return;
+    }
+    mutation.mutate({ currentPassword, newPassword });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="currentPassword">Current Password</Label>
+        <Input 
+          id="currentPassword" 
+          type="password" 
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+          required 
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="newPassword">New Password</Label>
+        <Input 
+          id="newPassword" 
+          type="password" 
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          required 
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+        <Input 
+          id="confirmPassword" 
+          type="password" 
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required 
+        />
+      </div>
+      {status && (
+        <p className={cn("text-sm", status.type === "success" ? "text-green-600" : "text-red-600")}>
+          {status.message}
+        </p>
+      )}
+      <Button type="submit" disabled={mutation.isPending}>
+        {mutation.isPending ? "Updating..." : "Update Password"}
+      </Button>
+    </form>
   );
 }

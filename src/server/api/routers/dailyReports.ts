@@ -17,6 +17,7 @@ export const dailyReportsRouter = createTRPCRouter({
     }))
     .mutation(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
+      if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       return await db.insert(dailyReports).values({
         userId: dbUser.id,
@@ -34,6 +35,7 @@ export const dailyReportsRouter = createTRPCRouter({
     }).optional())
     .query(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
+      if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       return await db.query.dailyReports.findMany({
         where: eq(dailyReports.userId, dbUser.id),
@@ -41,12 +43,19 @@ export const dailyReportsRouter = createTRPCRouter({
         limit: input?.limit ?? 50,
         offset: input?.offset ?? 0,
         with: {
+          user: {
+            columns: {
+              firstName: true,
+              lastName: true,
+            }
+          },
           customer: {
             columns: {
               name: true,
             }
           }
         }
+
       });
     }),
 
@@ -58,6 +67,7 @@ export const dailyReportsRouter = createTRPCRouter({
     }).optional())
     .query(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
+      if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       const filters = [eq(dailyReports.branchId, dbUser.branchId!)];
 

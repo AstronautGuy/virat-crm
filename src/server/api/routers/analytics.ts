@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
+import { TRPCError } from "@trpc/server";
 import { sales, branches, locationLogs, leaves, users, performanceSnapshots } from "@/server/db/schema";
-import { and, gte, lte, sum, count, eq, sql } from "drizzle-orm";
+import { and, gte, lte, sum, count, eq, sql, inArray } from "drizzle-orm";
 import { getDateRange, type DateRangePreset } from "@/server/lib/date";
 
 export const analyticsRouter = createTRPCRouter({
@@ -11,17 +12,11 @@ export const analyticsRouter = createTRPCRouter({
       branchId: z.number().optional()
     }))
     .query(async ({ ctx, input }) => {
-      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
-      const user = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.dbUser!.kindeId),
-      });
-      if (!user) throw new TRPCError({ code: "NOT_FOUND" });
-
       // RBAC: Non-admins are locked to their own branch
-      const effectiveBranchId = user.role === "Admin" ? input.branchId : user.branchId;
+      const effectiveBranchId = ctx.dbUser.role === "Admin" ? input.branchId : ctx.dbUser.branchId;
 
       if (input.preset === "all") {
-        const filters = [eq(performanceSnapshots.entityType, "branch")];
+        const filters: any[] = [eq(performanceSnapshots.entityType, "branch")];
         if (effectiveBranchId) {
           filters.push(eq(performanceSnapshots.entityId, effectiveBranchId.toString()));
         }
@@ -45,7 +40,7 @@ export const analyticsRouter = createTRPCRouter({
       }
 
       const { start, end } = getDateRange(input.preset as DateRangePreset);
-      const filters = [
+      const filters: any[] = [
         gte(sales.createdAt, start),
         lte(sales.createdAt, end),
         eq(sales.status, "Approved")
@@ -79,10 +74,7 @@ export const analyticsRouter = createTRPCRouter({
     .input(z.object({ preset: z.enum(["today", "7d", "30d", "all"]) }))
     .query(async ({ ctx, input }) => {
       // Branch comparison is strictly for Admins or Regional Managers
-      const user = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.dbUser!.kindeId),
-      });
-      if (user?.role !== "Admin") {
+      if (ctx.dbUser.role !== "Admin") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Only Admins can view branch comparisons" });
       }
 
@@ -136,15 +128,12 @@ export const analyticsRouter = createTRPCRouter({
   getWorkforceSummary: featureProtectedProcedure("dashboard")
     .input(z.object({ branchId: z.number().optional() }))
     .query(async ({ ctx, input }) => {
-      const user = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.dbUser!.kindeId),
-      });
-      const effectiveBranchId = user?.role === "Admin" ? input.branchId : user?.branchId;
+      const effectiveBranchId = ctx.dbUser.role === "Admin" ? input.branchId : ctx.dbUser.branchId;
 
       const today = new Date();
       const dateStr = today.toISOString().split('T')[0];
 
-      const filters = [eq(locationLogs.date, dateStr!)];
+      const filters: any[] = [eq(locationLogs.date, dateStr!)];
       if (effectiveBranchId) {
         const branchUsers = await ctx.db.query.users.findMany({
           where: eq(users.branchId, effectiveBranchId),
@@ -164,7 +153,7 @@ export const analyticsRouter = createTRPCRouter({
         .where(and(...filters));
 
       // Leaves are branch-specific
-      const leaveFilters = [eq(leaves.status, "Pending")];
+      const leaveFilters: any[] = [eq(leaves.status, "Pending")];
       if (effectiveBranchId) {
         const branchUsers = await ctx.db.query.users.findMany({
           where: eq(users.branchId, effectiveBranchId),

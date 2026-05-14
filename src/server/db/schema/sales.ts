@@ -5,6 +5,8 @@ import { branches } from "./branches";
 import { saleItems } from "./saleItems";
 import { replacements } from "./replacements";
 import { files } from "./files";
+import { customers } from "./customers";
+
 
 export const createTable = pgTableCreator((name) => `virat-crm_${name}`);
 
@@ -29,6 +31,8 @@ export const sales = createTable(
     deliveryAddress: text("delivery_address"),
     customerName: varchar("customer_name", { length: 256 }),
     customerAddress: text("customer_address"),
+    customerId: uuid("customer_id").references(() => customers.id),
+
     
     mainQty: integer("main_qty").notNull().default(0),
     freeQty: integer("free_qty").notNull().default(0),
@@ -68,4 +72,9 @@ export const salesRelations = relations(sales, ({ one, many }) => ({
   items: many(saleItems),
   replacements: many(replacements),
   files: many(files, { relationName: "sale_files" }),
+  customer: one(customers, {
+    fields: [sales.customerId],
+    references: [customers.id],
+  }),
 }));
+

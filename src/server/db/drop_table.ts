@@ -8,4 +8,4 @@ async function drop() {
   process.exit(0);
 }
 
-drop();
+void drop();

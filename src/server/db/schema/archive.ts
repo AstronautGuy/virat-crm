@@ -1,4 +1,4 @@
-import { pgTable, serial, numeric, text, varchar, timestamp, integer, uuid, index, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, numeric, varchar, timestamp, integer, uuid, index, jsonb } from "drizzle-orm/pg-core";
 
 export const salesArchive = pgTable("virat-crm_sales_archive", {
   id: serial("id").primaryKey(),
@@ -14,10 +14,10 @@ export const salesArchive = pgTable("virat-crm_sales_archive", {
   
   // Store items and other details as JSON to avoid complex relational archival
   details: jsonb("details").$type<{
-    items: any[];
-    replacements?: any[];
-    address?: any;
-    metadata?: any;
+    items: unknown[];
+    replacements?: unknown[];
+    address?: unknown;
+    metadata?: unknown;
   }>().notNull(),
   
   archivedAt: timestamp("archived_at").defaultNow().notNull(),

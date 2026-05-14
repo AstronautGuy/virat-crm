@@ -31,13 +31,7 @@ export const salesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
-      
-      const currentUser = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.dbUser.kindeId),
-      });
-
-      if (!currentUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      const currentUser = ctx.dbUser;
 
       return await ctx.db.transaction(async (tx) => {
         // 1. Stock Check & Decrement
@@ -155,13 +149,7 @@ export const salesRouter = createTRPCRouter({
     }),
 
   getSales: featureProtectedProcedure("sales").query(async ({ ctx }) => {
-    if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
-    const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.dbUser.kindeId),
-      columns: { id: true, role: true, branchId: true },
-    });
-
-    if (!currentUser) return [];
+    const currentUser = ctx.dbUser;
 
     if (currentUser.role === "Admin") {
       return ctx.db.query.sales.findMany({
@@ -197,12 +185,7 @@ export const salesRouter = createTRPCRouter({
   updateSaleStatus: featureProtectedProcedure("sales")
     .input(z.object({ saleId: z.number(), status: z.enum(["Pending", "Approved", "Rejected"]) }))
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
-      const currentUser = await ctx.db.query.users.findFirst({
-        where: eq(users.kindeId, ctx.dbUser!.kindeId),
-      });
-
-      if (!currentUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      const currentUser = ctx.dbUser;
 
       return await ctx.db.transaction(async (tx) => {
         const targetSale = await tx.query.sales.findFirst({

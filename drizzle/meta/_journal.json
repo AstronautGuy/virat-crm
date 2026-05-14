@@ -22,6 +22,27 @@
       "when": 1778051545604,
       "tag": "0002_silly_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778410081335,
+      "tag": "0003_smooth_stone_men",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778411011633,
+      "tag": "0004_needy_quentin_quire",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778742253126,
+      "tag": "0005_lame_korath",
+      "breakpoints": true
     }
   ]
 }

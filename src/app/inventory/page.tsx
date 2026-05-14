@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { DashboardLayout } from "@/app/_components/layout/DashboardLayout";
+
 
 export default function InventoryPage() {
   const { data: user } = api.users.getMe.useQuery();
@@ -60,13 +62,15 @@ export default function InventoryPage() {
   ];
 
   return (
-    <FeatureGate featureKey="inventory">
-      <div className="p-8 max-w-7xl mx-auto space-y-8">
+    <DashboardLayout>
+      <FeatureGate featureKey="inventory">
+        <div className="p-8 max-w-7xl mx-auto space-y-8">
+
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Inventory Command Center</h1>
-            <p className="text-slate-500">Real-time stock tracking for {user?.branch?.name ?? "your branch"}</p>
+            <p className="text-slate-500">Real-time stock tracking for your branch</p>
           </div>
           <div className="flex items-center gap-3">
             <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
@@ -184,5 +188,7 @@ export default function InventoryPage() {
         </div>
       </div>
     </FeatureGate>
-  );
+  </DashboardLayout>
+);
 }
+

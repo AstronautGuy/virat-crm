@@ -19,7 +19,7 @@ export default function LiveTeamMap() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [playbackDate, setPlaybackDate] = useState<string>(new Date().toISOString().split("T")[0]!);
 
-  const { data: teamLocations, isLoading, refetch } = api.location.getLiveTeam.useQuery(undefined, {
+  const { data: teamLocations, isLoading, refetch } = api.location.getLiveTeam.useQuery({}, {
     refetchInterval: 30000,
   });
 

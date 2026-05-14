@@ -3,20 +3,19 @@ import { users } from "@/server/db/schema/users";
 import { eq, sql } from "drizzle-orm";
 
 export const hierarchyRouter = createTRPCRouter({
+  getManagers: featureProtectedProcedure("admin")
+    .query(async ({ ctx }) => {
+      return ctx.db.query.users.findMany({
+        where: eq(users.role, "Manager"),
+      });
+    }),
+
   // Fetch immediate team members (direct reports)
   getMyTeam: featureProtectedProcedure("org-chart").query(async ({ ctx }) => {
-    // We first need the current user's DB id, since Kinde uses kindeId
-    const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.dbUser!.kindeId),
-      columns: { id: true, role: true },
-    });
-
-    if (!currentUser) return [];
-
     // If Admin, they might not have a manager, or maybe we want to return everyone?
-    // Let's stick to strict hierarchy: team members are where managerId == currentUser.id
+    // Let's stick to strict hierarchy: team members are where managerId == ctx.dbUser.id
     const team = await ctx.db.query.users.findMany({
-      where: eq(users.managerId, currentUser.id),
+      where: eq(users.managerId, ctx.dbUser.id),
       columns: {
         id: true,
         firstName: true,
@@ -32,15 +31,8 @@ export const hierarchyRouter = createTRPCRouter({
 
   // Fetch full N-level hierarchy tree (CTE)
   getFullHierarchy: featureProtectedProcedure("org-chart").query(async ({ ctx }) => {
-    const currentUser = await ctx.db.query.users.findFirst({
-      where: eq(users.kindeId, ctx.dbUser!.kindeId),
-      columns: { id: true, role: true },
-    });
-
-    if (!currentUser) return [];
-
     // If Admin, they see everyone. If Manager, they see their tree.
-    if (currentUser.role === "Admin") {
+    if (ctx.dbUser.role === "Admin") {
       // Just return all users for Admin
       return ctx.db.query.users.findMany({
         columns: {
@@ -60,7 +52,7 @@ export const hierarchyRouter = createTRPCRouter({
       WITH RECURSIVE subordinates AS (
         SELECT id, first_name, last_name, email, role, employee_code, manager_id
         FROM "virat-crm_user"
-        WHERE manager_id = ${currentUser.id}
+        WHERE manager_id = ${ctx.dbUser.id}
         
         UNION
         

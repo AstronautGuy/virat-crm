@@ -7,11 +7,13 @@ const TRACKING_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const MIN_ACCURACY = 100; // 100 meters
 
 export function useLocationBreadcrumbs() {
+  const { data: user } = api.users.getMe.useQuery();
   const logBreadcrumb = api.location.logBreadcrumb.useMutation();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const captureLocation = () => {
     if (!navigator.geolocation) return;
+    if (user?.role === "Admin") return; // Admins are not tracked
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -53,6 +55,15 @@ export function useLocationBreadcrumbs() {
   };
 
   useEffect(() => {
+    // Don't start tracking until we know the user's role
+    if (!user) return;
+    
+    // If Admin, don't track
+    if (user.role === "Admin") {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
+
     // Start tracking
     captureLocation();
     
@@ -61,7 +72,7 @@ export function useLocationBreadcrumbs() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, []);
+  }, [user]);
 
   return null;
 }

@@ -1,7 +1,6 @@
 /// <reference lib="webworker" />
-// @ts-expect-error - Serwist module resolution issue in some environments
-import { defaultCache } from "@serwist/next/browser";
-import { type PrecacheEntry, Serwist } from "serwist";
+import { defaultCache } from "@serwist/next/worker";
+import { type PrecacheEntry, Serwist, StaleWhileRevalidate } from "serwist";
 
 declare const self: ServiceWorkerGlobalScope & {
   __SW_MANIFEST: (PrecacheEntry | string)[] | undefined;
@@ -16,14 +15,10 @@ const serwist = new Serwist({
     ...defaultCache,
     {
       matcher: ({ url }) => url.pathname.startsWith("/api/trpc"),
-      handler: "StaleWhileRevalidate",
-      options: {
+      handler: new StaleWhileRevalidate({
         cacheName: "trpc-cache",
-        expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 60 * 60 * 24, // 24 hours
-        },
-      },
+        plugins: [],
+      }),
     },
   ],
 });

@@ -34,14 +34,17 @@ export async function sendNotificationToUser(userId: string, payload: Notificati
         },
         JSON.stringify(payload)
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If the subscription is no longer valid, remove it
-      if (error.statusCode === 410 || error.statusCode === 404) {
+      const statusCode = (error as { statusCode?: number })?.statusCode;
+
+      if (statusCode === 410 || statusCode === 404) {
         await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, sub.id));
       } else {
         console.error("Error sending push notification:", error);
       }
     }
+
   });
 
   await Promise.allSettled(sendPromises);
