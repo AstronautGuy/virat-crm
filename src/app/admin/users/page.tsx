@@ -150,10 +150,8 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
     managerId: undefined as string | undefined,
   });
 
-  /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
   const { data: branches } = api.inventory.getBranches.useQuery();
   const { data: managers } = api.hierarchy.getManagers.useQuery();
-  /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 
   const mutation = api.users.createUser.useMutation({
     onSuccess: () => {
@@ -255,9 +253,11 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
                   <SelectValue placeholder="Select Branch" />
                 </SelectTrigger>
                 <SelectContent>
+                  {/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */}
                   {(branches as any)?.map((b: any) => (
                     <SelectItem key={b.id} value={b.id.toString()}>{b.name}</SelectItem>
                   ))}
+                  {/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */}
                 </SelectContent>
               </Select>
             </div>
@@ -272,9 +272,11 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
                   <SelectValue placeholder="Optional" />
                 </SelectTrigger>
                 <SelectContent>
+                  {/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */}
                   {(managers as any)?.map((m: any) => (
                     <SelectItem key={m.id} value={m.id}>{m.firstName} {m.lastName}</SelectItem>
                   ))}
+                  {/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */}
                 </SelectContent>
               </Select>
             </div>

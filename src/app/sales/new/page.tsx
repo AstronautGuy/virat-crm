@@ -185,7 +185,7 @@ export default function NewSale() {
                     entityType="sale" 
                     entityId={newSaleId} 
                     maxFiles={3}
-                    onUploadComplete={() => {}}
+                    onUploadComplete={() => undefined}
                   />
                   <div className="mt-6 flex justify-center">
                     <Link href="/sales">

@@ -18,6 +18,8 @@ const FileGallery = dynamic(() => import("@/app/_components/ui/FileGallery").the
   loading: () => <div className="h-10 w-full animate-pulse bg-gray-50 rounded-lg" />
 });
 
+import { PageWrapper } from "../_components/layout/PageWrapper";
+
 export default function SalesDashboard() {
   const [filter, setFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
   
@@ -36,111 +38,119 @@ export default function SalesDashboard() {
   return (
     <DashboardLayout>
       <FeatureGate featureKey="sales">
-        <div className="flex flex-col space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Sales Register</h1>
-          <Link href="/sales/new">
-            <Button size="sm" className="h-9">
-              <Plus className="mr-2 h-4 w-4" />
-              New Sale
-            </Button>
-          </Link>
-        </div>
+        <PageWrapper isLoading={isLoading}>
+          <div className="flex flex-col space-y-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight text-slate-900">Sales Register</h1>
+                <p className="text-slate-500 text-sm mt-1">Track and manage all transactions in real-time.</p>
+              </div>
+              <Link href="/sales/new">
+                <Button size="lg" className="rounded-2xl px-6">
+                  <Plus className="mr-2 h-5 w-5" />
+                  New Entry
+                </Button>
+              </Link>
+            </div>
 
-        <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
-          {["All", "Pending", "Approved", "Rejected"].map((f) => (
-            <Badge
-              key={f}
-              variant={filter === f ? "default" : "outline"}
-              className="cursor-pointer whitespace-nowrap px-4 py-1"
-              onClick={() => setFilter(f as "All" | "Pending" | "Approved" | "Rejected")}
-            >
-              {f}
-            </Badge>
-          ))}
-        </div>
-
-        {isLoading ? (
-          <div className="flex h-40 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : filteredSales.length === 0 ? (
-          <Card className="flex flex-col items-center justify-center p-8 text-center border-dashed">
-            <p className="text-sm text-muted-foreground">No Sales Found</p>
-            <p className="text-xs text-muted-foreground mt-1">There are no sales to display.</p>
-          </Card>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredSales.map((sale) => (
-              <Card key={sale.id} className="overflow-hidden border-gray-100 shadow-sm transition-all hover:shadow-md">
-                <CardHeader className="pb-3 bg-gray-50/50">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-semibold tracking-tight truncate" title={sale.orderNumber}>
-                      {sale.orderNumber}
-                    </CardTitle>
-                    <Badge
-                      className={cn(
-                        "text-[10px] uppercase tracking-wider px-2 py-0.5",
-                        sale.status === "Approved"
-                          ? "bg-blue-50 text-blue-700 border-blue-100"
-                          : sale.status === "Rejected"
-                          ? "bg-red-50 text-red-700 border-red-100"
-                          : "bg-orange-50 text-orange-700 border-orange-100"
-                      )}
-                      variant="outline"
-                    >
-                      {sale.status}
-                    </Badge>
-                  </div>
-                  <CardDescription className="text-[10px] text-gray-500">
-                    {new Date(sale.createdAt).toLocaleDateString()} • {sale.customerName ?? "Anonymous"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs">
-                    <div className="flex flex-col">
-                      <span className="text-gray-400 text-[9px] uppercase font-bold tracking-widest">Amount</span>
-                      <span className="font-semibold text-gray-900">₹{sale.invoiceAmount}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-gray-400 text-[9px] uppercase font-bold tracking-widest">Balance</span>
-                      <span className="font-semibold text-red-600">₹{sale.balanceAmount}</span>
-                    </div>
-                    <div className="flex flex-col col-span-2 pt-2 border-t border-gray-50">
-                      <span className="text-gray-400 text-[9px] uppercase font-bold tracking-widest mb-1 flex items-center gap-1">
-                        <FileText className="w-3 h-3" /> Documents
-                      </span>
-                      <FileGallery entityType="sale" entityId={sale.id} initialFiles={sale.files} />
-                    </div>
-                  </div>
-
-                  {sale.status === "Pending" && (
-                    <div className="mt-5 flex gap-2 pt-3 border-t border-gray-50">
-                      <Button
-                        variant="outline"
-                        className="flex-1 h-10 border-blue-100 bg-blue-50/50 text-blue-700 hover:bg-blue-100 transition-all text-xs"
-                        onClick={() => updateStatus({ saleId: sale.id, status: "Approved" })}
-                        disabled={isUpdating}
-                      >
-                        <Check className="mr-1.5 h-3.5 w-3.5" /> Approve
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="flex-1 h-10 border-gray-100 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-all text-xs"
-                        onClick={() => updateStatus({ saleId: sale.id, status: "Rejected" })}
-                        disabled={isUpdating}
-                      >
-                        <X className="mr-1.5 h-3.5 w-3.5" /> Reject
-                      </Button>
-                    </div>
+            <div className="flex space-x-3 overflow-x-auto pb-4 no-scrollbar">
+              {["All", "Pending", "Approved", "Rejected"].map((f) => (
+                <Button
+                  key={f}
+                  variant={filter === f ? "default" : "outline"}
+                  className={cn(
+                    "rounded-2xl px-6 transition-all",
+                    filter === f ? "shadow-md" : "border-slate-200 text-slate-600"
                   )}
-                </CardContent>
+                  onClick={() => setFilter(f as "All" | "Pending" | "Approved" | "Rejected")}
+                >
+                  {f}
+                </Button>
+              ))}
+            </div>
+
+            {filteredSales.length === 0 && !isLoading ? (
+              <Card className="flex flex-col items-center justify-center p-12 text-center border-dashed bg-slate-50/50">
+                <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                  <FileText className="h-6 w-6 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800">No Sales Found</h3>
+                <p className="text-sm text-slate-500 mt-1">Try adjusting your filters or create a new entry.</p>
               </Card>
-            ))}
+            ) : (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {/* When loading, Skelon will use these as blueprint */}
+                {(isLoading ? Array.from({ length: 6 }) : filteredSales).map((sale: Record<string, any>, idx) => (
+                  <Card key={sale?.id ?? idx} className="overflow-hidden border-none group">
+                    <CardHeader className="pb-3 bg-slate-50/50 group-hover:bg-primary/5 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base font-bold tracking-tight text-slate-800 truncate" title={sale?.orderNumber}>
+                          {sale?.orderNumber ?? "ORD-000000"}
+                        </CardTitle>
+                        <Badge
+                          className={cn(
+                            "text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg border-none",
+                            sale?.status === "Approved"
+                              ? "bg-green-100 text-green-700"
+                              : sale?.status === "Rejected"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-amber-100 text-amber-700"
+                          )}
+                        >
+                          {sale?.status ?? "Pending"}
+                        </Badge>
+                      </div>
+                      <CardDescription className="text-xs text-slate-400 font-medium">
+                        {sale?.createdAt ? new Date(sale.createdAt).toLocaleDateString() : "Date Placeholder"} • {sale?.customerName ?? "Customer Name"}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-5">
+                      <div className="grid grid-cols-2 gap-y-4 gap-x-6">
+                        <div className="flex flex-col">
+                          <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Amount</span>
+                          <span className="font-bold text-slate-900 text-lg">₹{sale?.invoiceAmount ?? "00,000"}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Balance</span>
+                          <span className="font-bold text-red-500 text-lg">₹{sale?.balanceAmount ?? "00,000"}</span>
+                        </div>
+                        <div className="flex flex-col col-span-2 pt-4 border-t border-slate-50">
+                          <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-2 flex items-center gap-1.5">
+                            <FileText className="w-3.5 h-3.5" /> Documents
+                          </span>
+                          {sale && <FileGallery entityType="sale" entityId={sale.id} initialFiles={sale.files} />}
+                        </div>
+                      </div>
+
+                      {sale?.status === "Pending" && (
+                        <div className="mt-6 flex gap-3 pt-4 border-t border-slate-50">
+                          <Button
+                            className="flex-1 rounded-xl h-11"
+                            onClick={() => updateStatus({ saleId: sale.id, status: "Approved" })}
+                            disabled={isUpdating}
+                          >
+                            <Check className="mr-2 h-4 w-4" /> Approve
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="flex-1 rounded-xl h-11 border-slate-200 text-slate-600"
+                            onClick={() => updateStatus({ saleId: sale.id, status: "Rejected" })}
+                            disabled={isUpdating}
+                          >
+                            <X className="mr-2 h-4 w-4" /> Reject
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-        </div>
+        </PageWrapper>
       </FeatureGate>
     </DashboardLayout>
   );
+}
+ );
 }

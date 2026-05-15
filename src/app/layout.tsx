@@ -4,6 +4,7 @@ import { type Metadata } from "next";
 import { Inter } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
+import { SkeletonProvider } from "@/components/ui/skeleton-provider";
 
 
 export const metadata: Metadata = {
@@ -44,7 +45,9 @@ export default async function RootLayout({
     <html lang="en" className={`light ${inter.variable}`}>
       <body className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/10 selection:text-primary">
         <TRPCReactProvider>
-          {children}
+          <SkeletonProvider>
+            {children}
+          </SkeletonProvider>
         </TRPCReactProvider>
       </body>
     </html>

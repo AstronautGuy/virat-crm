@@ -69,7 +69,7 @@ const OrgNode: React.FC<OrgNodeProps> = ({ node, level }) => {
             exit={{ opacity: 0, height: 0 }}
             className="flex flex-col gap-2 mt-2 overflow-hidden"
           >
-            {node.children.map((child) => (
+            {node.children?.map((child) => (
               <OrgNode key={child.id} node={child} level={level + 1} />
             ))}
           </motion.div>

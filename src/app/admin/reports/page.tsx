@@ -34,13 +34,13 @@ const PRESETS = [
   { value: "quarter", label: "Quarterly" },
   { value: "year", label: "Yearly" },
   { value: "all", label: "Lifetime" },
-];
+] as const;
 
 const SCOPES = [
   { value: "individual", label: "Individual", icon: UserIcon },
   { value: "team", label: "Immediate Team", icon: Users },
   { value: "management", label: "Full Subtree", icon: Layers },
-];
+] as const;
 
 export default function ReportsPage() {
   const [preset, setPreset] = useState<"today" | "7d" | "30d" | "quarter" | "year" | "all">("30d");

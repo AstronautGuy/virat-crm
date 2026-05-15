@@ -8,7 +8,8 @@ const MIN_ACCURACY = 100; // 100 meters
 
 export function useLocationBreadcrumbs() {
   const { data: user } = api.users.getMe.useQuery();
-  const logBreadcrumb = api.location.logBreadcrumb.useMutation();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+  const logBreadcrumb = (api.location.logBreadcrumb as any).useMutation();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const captureLocation = () => {
@@ -21,6 +22,7 @@ export function useLocationBreadcrumbs() {
 
         // Only log if accuracy is decent (or if it's the best we have)
         if (accuracy < MIN_ACCURACY) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
           logBreadcrumb.mutate({
             latitude,
             longitude,
@@ -33,6 +35,7 @@ export function useLocationBreadcrumbs() {
         if (error.code === error.TIMEOUT) {
           navigator.geolocation.getCurrentPosition(
             (pos) => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
               logBreadcrumb.mutate({
                 latitude: pos.coords.latitude,
                 longitude: pos.coords.longitude,

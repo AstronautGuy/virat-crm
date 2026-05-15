@@ -22,11 +22,16 @@ Secure, mobile-first operations management that ensures authenticated access and
 - ✓ Dynamic RBAC & Feature Gating (M4)
 - ✓ Inventory Orchestration & Operational Scaling (M5)
 
-### Active (Milestone 6: CRM & Bulk Operations)
+- ✓ CRM Master (Customer database, Interaction logs, Credit limits)
+- ✓ Manager-Only Customer Editing (RBAC restriction)
+- ✓ Bulk Operations Utility (Excel/CSV imports/exports)
+- ✓ Soft Modernism UI/UX Rework
 
-- [ ] CRM Master (Customer database, Interaction logs, Credit limits)
-- [ ] Manager-Only Customer Editing (RBAC restriction)
-- [ ] Bulk Operations Utility (Excel/CSV imports/exports)
+### Active (Milestone 7: Advanced Intelligence & Scaling)
+
+- [ ] Advanced Predictive Analytics
+- [ ] Real-time Inventory Alerts
+- [ ] Multi-tenant branch isolation hardening
 
 ### Out of Scope
 ...
@@ -36,9 +41,10 @@ Secure, mobile-first operations management that ensures authenticated access and
 - **v3: Field Intelligence**: Location Tracking, Org Charts, Automated Reports.
 - **v4: Access Control**: Dynamic RBAC, Feature Gating, Security Hardening.
 - **v5: Inventory**: Multi-branch stock transfers, atomic transactions, archival.
+- **v6: CRM & Bulk**: Customer master, Manager RBAC, Excel utilities, Soft Modernism UI.
 
-### Next Milestone: M6 (CRM & Bulk Operations)
-- Goal: Implement a centralized Customer Relationship Management system with Manager-only editing and robust Excel-based data import/export utilities.
+### Next Milestone: M7 (Advanced Intelligence & Scaling)
+- Goal: Implement predictive modeling for sales trends and harden the multi-tenant architecture for 100+ branches.
 
 ## Constraints
 
@@ -67,4 +73,4 @@ Secure, mobile-first operations management that ensures authenticated access and
 This document evolves at phase transitions and milestone boundaries.
 
 ---
-*Last updated: 2026-05-10 after Milestone 5 Completion*
+*Last updated: 2026-05-15 after Milestone 6 Completion*

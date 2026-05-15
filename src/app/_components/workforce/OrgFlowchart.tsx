@@ -122,7 +122,9 @@ export function OrgFlowchart() {
     const initialNodes: Node[] = [];
     const initialEdges: Edge[] = [];
 
-    const traverse = (node: { id: string; name: string; role: string | null; children?: unknown[] }, parentId: string | null = null) => {
+    type OrgNode = { id: string; name: string; role: string | null; children?: OrgNode[] };
+
+    const traverse = (node: OrgNode, parentId: string | null = null) => {
       const id = node.id;
       
       initialNodes.push({
@@ -144,11 +146,11 @@ export function OrgFlowchart() {
       }
 
       if (node.children) {
-        (node.children as any[]).forEach((child) => traverse(child, id));
+        node.children.forEach((child) => traverse(child, id));
       }
     };
 
-    roots.forEach((root) => traverse(root));
+    (roots as OrgNode[]).forEach((root) => traverse(root));
 
     const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
       initialNodes,
