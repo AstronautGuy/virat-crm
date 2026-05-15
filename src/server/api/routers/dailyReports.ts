@@ -1,15 +1,16 @@
 import { z } from "zod";
 import {
   createTRPCRouter,
-  protectedProcedure,
   managerProcedure,
+  featureProtectedProcedure,
+  featureManagerProcedure,
 } from "@/server/api/trpc";
 import { dailyReports } from "@/server/db/schema";
 import { eq, and, desc, sql, type SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 export const dailyReportsRouter = createTRPCRouter({
-  submitReport: protectedProcedure
+  submitReport: featureProtectedProcedure("reports")
     .input(z.object({
       content: z.string().min(10, "Report content too short"),
       reportDate: z.date().optional(),
@@ -28,7 +29,7 @@ export const dailyReportsRouter = createTRPCRouter({
       }).returning();
     }),
 
-  listMyReports: protectedProcedure
+  listMyReports: featureProtectedProcedure("reports")
     .input(z.object({
       limit: z.number().min(1).max(100).default(50),
       offset: z.number().min(0).default(0),
@@ -59,7 +60,7 @@ export const dailyReportsRouter = createTRPCRouter({
       });
     }),
 
-  listBranchReports: managerProcedure
+  listBranchReports: featureManagerProcedure("reports")
     .input(z.object({
       date: z.date().optional(),
       limit: z.number().min(1).max(100).default(50),

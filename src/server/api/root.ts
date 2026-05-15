@@ -15,6 +15,8 @@ import { inventoryRouter } from "./routers/inventory";
 import { maintenanceRouter } from "./routers/maintenance";
 import { crmRouter } from "./routers/crm";
 import { dailyReportsRouter } from "./routers/dailyReports";
+import { authRouter } from "./routers/auth";
+import { heartbeatRouter } from "./routers/heartbeat";
 
 
 
@@ -39,8 +41,8 @@ export const appRouter = createTRPCRouter({
   maintenance: maintenanceRouter,
   crm: crmRouter,
   dailyReports: dailyReportsRouter,
-
-
+  auth: authRouter,
+  heartbeat: heartbeatRouter,
 });
 
 // export type definition of API

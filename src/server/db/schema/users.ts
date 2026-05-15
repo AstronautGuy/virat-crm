@@ -18,6 +18,10 @@ export const users = createTable("user", {
   branchId: integer("branch_id").references(() => branches.id),
   managerId: uuid("manager_id").references((): AnyPgColumn => users.id),
   isActive: boolean("is_active").default(true).notNull(),
+  lastActiveAt: timestamp("last_active_at", { withTimezone: true }),
+  lastLat: varchar("last_lat", { length: 32 }),
+  lastLng: varchar("last_lng", { length: 32 }),
+  connectivityStatus: varchar("connectivity_status", { length: 32 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(() => new Date()),
 });

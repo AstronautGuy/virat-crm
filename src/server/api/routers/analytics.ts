@@ -70,7 +70,7 @@ export const analyticsRouter = createTRPCRouter({
       };
     }),
 
-  getBranchComparison: featureProtectedProcedure("dashboard")
+  getBranchComparison: featureProtectedProcedure("analytics")
     .input(z.object({ preset: z.enum(["today", "7d", "30d", "all"]) }))
     .query(async ({ ctx, input }) => {
       // Branch comparison is strictly for Admins or Regional Managers
@@ -176,7 +176,7 @@ export const analyticsRouter = createTRPCRouter({
       };
     }),
 
-  getAttendancePerformance: featureProtectedProcedure("dashboard")
+  getAttendancePerformance: featureProtectedProcedure("analytics")
     .input(z.object({ preset: z.enum(["today", "7d", "30d", "all"]) }))
     .query(async ({ ctx, input }) => {
       const { start, end } = getDateRange(input.preset);
@@ -199,7 +199,7 @@ export const analyticsRouter = createTRPCRouter({
       return stats;
     }),
 
-  getSalesExport: featureProtectedProcedure("dashboard")
+  getSalesExport: featureProtectedProcedure("analytics")
     .input(z.object({ preset: z.enum(["today", "7d", "30d", "all"]) }))
     .query(async ({ ctx, input }) => {
       const { start, end } = getDateRange(input.preset);
@@ -226,6 +226,39 @@ export const analyticsRouter = createTRPCRouter({
       const header = "Order #,Customer,Amount,Status,Date,Branch\n";
       const rows = data.map(s => 
         `${s.orderNumber},"${s.customerName ?? ""}",${s.invoiceAmount},${s.status},${s.date.toISOString()},${s.branch}`
+      ).join("\n");
+
+      return header + rows;
+    }),
+
+  getAttendanceExport: featureProtectedProcedure("analytics")
+    .input(z.object({ preset: z.enum(["today", "7d", "30d", "all"]) }))
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getDateRange(input.preset);
+
+      const data = await ctx.db
+        .select({
+          userName: users.firstName,
+          userLastName: users.lastName,
+          date: locationLogs.date,
+          slab: locationLogs.slab,
+          lat: locationLogs.latitude,
+          lng: locationLogs.longitude,
+          recordedAt: locationLogs.recordedAt,
+        })
+        .from(locationLogs)
+        .innerJoin(users, eq(locationLogs.userId, users.id))
+        .where(
+          and(
+            gte(locationLogs.recordedAt, start),
+            lte(locationLogs.recordedAt, end)
+          )
+        )
+        .orderBy(desc(locationLogs.recordedAt));
+
+      const header = "Date,Time Slab,User,Latitude,Longitude,Logged At\n";
+      const rows = data.map(l => 
+        `${l.date},${l.slab},"${l.userName} ${l.userLastName ?? ""}",${l.lat},${l.lng},${l.recordedAt.toISOString()}`
       ).join("\n");
 
       return header + rows;

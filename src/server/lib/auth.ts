@@ -65,3 +65,16 @@ export async function updateSession(request: NextRequest) {
   });
   return res;
 }
+
+export async function getSessionFromHeaders(headers: Headers) {
+  const authHeader = headers.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.substring(7);
+    try {
+      return await decrypt(token);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}

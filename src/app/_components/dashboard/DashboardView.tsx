@@ -21,10 +21,13 @@ interface DashboardViewProps {
   isLoading?: boolean;
 }
 
+import { FeatureGate } from "../auth/FeatureGate";
+
 export function DashboardView({ user, metrics, isManager, isLoading }: DashboardViewProps) {
   return (
     <PageWrapper isLoading={isLoading}>
-      <div className="flex flex-col space-y-8">
+      <FeatureGate featureKey="dashboard">
+        <div className="flex flex-col space-y-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h1>
           <p className="text-slate-500 mt-1">
@@ -84,7 +87,7 @@ export function DashboardView({ user, metrics, isManager, isLoading }: Dashboard
             </Link>
           </Card>
         </div>
-      </div>
+      </FeatureGate>
     </PageWrapper>
   );
 }

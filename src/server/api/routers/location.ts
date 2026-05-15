@@ -38,7 +38,7 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 export const locationRouter = createTRPCRouter({
-  ping: protectedProcedure
+  ping: featureProtectedProcedure("workforce")
     .input(
       z.object({
         latitude: z.number(),
@@ -172,7 +172,7 @@ export const locationRouter = createTRPCRouter({
       return logs;
     }),
 
-  logBreadcrumb: protectedProcedure
+  logBreadcrumb: featureProtectedProcedure("workforce")
     .input(
       z.object({
         latitude: z.number(),

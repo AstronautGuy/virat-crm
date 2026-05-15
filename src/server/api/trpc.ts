@@ -1,7 +1,8 @@
 import { initTRPC, TRPCError } from "@trpc/server";
+import { type OpenApiMeta } from "trpc-to-openapi";
 import superjson from "superjson";
 import { ZodError } from "zod";
-import { getSession } from "@/server/lib/auth";
+import { getSession, getSessionFromHeaders } from "@/server/lib/auth";
 
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema/users";
@@ -14,7 +15,7 @@ import { eq, and } from "drizzle-orm";
  * This section defines the "contexts" that are available in the backend API.
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const session = await getSession();
+  const session = (await getSession()) ?? (await getSessionFromHeaders(opts.headers));
   const userId = session?.userId;
 
   // Fetch DB user for role information
@@ -35,7 +36,7 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
 /**
  * 2. INITIALIZATION
  */
-const t = initTRPC.context<typeof createTRPCContext>().create({
+const t = initTRPC.context<typeof createTRPCContext>().meta<OpenApiMeta>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
     return {
@@ -143,23 +144,17 @@ export const featureProtectedProcedure = (featureKey: string) => {
 /**
  * Admin (authenticated + admin role) procedure
  */
-const isAdmin = t.middleware(async ({ ctx, next }) => {
-  if (ctx.dbUser?.role !== "Admin") {
-    throw new TRPCError({ code: "FORBIDDEN" });
-  }
-  return next({ ctx });
-});
-
+export const isAdminMiddleware = isAdmin;
 export const adminProcedure = protectedProcedure.use(isAdmin);
 
 /**
  * Manager (authenticated + manager or admin role) procedure
  */
-const isManager = t.middleware(async ({ ctx, next }) => {
-  if (ctx.dbUser?.role !== "Manager" && ctx.dbUser?.role !== "Admin") {
-    throw new TRPCError({ code: "FORBIDDEN" });
-  }
-  return next({ ctx });
-});
-
+export const isManagerMiddleware = isManager;
 export const managerProcedure = protectedProcedure.use(isManager);
+
+/**
+ * Combined Feature + Manager Procedure
+ */
+export const featureManagerProcedure = (featureKey: string) => 
+  featureProtectedProcedure(featureKey).use(isManagerMiddleware);

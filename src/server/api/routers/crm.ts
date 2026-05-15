@@ -3,13 +3,16 @@ import {
   createTRPCRouter,
   protectedProcedure,
   managerProcedure,
+  featureProtectedProcedure,
+  featureManagerProcedure,
 } from "@/server/api/trpc";
 import { customers, sales } from "@/server/db/schema";
 import { eq, and, sql, desc, or, type SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 export const crmRouter = createTRPCRouter({
-  getBranchCustomers: protectedProcedure
+  getBranchCustomers: featureProtectedProcedure("crm")
+    .meta({ openapi: { method: "GET", path: "/crm/customers", summary: "Get branch customers", tags: ["CRM"] } })
     .input(z.object({
       search: z.string().optional(),
     }).optional())
@@ -63,7 +66,7 @@ export const crmRouter = createTRPCRouter({
       return customersWithFinancials;
     }),
 
-  getCustomerById: protectedProcedure
+  getCustomerById: featureProtectedProcedure("crm")
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
@@ -98,7 +101,8 @@ export const crmRouter = createTRPCRouter({
       };
     }),
 
-  createCustomer: managerProcedure
+  createCustomer: featureManagerProcedure("crm")
+    .meta({ openapi: { method: "POST", path: "/crm/customers", summary: "Create approved customer (Manager Only)", tags: ["CRM"] } })
     .input(z.object({
       name: z.string().min(2),
       mobile: z.string().min(10),
@@ -122,7 +126,8 @@ export const crmRouter = createTRPCRouter({
     }),
 
 
-  proposeCustomer: protectedProcedure
+  proposeCustomer: featureProtectedProcedure("crm")
+    .meta({ openapi: { method: "POST", path: "/crm/propose", summary: "Propose draft customer", tags: ["CRM"] } })
     .input(z.object({
       name: z.string().min(2),
       mobile: z.string().min(10),
@@ -144,7 +149,7 @@ export const crmRouter = createTRPCRouter({
       }).returning();
     }),
 
-  approveCustomer: managerProcedure
+  approveCustomer: featureManagerProcedure("crm")
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
@@ -154,7 +159,7 @@ export const crmRouter = createTRPCRouter({
         .returning();
     }),
 
-  updateCustomer: managerProcedure
+  updateCustomer: featureManagerProcedure("crm")
     .input(z.object({
       id: z.string().uuid(),
       name: z.string().min(2).optional(),
