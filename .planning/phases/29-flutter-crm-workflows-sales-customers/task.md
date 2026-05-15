@@ -1,0 +1,22 @@
+# Phase 29 Task List: Flutter CRM Workflows (Sales & Customers)
+
+- [ ] **1. Data Layer & Local Persistence**
+  - [ ] Define `SyncItem` Isar collection
+  - [ ] Implement `SyncRepository` with Isar logic
+  - [ ] Add basic unit tests for sync queue logic
+- [ ] **2. Auth & Permissions**
+  - [ ] Update `AuthProvider` to handle the new `permissions` map
+  - [ ] Create `FeatureGate` widget in Flutter
+  - [ ] Verify gating by manually modifying role permissions in DB
+- [ ] **3. CRM Screens**
+  - [ ] Implement `NewSaleScreen` (Single page scroll, Big Buttons)
+  - [ ] Implement Pincode auto-fill logic in the form
+  - [ ] Implement `CustomerListScreen` with search
+  - [ ] Implement `NewCustomerScreen` (Draft/Propose flow)
+- [ ] **4. Synchronization Service**
+  - [ ] Set up `connectivity_plus` listener
+  - [ ] Implement auto-sync trigger on connectivity restoration
+  - [ ] Integrate sync check into the existing `HeartbeatService` pulse
+- [ ] **5. Verification & Polish**
+  - [ ] Final visual check against "Big Button" standards
+  - [ ] Offline end-to-end testing (Airplane mode -> Restore -> Verify Web DB)

@@ -49,6 +49,8 @@ Secure, mobile-first operations management that ensures authenticated access and
 ## Constraints
 
 - **Data Integrity**: Multi-branch consistency — Ensure inventory updates are atomic across locations.
+- **Feature Parity**: **STRICT**. Every feature change in the website must be implemented in the mobile app and vice versa to ensure operational consistency for both office and field staff.
+- **Admin Control**: **STRICT**. Every single feature (Sales, Customers, Attendance, etc.) must be toggleable by the Admin for each and every role. No feature should be accessible if disabled in the `rolePermissions` table.
 
 ## Mobile Compatibility (Native Wrapper Focus)
 

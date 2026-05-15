@@ -7,6 +7,21 @@
   - [ ] **Task 26.1**: Implement time-series modeling for sales trends.
   - [ ] **Task 26.2**: Dashboard: Sales forecasting visualizations.
 
+- **Phase 27: Flutter Discovery & API Architecture** (Done 2026-05-15)
+  - [x] **Task 27.1**: Implement tRPC-to-REST bridging for Flutter consumption.
+  - [x] **Task 27.2**: Design mobile-specific authentication flow & Monitoring Service.
+  - [x] **Task 27.3**: Finalize `MOBILE-SPEC.md` for Flutter implementation.
+
+- **Phase 28: Flutter Application Implementation** (Done 2026-05-15)
+  - [x] **Task 28.1**: Initialize Flutter project with `flutter_background_service`.
+  - [x] **Task 28.2**: Build "Big Button" UI for Auth and Dashboard.
+  - [x] **Task 28.3**: Implement mandatory location gate.
+
+- **Phase 29: Flutter CRM Workflows (Sales & Customers)**
+  - [ ] **Task 29.1**: Implement Customer Search & Creation (REST Bridge).
+  - [ ] **Task 29.2**: Build the "Big Button" New Sale form.
+  - [ ] **Task 29.3**: Implement SyncRepository for background data reconciliation.
+
 ## Backlog
 
 ### Phase 999.1: Follow-up — Phase 21 incomplete plans (BACKLOG)
