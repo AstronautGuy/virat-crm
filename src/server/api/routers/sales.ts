@@ -7,9 +7,10 @@ import { TRPCError } from "@trpc/server";
 
 export const salesRouter = createTRPCRouter({
   createSale: featureProtectedProcedure("sales")
+    .meta({ openapi: { method: "POST", path: "/sales/create", summary: "Create a new sale", tags: ["Sales"] } })
     .input(
       z.object({
-        branchId: z.number(),
+        branchId: z.number().optional(),
         pincode: z.string().regex(/^[1-9][0-9]{5}$/, "Invalid Pincode").optional(),
         addressLine1: z.string().optional(),
         landmark: z.string().optional(),
@@ -30,8 +31,32 @@ export const salesRouter = createTRPCRouter({
         ),
       })
     )
+    .output(
+      z.object({
+        id: z.number(),
+        orderNumber: z.string(),
+        transactionNumber: z.string(),
+        branchId: z.number(),
+        userId: z.string(),
+        mainQty: z.number(),
+        freeQty: z.number(),
+        totalQty: z.number(),
+        invoiceAmount: z.string(),
+        advancePaymentAmount: z.string().nullable().optional(),
+        receivedAmount: z.string().nullable().optional(),
+        balanceAmount: z.string(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const currentUser = ctx.dbUser;
+      const targetBranchId = input.branchId ?? currentUser.branchId;
+
+      if (!targetBranchId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Branch ID is required",
+        });
+      }
 
       return await ctx.db.transaction(async (tx) => {
         // 1. Stock Check & Decrement
@@ -39,7 +64,7 @@ export const salesRouter = createTRPCRouter({
           const stockEntry = await tx.query.inventory.findFirst({
             where: and(
               eq(inventory.productId, item.productId),
-              eq(inventory.branchId, input.branchId)
+              eq(inventory.branchId, targetBranchId)
             ),
           });
 
@@ -57,7 +82,7 @@ export const salesRouter = createTRPCRouter({
             .where(eq(inventory.id, stockEntry.id));
         }
 
-        // 2. Fetch Pincode Details (Outside transaction if possible, but kept here for simplicity if needed)
+        // 2. Fetch Pincode Details
         let deliveryAddress = "";
         if (input.pincode) {
           try {
@@ -97,7 +122,7 @@ export const salesRouter = createTRPCRouter({
         const [newSale] = await tx
           .insert(sales)
           .values({
-            branchId: input.branchId,
+            branchId: targetBranchId,
             userId: currentUser.id,
             managerId: currentUser.managerId,
             orderNumber,
@@ -137,7 +162,7 @@ export const salesRouter = createTRPCRouter({
           await tx.insert(inventoryTransactions).values(
             input.items.map((item) => ({
               productId: item.productId,
-              branchId: input.branchId,
+              branchId: targetBranchId,
               userId: currentUser.id,
               type: "Sale",
               quantity: -item.quantity,
@@ -147,7 +172,20 @@ export const salesRouter = createTRPCRouter({
           );
         }
 
-        return newSale;
+        return {
+          id: newSale.id,
+          orderNumber: newSale.orderNumber,
+          transactionNumber: newSale.transactionNumber,
+          branchId: newSale.branchId,
+          userId: newSale.userId,
+          mainQty: newSale.mainQty,
+          freeQty: newSale.freeQty,
+          totalQty: newSale.totalQty,
+          invoiceAmount: newSale.invoiceAmount,
+          advancePaymentAmount: newSale.advancePaymentAmount,
+          receivedAmount: newSale.receivedAmount,
+          balanceAmount: newSale.balanceAmount,
+        };
       });
     }),
 

@@ -12,7 +12,7 @@ export const replacements = createTable("replacement", {
   id: serial("id").primaryKey(),
   originalSaleId: integer("original_sale_id").references(() => sales.id).notNull(),
   branchId: integer("branch_id").references(() => branches.id).notNull(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   reason: text("reason").notNull(),
   status: varchar("status", { length: 50 }).default("Pending").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

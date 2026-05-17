@@ -16,6 +16,13 @@ class FeatureGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final role = ref.watch(userRoleProvider);
+
+    // Admins bypass all feature gates in the system
+    if (role == 'Admin') {
+      return child;
+    }
+
     final permissions = ref.watch(permissionsProvider);
     final isEnabled = permissions[featureKey] ?? false; // STRICT: Default to disabled if not found
 

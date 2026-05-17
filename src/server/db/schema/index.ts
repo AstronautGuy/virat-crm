@@ -1,4 +1,5 @@
-export { users, usersRelations, roleEnum } from "./users";
+export { users, usersRelations } from "./users";
+export { roles } from "./roles";
 export { branches, branchesRelations } from "./branches";
 export { locationLogs, locationLogsRelations } from "./locationLogs";
 export { sales, salesRelations } from "./sales";

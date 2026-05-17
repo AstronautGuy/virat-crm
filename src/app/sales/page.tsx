@@ -80,7 +80,7 @@ export default function SalesDashboard() {
             ) : (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {/* When loading, Skelon will use these as blueprint */}
-                {(isLoading ? Array.from({ length: 6 }) : filteredSales).map((sale: Record<string, any>, idx) => (
+                {((isLoading ? Array.from({ length: 6 }) : filteredSales) as Record<string, any>[]).map((sale, idx) => (
                   <Card key={sale?.id ?? idx} className="overflow-hidden border-none group">
                     <CardHeader className="pb-3 bg-slate-50/50 group-hover:bg-primary/5 transition-colors">
                       <div className="flex items-center justify-between">
@@ -151,6 +151,4 @@ export default function SalesDashboard() {
       </FeatureGate>
     </DashboardLayout>
   );
-}
- );
 }

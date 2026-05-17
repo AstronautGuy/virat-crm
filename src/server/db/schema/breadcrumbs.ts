@@ -6,7 +6,7 @@ export const breadcrumbs = pgTable("virat-crm_breadcrumbs", {
   id: serial("id").primaryKey(),
   userId: uuid("user_id")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: "cascade" }),
   latitude: doublePrecision("latitude").notNull(),
   longitude: doublePrecision("longitude").notNull(),
   accuracy: doublePrecision("accuracy"),

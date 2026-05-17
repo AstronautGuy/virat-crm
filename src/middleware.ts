@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { decrypt } from "@/server/lib/auth";
 
 // Add paths that should be accessible without authentication
-const publicPaths = ["/login", "/signup", "/api/auth/login", "/api/auth/logout", "/api/trpc"];
+const publicPaths = ["/login", "/signup", "/api/auth/login", "/api/auth/logout", "/api/trpc", "/api/rest"];
 
 export async function middleware(request: NextRequest) {
   const { nextUrl } = request;

@@ -1,11 +1,10 @@
-import { pgTableCreator, varchar, uuid, boolean, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTableCreator, varchar, uuid, boolean, integer, timestamp } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { branches } from "./branches";
+import { roles } from "./roles";
 import { relations } from "drizzle-orm";
 
 export const createTable = pgTableCreator((name) => `virat-crm_${name}`);
-
-export const roleEnum = pgEnum("virat-crm_role", ["Admin", "Manager", "Employee"]);
 
 export const users = createTable("user", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -14,9 +13,9 @@ export const users = createTable("user", {
   password: varchar("password", { length: 256 }), // Nullable for existing users migration
   firstName: varchar("first_name", { length: 256 }).notNull(),
   lastName: varchar("last_name", { length: 256 }).notNull(),
-  role: roleEnum("role").default("Employee").notNull(),
+  role: varchar("role", { length: 64 }).default("Employee").notNull().references(() => roles.name),
   branchId: integer("branch_id").references(() => branches.id),
-  managerId: uuid("manager_id").references((): AnyPgColumn => users.id),
+  managerId: uuid("manager_id").references((): AnyPgColumn => users.id, { onDelete: "set null" }),
   isActive: boolean("is_active").default(true).notNull(),
   lastActiveAt: timestamp("last_active_at", { withTimezone: true }),
   lastLat: varchar("last_lat", { length: 32 }),

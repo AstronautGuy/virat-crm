@@ -2,7 +2,10 @@ import { DashboardLayout } from "@/app/_components/layout/DashboardLayout";
 import LiveTeamMap from "@/app/_components/maps/LiveTeamMap";
 import { Users, MapPin, Activity } from "lucide-react";
 import { FeatureGate } from "@/app/_components/auth/FeatureGate";
+import { Suspense } from "react";
+
 export default function LiveMapPage() {
+
 
   return (
     <DashboardLayout>
@@ -57,7 +60,16 @@ export default function LiveMapPage() {
             </div>
           </div>
 
-          <LiveTeamMap />
+          <Suspense fallback={
+            <div className="flex h-[400px] w-full items-center justify-center rounded-xl bg-gray-50 border border-gray-100 animate-pulse">
+              <div className="text-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent mx-auto mb-2" />
+                <p className="text-xs text-gray-500 font-medium animate-pulse">Loading map container...</p>
+              </div>
+            </div>
+          }>
+            <LiveTeamMap />
+          </Suspense>
 
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <h3 className="text-sm font-semibold mb-4">Tracking Privacy Notice</h3>

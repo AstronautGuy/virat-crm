@@ -17,7 +17,7 @@ import { crmRouter } from "./routers/crm";
 import { dailyReportsRouter } from "./routers/dailyReports";
 import { authRouter } from "./routers/auth";
 import { heartbeatRouter } from "./routers/heartbeat";
-
+import { rolesRouter } from "./routers/roles";
 
 
 /**
@@ -43,6 +43,7 @@ export const appRouter = createTRPCRouter({
   dailyReports: dailyReportsRouter,
   auth: authRouter,
   heartbeat: heartbeatRouter,
+  roles: rolesRouter,
 });
 
 // export type definition of API

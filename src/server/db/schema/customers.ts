@@ -17,7 +17,7 @@ export const customers = createTable("customer", {
   address: varchar("address", { length: 1024 }).notNull(),
   branchId: integer("branch_id").notNull().references(() => branches.id),
   status: customerStatusEnum("status").default("Draft").notNull(),
-  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdBy: uuid("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(() => new Date()),
 });

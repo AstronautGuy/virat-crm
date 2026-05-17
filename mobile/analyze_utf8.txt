@@ -1,0 +1,14 @@
+﻿Analyzing mobile...                                             
+
+warning - Unused import: 'package:dio/dio.dart' - lib\data\repositories\auth_repository.dart:2:8 - unused_import
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\data\repositories\crm_repository.dart:19:7 - use_null_aware_elements
+   info - The type of the right operand ('ConnectivityResult') isn't a subtype or a supertype of the left operand ('List<ConnectivityResult>') - lib\data\repositories\sync_repository.dart:26:22 - unrelated_type_equality_checks
+   info - The private field _items could be 'final' - lib\presentation\screens\new_sale_screen.dart:25:30 - prefer_final_fields
+warning - Unused import: 'dart:io' - lib\services\heartbeat_service.dart:2:8 - unused_import
+   info - The import of 'package:flutter_background_service_android/flutter_background_service_android.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter_background_service/flutter_background_service.dart' - lib\services\heartbeat_service.dart:6:8 - unnecessary_import
+   info - The imported package 'flutter_background_service_android' isn't a dependency of the importing package - lib\services\heartbeat_service.dart:6:8 - depend_on_referenced_packages
+   info - The type of the right operand ('ConnectivityResult') isn't a subtype or a supertype of the left operand ('List<ConnectivityResult>') - lib\services\heartbeat_service.dart:66:16 - unrelated_type_equality_checks
+   info - 'desiredAccuracy' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings - lib\services\heartbeat_service.dart:81:9 - deprecated_member_use
+   info - The type of the right operand ('ConnectivityResult') isn't a subtype or a supertype of the left operand ('List<ConnectivityResult>') - lib\services\heartbeat_service.dart:86:42 - unrelated_type_equality_checks
+   info - The type of the right operand ('ConnectivityResult') isn't a subtype or a supertype of the left operand ('List<ConnectivityResult>') - lib\services\heartbeat_service.dart:104:32 - unrelated_type_equality_checks
+

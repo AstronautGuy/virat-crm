@@ -53,10 +53,43 @@ function testRBAC() {
   console.log("✔ RBAC Validation Tests Passed!");
 }
 
+// 3. Test GPS Violation alert logic
+interface HeartbeatInput {
+  status: "Online" | "Offline" | "Low Battery" | "No GPS";
+}
+
+function handleHeartbeatPulse(input: HeartbeatInput, user: { firstName: string; lastName: string; employeeCode: string }) {
+  const alerts: string[] = [];
+  
+  if (input.status === "No GPS") {
+    alerts.push(`GPS Violation Alert: ${user.firstName} ${user.lastName} (${user.employeeCode}) has disabled their device's GPS!`);
+  }
+  
+  return alerts;
+}
+
+function testGPSViolationAlert() {
+  console.log("Running GPS Violation Alert Validation Tests...");
+  
+  const user = { firstName: "John", lastName: "Doe", employeeCode: "EMP001" };
+  
+  // No alert on Online status
+  const alertsOnline = handleHeartbeatPulse({ status: "Online" }, user);
+  assert.strictEqual(alertsOnline.length, 0, "Online status should not trigger an admin alert");
+  
+  // Alert on No GPS status
+  const alertsNoGps = handleHeartbeatPulse({ status: "No GPS" }, user);
+  assert.strictEqual(alertsNoGps.length, 1, "No GPS status should trigger an admin alert");
+  assert.match(alertsNoGps[0]!, /GPS Violation Alert: John Doe \(EMP001\) has disabled their device's GPS!/, "Alert message should contain user details");
+  
+  console.log("✔ GPS Violation Alert Validation Tests Passed!");
+}
+
 function runAll() {
   try {
     testPincodeValidation();
     testRBAC();
+    testGPSViolationAlert();
     console.log("All automated tests passed successfully.");
     process.exit(0);
   } catch (err) {

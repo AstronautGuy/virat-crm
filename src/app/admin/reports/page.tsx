@@ -2,7 +2,8 @@
 
 import { FeatureGate } from "@/app/_components/auth/FeatureGate";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/trpc/react";
 import { DashboardLayout } from "@/app/_components/layout/DashboardLayout";
 import { 
@@ -43,9 +44,30 @@ const SCOPES = [
 ] as const;
 
 export default function ReportsPage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout>
+        <div className="flex h-[400px] w-full items-center justify-center rounded-xl bg-gray-50 border border-gray-100">
+          <div className="text-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent mx-auto mb-2" />
+            <p className="text-xs text-gray-500 font-medium animate-pulse">Loading reports context...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    }>
+      <ReportsPageContent />
+    </Suspense>
+  );
+}
+
+function ReportsPageContent() {
+  const searchParams = useSearchParams();
+  const initialUserId = searchParams ? searchParams.get("userId") : null;
+
   const [preset, setPreset] = useState<"today" | "7d" | "30d" | "quarter" | "year" | "all">("30d");
   const [scope, setScope] = useState<"individual" | "team" | "management" | "branch">("individual");
-  const [targetId, setTargetId] = useState<string | null>(null);
+  const [targetId, setTargetId] = useState<string | null>(initialUserId);
+
 
   const { data: selectableUsers } = api.reports.getSelectableUsers.useQuery();
   const { data: reportData, isLoading } = api.reports.getReportData.useQuery(
@@ -137,6 +159,7 @@ export default function ReportsPage() {
               <span>Target Entity</span>
             </div>
             <select
+              value={targetId ?? ""}
               onChange={(e) => setTargetId(e.target.value || null)}
               className="w-full bg-gray-50 border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-green-500"
             >

@@ -2,7 +2,6 @@ import { z } from "zod";
 import { createTRPCRouter, adminProcedure, publicProcedure } from "@/server/api/trpc";
 import { rolePermissions } from "@/server/db/schema/rolePermissions";
 import { eq, and } from "drizzle-orm";
-import { roleEnum } from "@/server/db/schema/users";
 
 export const permissionsRouter = createTRPCRouter({
   getAll: adminProcedure.query(async ({ ctx }) => {
@@ -12,7 +11,7 @@ export const permissionsRouter = createTRPCRouter({
   toggle: adminProcedure
     .input(
       z.object({
-        role: z.enum(roleEnum.enumValues),
+        role: z.string().min(2).max(64),
         featureKey: z.string(),
         isEnabled: z.boolean(),
       })
@@ -49,7 +48,7 @@ export const permissionsRouter = createTRPCRouter({
     }),
 
   getForRole: publicProcedure
-    .input(z.object({ role: z.enum(roleEnum.enumValues) }))
+    .input(z.object({ role: z.string().min(2).max(64) }))
     .query(async ({ ctx, input }) => {
       return ctx.db
         .select()

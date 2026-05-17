@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
 import { api } from "@/trpc/react";
@@ -18,8 +19,11 @@ import type * as Leaflet from "leaflet";
 
 export default function LiveTeamMap() {
   const [L, setL] = useState<typeof Leaflet | null>(null);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const queryUserId = searchParams ? searchParams.get("userId") : null;
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(queryUserId);
   const [playbackDate, setPlaybackDate] = useState<string>(new Date().toISOString().split("T")[0]!);
+
 
   const { data: teamLocations, isLoading, refetch } = api.location.getLiveTeam.useQuery({}, {
     refetchInterval: 30000,

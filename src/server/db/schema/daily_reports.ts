@@ -6,7 +6,7 @@ import { relations } from "drizzle-orm";
 
 export const dailyReports = createTable("daily_report", {
   id: serial("id").primaryKey(),
-  userId: uuid("user_id").notNull().references(() => users.id),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   branchId: integer("branch_id").notNull().references(() => branches.id),
   reportDate: timestamp("report_date", { withTimezone: true }).defaultNow().notNull(),
   content: text("content").notNull(),

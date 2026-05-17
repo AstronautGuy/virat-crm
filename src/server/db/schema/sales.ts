@@ -20,8 +20,8 @@ export const sales = createTable(
     orderNumber: varchar("order_number", { length: 100 }).notNull().unique(),
     transactionNumber: varchar("transaction_number", { length: 100 }).unique(),
     status: varchar("status", { length: 50 }).notNull().default("Pending"), // Pending, Approved, Rejected
-    userId: uuid("user_id").references(() => users.id).notNull(), // Employee
-    managerId: uuid("manager_id").references(() => users.id), // Field Supervisor
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(), // Employee
+    managerId: uuid("manager_id").references(() => users.id, { onDelete: "set null" }), // Field Supervisor
     pincode: varchar("pincode", { length: 20 }),
     addressLine1: varchar("address_line_1", { length: 256 }),
     landmark: varchar("landmark", { length: 256 }),

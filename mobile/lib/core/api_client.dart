@@ -1,12 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:virat_mobile/core/config.dart';
 
 class ApiClient {
   final Dio _dio = Dio();
   final _storage = const FlutterSecureStorage();
 
   ApiClient() {
-    _dio.options.baseUrl = 'https://virat-crm.vercel.app/api/rest'; // Placeholder, should be configurable
+    _dio.options.baseUrl = AppConfig.baseUrl;
     _dio.options.connectTimeout = const Duration(seconds: 10);
     _dio.options.receiveTimeout = const Duration(seconds: 10);
 

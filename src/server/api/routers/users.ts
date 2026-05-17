@@ -13,6 +13,7 @@ export const usersRouter = createTRPCRouter({
       email: z.string().email(),
       employeeCode: z.string().min(3),
       password: z.string().min(6),
+      branchId: z.number(),
     }))
     .mutation(async ({ ctx, input }) => {
       // Check if user already exists
@@ -39,6 +40,7 @@ export const usersRouter = createTRPCRouter({
         employeeCode: input.employeeCode,
         password: hashedPassword,
         role: "Employee", // Default role for self-signup
+        branchId: input.branchId,
         isActive: true,
       }).returning();
 
@@ -47,6 +49,10 @@ export const usersRouter = createTRPCRouter({
         userId: newUser?.id,
       };
     }),
+
+  getPublicBranches: publicProcedure.query(async ({ ctx }) => {
+    return ctx.db.query.branches.findMany();
+  }),
 
   getMe: protectedProcedure.query(async ({ ctx }) => {
     // In our new system, ctx.dbUser is already fetched in the context
@@ -96,8 +102,8 @@ export const usersRouter = createTRPCRouter({
       email: z.string().email(),
       employeeCode: z.string(),
       password: z.string().min(6),
-      role: z.enum(["Admin", "Manager", "Employee"]),
-      branchId: z.number().optional(),
+      role: z.string().min(2).max(64),
+      branchId: z.number(),
       managerId: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -125,6 +131,93 @@ export const usersRouter = createTRPCRouter({
       }
     });
   }),
+
+  toggleActiveStatus: protectedProcedure
+    .input(z.object({
+      userId: z.string(),
+      isActive: z.boolean(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.dbUser.role !== "Admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can change active status" });
+      }
+
+      await ctx.db
+        .update(users)
+        .set({ isActive: input.isActive })
+        .where(eq(users.id, input.userId));
+
+      return { success: true };
+    }),
+
+  resetUserPassword: protectedProcedure
+    .input(z.object({
+      userId: z.string(),
+      newPassword: z.string().min(6),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.dbUser.role !== "Admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can reset employee passwords" });
+      }
+
+      const hashedPassword = await bcrypt.hash(input.newPassword, 10);
+      await ctx.db
+        .update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, input.userId));
+
+      return { success: true };
+    }),
+
+  updateUser: protectedProcedure
+    .input(z.object({
+      userId: z.string(),
+      firstName: z.string().min(2),
+      lastName: z.string().min(2),
+      email: z.string().email(),
+      employeeCode: z.string().min(3),
+      role: z.string().min(2).max(64),
+      branchId: z.number().nullable().optional(),
+      managerId: z.string().nullable().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.dbUser.role !== "Admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can edit user details" });
+      }
+
+      if (input.managerId && input.managerId === input.userId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "An employee cannot be their own manager",
+        });
+      }
+
+      // Check if another user already uses this email or employee code
+      const existingUser = await ctx.db.query.users.findFirst({
+        where: or(
+          eq(users.email, input.email),
+          eq(users.employeeCode, input.employeeCode)
+        ),
+      });
+
+      if (existingUser && existingUser.id !== input.userId) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Another employee with this email or employee code already exists",
+        });
+      }
+
+      const { userId, ...updateData } = input;
+
+      const [updatedUser] = await ctx.db
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, userId))
+        .returning();
+
+      return updatedUser;
+    }),
+
 
   getOrgTree: featureProtectedProcedure("org-chart").query(async ({ ctx }) => {
     // Fetch all active users

@@ -6,7 +6,7 @@ export const createTable = pgTableCreator((name) => `virat-crm_${name}`);
 
 export const pushSubscriptions = createTable("push_subscription", {
   id: serial("id").primaryKey(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   endpoint: text("endpoint").notNull().unique(),
   p256dh: text("p256dh").notNull(),
   auth: text("auth").notNull(),

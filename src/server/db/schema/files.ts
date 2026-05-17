@@ -16,7 +16,7 @@ export const files = createTable("file", {
   size: integer("size").notNull(),
   uploadedBy: uuid("uploaded_by")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -1,17 +1,29 @@
 import { z } from "zod";
-import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, featureProtectedProcedure, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { inventory, inventoryTransactions, stockTransfers } from "@/server/db/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 
 export const inventoryRouter = createTRPCRouter({
-  getBranches: featureProtectedProcedure("admin")
+  getBranches: protectedProcedure
     .query(async ({ ctx }) => {
       return ctx.db.query.branches.findMany();
     }),
 
   getBranchStock: featureProtectedProcedure("inventory")
+    .meta({ openapi: { method: "GET", path: "/inventory/stock", summary: "Get branch stock levels", tags: ["Inventory"] } })
     .input(z.object({ branchId: z.number().optional() }))
+    .output(z.array(z.object({
+      productId: z.number(),
+      branchId: z.number(),
+      quantity: z.number(),
+      product: z.object({
+        id: z.number(),
+        name: z.string(),
+        sku: z.string(),
+        price: z.string(),
+      }),
+    })))
     .query(async ({ ctx, input }) => {
       const isAdmin = ctx.dbUser.role === "Admin";
       const branchId = isAdmin ? input.branchId : (input.branchId ?? ctx.dbUser.branchId);
@@ -20,12 +32,43 @@ export const inventoryRouter = createTRPCRouter({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Branch ID is required" });
       }
 
-      return ctx.db.query.inventory.findMany({
+      const rows = await ctx.db.query.inventory.findMany({
         where: branchId ? eq(inventory.branchId, branchId) : undefined,
         with: {
           product: true,
         },
       });
+
+      return rows.map((row) => ({
+        productId: row.productId,
+        branchId: row.branchId,
+        quantity: row.quantity,
+        product: {
+          id: row.product.id,
+          name: row.product.name,
+          sku: row.product.sku,
+          price: row.product.price.toString(),
+        },
+      }));
+    }),
+
+  getProducts: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/inventory/products", summary: "Get list of all products", tags: ["Inventory"] } })
+    .input(z.void())
+    .output(z.array(z.object({
+      id: z.number(),
+      name: z.string(),
+      sku: z.string(),
+      price: z.string(),
+    })))
+    .query(async ({ ctx }) => {
+      const items = await ctx.db.query.products.findMany();
+      return items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        sku: item.sku,
+        price: item.price.toString(),
+      }));
     }),
 
 

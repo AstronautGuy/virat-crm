@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { branches, locationLogs, leaves, performanceSnapshots, sales, users } from "@/server/db/schema";
-import { and, gte, lte, sum, count, eq, sql, inArray, type SQL } from "drizzle-orm";
+import { and, gte, lte, sum, count, eq, sql, inArray, desc, type SQL } from "drizzle-orm";
 import { getDateRange } from "@/server/lib/date";
 
 export const analyticsRouter = createTRPCRouter({

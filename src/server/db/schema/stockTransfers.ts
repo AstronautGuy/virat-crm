@@ -14,9 +14,9 @@ export const stockTransfers = createTable("stock_transfer", {
     .references(() => branches.id)
     .notNull(),
   status: varchar("status", { length: 50 }).notNull().default("Pending"), // Pending, Shipped, Received, Cancelled
-  requestedById: uuid("requested_by_id").references(() => users.id).notNull(),
-  approvedById: uuid("approved_by_id").references(() => users.id),
-  receivedById: uuid("received_by_id").references(() => users.id),
+  requestedById: uuid("requested_by_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  approvedById: uuid("approved_by_id").references(() => users.id, { onDelete: "set null" }),
+  receivedById: uuid("received_by_id").references(() => users.id, { onDelete: "set null" }),
   
   // JSON array of { productId, quantity }
   items: jsonb("items").notNull(),

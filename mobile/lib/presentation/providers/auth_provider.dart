@@ -3,6 +3,10 @@ import 'package:virat_mobile/data/repositories/auth_repository.dart';
 import 'package:virat_mobile/presentation/providers/repository_provider.dart';
 
 final permissionsProvider = StateProvider<Map<String, bool>>((ref) => {});
+final userRoleProvider = StateProvider<String?>((ref) => null);
+final userNameProvider = StateProvider<String?>((ref) => null);
+final employeeCodeProvider = StateProvider<String?>((ref) => null);
+final branchNameProvider = StateProvider<String?>((ref) => null);
 
 final authProvider = StateNotifierProvider<AuthNotifier, AsyncValue<void>>((ref) {
   return AuthNotifier(ref.watch(authRepositoryProvider), ref);
@@ -19,6 +23,18 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> _loadPermissions() async {
     final perms = await _repository.getPermissions();
     _ref.read(permissionsProvider.notifier).state = perms;
+
+    final role = await _repository.getUserRole();
+    _ref.read(userRoleProvider.notifier).state = role;
+
+    final name = await _repository.getUserName();
+    _ref.read(userNameProvider.notifier).state = name;
+
+    final empCode = await _repository.getEmployeeCode();
+    _ref.read(employeeCodeProvider.notifier).state = empCode;
+
+    final branchName = await _repository.getBranchName();
+    _ref.read(branchNameProvider.notifier).state = branchName;
   }
 
   Future<void> login(String employeeCode, String password) async {
@@ -29,12 +45,17 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+      rethrow;
     }
   }
 
   Future<void> logout() async {
     await _repository.logout();
     _ref.read(permissionsProvider.notifier).state = {};
+    _ref.read(userRoleProvider.notifier).state = null;
+    _ref.read(userNameProvider.notifier).state = null;
+    _ref.read(employeeCodeProvider.notifier).state = null;
+    _ref.read(branchNameProvider.notifier).state = null;
     state = const AsyncValue.data(null);
   }
 }

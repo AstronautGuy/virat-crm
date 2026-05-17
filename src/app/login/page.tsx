@@ -17,6 +17,9 @@ function LoginContent() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [requireBranch, setRequireBranch] = useState(false);
+  const [branches, setBranches] = useState<{ id: number; name: string }[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
   const signupSuccess = searchParams.get("signup") === "success";
@@ -27,17 +30,32 @@ function LoginContent() {
     setError(null);
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const body: Record<string, any> = { employeeCode, password };
+      if (requireBranch && selectedBranchId) {
+        body.branchId = parseInt(selectedBranchId, 10);
+      }
+
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeCode, password }),
+        body: JSON.stringify(body),
       });
 
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as { error?: string; requireBranch?: boolean; branches?: { id: number; name: string }[] };
 
       if (res.ok) {
-        router.push("/");
-        router.refresh();
+        if (data.requireBranch) {
+          const activeBranches = data.branches;
+          setRequireBranch(true);
+          setBranches(activeBranches ?? []);
+          if (activeBranches && activeBranches.length > 0 && activeBranches[0]) {
+            setSelectedBranchId(activeBranches[0].id.toString());
+          }
+        } else {
+          router.push("/");
+          router.refresh();
+        }
       } else {
         setError(data.error ?? "Login failed");
       }
@@ -114,6 +132,29 @@ function LoginContent() {
                   />
                 </div>
               </div>
+
+              {requireBranch && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="space-y-2 overflow-hidden"
+                >
+                  <Label htmlFor="branch">Operating Branch (Admin Privilege)</Label>
+                  <select
+                    id="branch"
+                    className="w-full h-12 px-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-800"
+                    value={selectedBranchId}
+                    onChange={(e) => setSelectedBranchId(e.target.value)}
+                    required
+                  >
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id.toString()}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </motion.div>
+              )}
 
               {error && (
                 <motion.div

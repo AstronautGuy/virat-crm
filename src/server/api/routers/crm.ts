@@ -16,6 +16,7 @@ export const crmRouter = createTRPCRouter({
     .input(z.object({
       search: z.string().optional(),
     }).optional())
+    .output(z.any())
     .query(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
       
@@ -112,14 +113,23 @@ export const crmRouter = createTRPCRouter({
       district: z.string(),
       state: z.string(),
       address: z.string(),
+      branchId: z.number().optional(),
     }))
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
       if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
       
+      const targetBranchId = input.branchId ?? dbUser.branchId;
+      if (!targetBranchId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Branch selection is required" });
+      }
+
+      const { branchId, ...rest } = input;
+      
       return await db.insert(customers).values({
-        ...input,
-        branchId: dbUser.branchId!,
+        ...rest,
+        branchId: targetBranchId,
         status: "Approved", // Managers/Admins create approved customers
         createdBy: dbUser.id,
       }).returning();
@@ -137,13 +147,23 @@ export const crmRouter = createTRPCRouter({
       district: z.string(),
       state: z.string(),
       address: z.string(),
+      branchId: z.number().optional(),
     }))
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
+      if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
+      
+      const targetBranchId = input.branchId ?? dbUser.branchId;
+      if (!targetBranchId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Branch selection is required" });
+      }
+
+      const { branchId, ...rest } = input;
       
       return await db.insert(customers).values({
-        ...input,
-        branchId: dbUser.branchId!,
+        ...rest,
+        branchId: targetBranchId,
         status: "Draft", // Employees create draft customers
         createdBy: dbUser.id,
       }).returning();

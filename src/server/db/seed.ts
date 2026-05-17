@@ -1,5 +1,5 @@
 import { db } from "./index";
-import { branches, users, products, sales, saleItems, replacements, inventory } from "./schema";
+import { branches, users, products, sales, saleItems, replacements, inventory, roles, rolePermissions } from "./schema";
 import { sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -7,6 +7,7 @@ async function main() {
   console.log("Seeding database...");
 
   // Truncate tables to allow re-seeding
+  await db.execute(sql`TRUNCATE TABLE "virat-crm_role_permission" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_stock_transfer" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_inventory_transaction" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_inventory" CASCADE;`);
@@ -15,10 +16,56 @@ async function main() {
   await db.execute(sql`TRUNCATE TABLE "virat-crm_sale" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_product" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_user" CASCADE;`);
+  await db.execute(sql`TRUNCATE TABLE "virat-crm_roles" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_branch" CASCADE;`);
 
   // Hash passwords
   const password = await bcrypt.hash("password123", 10);
+
+  // Seed Roles
+  const insertedRoles = await db
+    .insert(roles)
+    .values([
+      { name: "Admin", isSystem: true, description: "System Administrator" },
+      { name: "Manager", isSystem: true, description: "Branch Manager" },
+      { name: "Employee", isSystem: true, description: "Field Employee" }
+    ])
+    .returning();
+  console.log("Roles seeded:", insertedRoles.length);
+
+  // Seed Role Permissions
+  await db
+    .insert(rolePermissions)
+    .values([
+      // Admin permissions
+      { role: "Admin", featureKey: "dashboard", isEnabled: true },
+      { role: "Admin", featureKey: "crm", isEnabled: true },
+      { role: "Admin", featureKey: "sales", isEnabled: true },
+      { role: "Admin", featureKey: "inventory", isEnabled: true },
+      { role: "Admin", featureKey: "workforce", isEnabled: true },
+      { role: "Admin", featureKey: "documents", isEnabled: true },
+      { role: "Admin", featureKey: "replacements", isEnabled: true },
+      { role: "Admin", featureKey: "performance", isEnabled: true },
+
+      // Manager permissions
+      { role: "Manager", featureKey: "dashboard", isEnabled: true },
+      { role: "Manager", featureKey: "crm", isEnabled: true },
+      { role: "Manager", featureKey: "sales", isEnabled: true },
+      { role: "Manager", featureKey: "inventory", isEnabled: true },
+      { role: "Manager", featureKey: "workforce", isEnabled: true },
+      { role: "Manager", featureKey: "documents", isEnabled: true },
+      { role: "Manager", featureKey: "replacements", isEnabled: true },
+      { role: "Manager", featureKey: "performance", isEnabled: true },
+
+      // Employee permissions
+      { role: "Employee", featureKey: "dashboard", isEnabled: true },
+      { role: "Employee", featureKey: "crm", isEnabled: true },
+      { role: "Employee", featureKey: "sales", isEnabled: true },
+      { role: "Employee", featureKey: "inventory", isEnabled: true },
+      { role: "Employee", featureKey: "documents", isEnabled: true },
+      { role: "Employee", featureKey: "replacements", isEnabled: true },
+    ]);
+  console.log("Role permissions seeded");
 
   // Seed Branches
   const insertedBranches = await db

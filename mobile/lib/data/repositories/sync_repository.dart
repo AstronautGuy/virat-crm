@@ -23,7 +23,7 @@ class SyncRepository {
     
     // Attempt immediate sync if online
     final connectivity = await Connectivity().checkConnectivity();
-    if (connectivity != ConnectivityResult.none) {
+    if (!connectivity.contains(ConnectivityResult.none)) {
       await syncAll();
     }
   }
@@ -42,7 +42,7 @@ class SyncRepository {
         Response response;
 
         if (item.type == 'createSale') {
-          response = await apiClient.dio.post('/crm/sales', data: data);
+          response = await apiClient.dio.post('/sales/create', data: data);
         } else if (item.type == 'proposeCustomer') {
           response = await apiClient.dio.post('/crm/propose', data: data);
         } else {

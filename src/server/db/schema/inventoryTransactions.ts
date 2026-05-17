@@ -14,7 +14,7 @@ export const inventoryTransactions = createTable("inventory_transaction", {
   branchId: integer("branch_id")
     .references(() => branches.id)
     .notNull(),
-  userId: uuid("user_id").references(() => users.id).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   type: varchar("type", { length: 50 }).notNull(), // Sale, Transfer_In, Transfer_Out, Adjustment, Replacement
   quantity: integer("quantity").notNull(), // Can be negative for removals
   referenceId: varchar("reference_id", { length: 256 }), // Sale ID, Transfer ID, etc.

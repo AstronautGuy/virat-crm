@@ -9,7 +9,7 @@ export const locationLogs = createTable(
   {
     id: serial("id").primaryKey(),
     userId: uuid("user_id")
-      .references(() => users.id)
+      .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     date: varchar("date", { length: 10 }).notNull(), // 'YYYY-MM-DD'
     slab: varchar("slab", { length: 20 }).notNull(), // '10:00-14:00'

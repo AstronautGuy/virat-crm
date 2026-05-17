@@ -1,7 +1,8 @@
 import 'dart:convert';
-import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:virat_mobile/core/api_client.dart';
+
+import 'package:dio/dio.dart';
 
 class AuthRepository {
   final ApiClient apiClient;
@@ -26,12 +27,23 @@ class AuthRepository {
         await _storage.write(key: 'jwt_token', value: token);
         await _storage.write(key: 'user_role', value: user['role']);
         await _storage.write(key: 'user_name', value: '${user['firstName']} ${user['lastName']}');
+        await _storage.write(key: 'employee_code', value: user['employeeCode']);
+        await _storage.write(key: 'branch_name', value: user['branchName'] ?? 'No Branch');
         await _storage.write(key: 'permissions', value: jsonEncode(permissions));
 
         return data;
       } else {
-        throw Exception('Login failed: ${response.data['message']}');
+        throw Exception(response.data['message'] ?? 'Login failed');
       }
+    } on DioException catch (e) {
+      final response = e.response;
+      if (response != null && response.data != null && response.data is Map) {
+        final data = response.data as Map;
+        if (data.containsKey('message')) {
+          throw Exception(data['message']);
+        }
+      }
+      throw Exception('Network error: ${e.message ?? 'Unknown connection error'}');
     } catch (e) {
       rethrow;
     }
@@ -44,6 +56,22 @@ class AuthRepository {
       return decoded.map((key, value) => MapEntry(key, value as bool));
     }
     return {};
+  }
+
+  Future<String?> getUserName() async {
+    return await _storage.read(key: 'user_name');
+  }
+
+  Future<String?> getUserRole() async {
+    return await _storage.read(key: 'user_role');
+  }
+
+  Future<String?> getEmployeeCode() async {
+    return await _storage.read(key: 'employee_code');
+  }
+
+  Future<String?> getBranchName() async {
+    return await _storage.read(key: 'branch_name');
   }
 
   Future<void> logout() async {

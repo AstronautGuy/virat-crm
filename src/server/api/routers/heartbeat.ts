@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { users } from "@/server/db/schema/users";
 import { eq } from "drizzle-orm";
+import { notifyAdmins } from "@/server/lib/monitoring";
 
 export const heartbeatRouter = createTRPCRouter({
   pulse: featureProtectedProcedure("workforce")
@@ -25,6 +26,13 @@ export const heartbeatRouter = createTRPCRouter({
           connectivityStatus: input.status,
         })
         .where(eq(users.id, dbUser.id));
+
+      if (input.status === "No GPS") {
+        await notifyAdmins(
+          "GPS Violation Alert",
+          `${dbUser.firstName} ${dbUser.lastName} (${dbUser.employeeCode}) has disabled their device's GPS!`
+        );
+      }
 
       return { success: true };
     }),

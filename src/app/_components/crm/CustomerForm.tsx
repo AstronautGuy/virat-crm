@@ -36,6 +36,7 @@ const formSchema = z.object({
   district: z.string().min(1, "District is required"),
   state: z.string().min(1, "State is required"),
   address: z.string().min(5, "Full address is required"),
+  branchId: z.string().min(1, "Branch is required"),
 });
 
 interface CustomerFormProps {
@@ -47,6 +48,9 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
   const [isFetchingPincode, setIsFetchingPincode] = useState(false);
   const [villages, setVillages] = useState<string[]>([]);
   
+  const { data: branches } = api.inventory.getBranches.useQuery();
+  const { data: me } = api.users.getMe.useQuery();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -58,10 +62,17 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
       district: "",
       state: "",
       address: "",
+      branchId: "",
     },
   });
 
   const pincode = form.watch("pincode");
+
+  useEffect(() => {
+    if (me?.branchId) {
+      form.setValue("branchId", me.branchId.toString());
+    }
+  }, [me, form]);
 
   useEffect(() => {
     if (pincode?.length === 6 && /^[1-9][0-9]{5}$/.test(pincode)) {
@@ -119,6 +130,7 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
     const formattedValues = {
       ...values,
       dob: values.dob ? new Date(values.dob) : undefined,
+      branchId: parseInt(values.branchId, 10),
     };
     
     if (isManager) {
@@ -164,6 +176,31 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="branchId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Operating Branch</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Branch" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {branches?.map((b) => (
+                        <SelectItem key={b.id} value={b.id.toString()}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField

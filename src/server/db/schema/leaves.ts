@@ -11,7 +11,7 @@ export const leaves = createTable(
   "leave",
   {
     id: serial("id").primaryKey(),
-    userId: uuid("user_id").references(() => users.id).notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
     startDate: date("start_date").notNull(),
     endDate: date("end_date").notNull(),
     type: leaveTypeEnum("type").notNull(),

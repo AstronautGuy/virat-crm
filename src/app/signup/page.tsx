@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { api } from "@/trpc/react";
 import Link from "next/link";
 
+import { useEffect } from "react";
+
 export default function SignupPage() {
   const [formData, setFormData] = useState({
     firstName: "",
@@ -17,9 +19,24 @@ export default function SignupPage() {
     email: "",
     employeeCode: "",
     password: "",
+    branchId: "",
   });
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  const { data: branches } = api.users.getPublicBranches.useQuery();
+
+  useEffect(() => {
+    if (branches && branches.length > 0 && !formData.branchId) {
+      const firstBranch = branches[0];
+      if (firstBranch) {
+        setFormData((prev) => ({
+          ...prev,
+          branchId: firstBranch.id.toString(),
+        }));
+      }
+    }
+  }, [branches, formData.branchId]);
 
   const signup = api.users.signup.useMutation({
     onSuccess: () => {
@@ -33,10 +50,17 @@ export default function SignupPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    signup.mutate(formData);
+    if (!formData.branchId) {
+      setError("Please select a branch.");
+      return;
+    }
+    signup.mutate({
+      ...formData,
+      branchId: parseInt(formData.branchId, 10),
+    });
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData((prev) => ({
       ...prev,
       [e.target.id]: e.target.value,
@@ -135,6 +159,25 @@ export default function SignupPage() {
                     onChange={handleChange}
                     required
                   />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="branchId">Select Workplace Branch</Label>
+                <div className="relative">
+                  <select
+                    id="branchId"
+                    className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-slate-800"
+                    value={formData.branchId}
+                    onChange={handleChange}
+                    required
+                  >
+                    {branches?.map((b) => (
+                      <option key={b.id} value={b.id.toString()}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

@@ -144,12 +144,36 @@ export const featureProtectedProcedure = (featureKey: string) => {
 /**
  * Admin (authenticated + admin role) procedure
  */
+const isAdmin = t.middleware(({ ctx, next }) => {
+  if (!ctx.dbUser || ctx.dbUser.role !== "Admin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Admin role required." });
+  }
+  return next({
+    ctx: {
+      ...ctx,
+      dbUser: ctx.dbUser,
+    },
+  });
+});
+
 export const isAdminMiddleware = isAdmin;
 export const adminProcedure = protectedProcedure.use(isAdmin);
 
 /**
  * Manager (authenticated + manager or admin role) procedure
  */
+const isManager = t.middleware(({ ctx, next }) => {
+  if (!ctx.dbUser || (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Manager")) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Manager or Admin role required." });
+  }
+  return next({
+    ctx: {
+      ...ctx,
+      dbUser: ctx.dbUser,
+    },
+  });
+});
+
 export const isManagerMiddleware = isManager;
 export const managerProcedure = protectedProcedure.use(isManager);
 

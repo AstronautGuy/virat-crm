@@ -7,7 +7,7 @@ import 'package:virat_mobile/presentation/guards/location_gate.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Background Service
   await initializeService();
 
@@ -18,7 +18,6 @@ void main() async {
   );
 }
 
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -26,9 +25,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Virat CRM',
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.darkTheme,
       builder: (context, child) => LocationGate(child: child!),
-      home: const LoginScreen(),
+      initialRoute: '/',
+      // Route '/' is used for logout navigation back to login
+      routes: {
+        '/': (context) => const LoginScreen(),
+      },
       debugShowCheckedModeBanner: false,
     );
   }

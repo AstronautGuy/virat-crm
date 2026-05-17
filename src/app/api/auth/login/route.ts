@@ -1,31 +1,30 @@
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema/users";
+import { branches } from "@/server/db/schema/branches";
 import { eq } from "drizzle-orm";
 import { login } from "@/server/lib/auth";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as { employeeCode?: string; password?: string };
-  const { employeeCode, password } = body;
+  const body = (await request.json()) as { employeeCode?: string; password?: string; branchId?: number };
+  const { employeeCode, password, branchId } = body;
 
   if (!employeeCode || !password) {
     return NextResponse.json({ error: "Missing credentials" }, { status: 400 });
   }
 
   const user = await db.query.users.findFirst({
-    where: employeeCode ? eq(users.employeeCode, employeeCode) : undefined,
+    where: eq(users.employeeCode, employeeCode),
   });
 
-  if (!user?.isActive) {
+  if (!user || !user.isActive) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
   // Check password
   if (!user.password) {
     // If user has no password set (migration case), they should probably set one first.
-    // For now, let's assume they use a default password or handle it.
-    // If we want to allow migration, we could check against a temporary default.
     return NextResponse.json({ error: "Password not set. Please contact admin." }, { status: 401 });
   }
 
@@ -33,6 +32,22 @@ export async function POST(request: Request) {
 
   if (!isPasswordCorrect) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+  }
+
+  // If user is Admin, they MUST select a branch to operate under
+  if (user.role === "Admin") {
+    if (branchId === undefined) {
+      const activeBranches = await db.query.branches.findMany({
+        where: eq(branches.isActive, true),
+      });
+      return NextResponse.json({
+        requireBranch: true,
+        branches: activeBranches.map(b => ({ id: b.id, name: b.name })),
+      });
+    }
+
+    // Update the Admin's branchId to the selected branch so that their operations are locked to this branch
+    await db.update(users).set({ branchId }).where(eq(users.id, user.id));
   }
 
   // Create session

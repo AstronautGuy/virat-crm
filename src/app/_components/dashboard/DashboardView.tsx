@@ -87,6 +87,7 @@ export function DashboardView({ user, metrics, isManager, isLoading }: Dashboard
             </Link>
           </Card>
         </div>
+        </div>
       </FeatureGate>
     </PageWrapper>
   );

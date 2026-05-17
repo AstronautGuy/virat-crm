@@ -17,15 +17,20 @@ export const authRouter = createTRPCRouter({
       token: z.string(),
       user: z.object({
         id: z.string(),
+        employeeCode: z.string(),
         firstName: z.string(),
         lastName: z.string(),
         role: z.string(),
+        branchName: z.string().optional().nullable(),
         permissions: z.record(z.string(), z.boolean()),
       }),
     }))
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.db.query.users.findFirst({
-        where: eq(users.employeeCode, input.employeeCode),
+        where: eq(users.employeeCode, input.employeeCode.toUpperCase()),
+        with: {
+          branch: true,
+        },
       });
 
       if (!user || !user.password) {
@@ -55,9 +60,11 @@ export const authRouter = createTRPCRouter({
         token,
         user: {
           id: user.id,
+          employeeCode: user.employeeCode,
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
+          branchName: user.branch?.name ?? "No Branch Assigned",
           permissions: permissionsMap,
         }
       };
