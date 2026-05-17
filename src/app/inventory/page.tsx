@@ -148,7 +148,7 @@ export default function InventoryPage() {
                   </tr>
                 ) : (
                   filteredStock?.map((item) => (
-                    <tr key={item.id} className="hover:bg-secondary/30 transition-colors group">
+                    <tr key={item.productId} className="hover:bg-secondary/30 transition-colors group">
                       <td className="px-6 py-5 text-foreground font-bold">{item.product.name}</td>
                       <td className="px-6 py-5 text-muted-foreground font-mono text-xs">{item.product.sku}</td>
                       <td className="px-6 py-5 text-center font-bold tabular-nums">

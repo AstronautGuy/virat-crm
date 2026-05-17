@@ -35,7 +35,7 @@ export const salesRouter = createTRPCRouter({
       z.object({
         id: z.number(),
         orderNumber: z.string(),
-        transactionNumber: z.string(),
+        transactionNumber: z.string().nullable(),
         branchId: z.number(),
         userId: z.string(),
         mainQty: z.number(),

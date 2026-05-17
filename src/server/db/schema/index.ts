@@ -19,4 +19,4 @@ export { performanceSnapshots } from "./performance";
 export { salesArchive, replacementsArchive } from "./archive";
 export { customers, customersRelations, customerStatusEnum } from "./customers";
 export { dailyReports, dailyReportsRelations } from "./daily_reports";
-
+export { systemSettings } from "./systemSettings";

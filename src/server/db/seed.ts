@@ -1,5 +1,5 @@
 import { db } from "./index";
-import { branches, users, products, sales, saleItems, replacements, inventory, roles, rolePermissions } from "./schema";
+import { branches, users, products, sales, saleItems, replacements, inventory, roles, rolePermissions, systemSettings } from "./schema";
 import { sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -7,6 +7,7 @@ async function main() {
   console.log("Seeding database...");
 
   // Truncate tables to allow re-seeding
+  await db.execute(sql`TRUNCATE TABLE "virat-crm_system_settings" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_role_permission" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_stock_transfer" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_inventory_transaction" CASCADE;`);
@@ -26,6 +27,7 @@ async function main() {
   const insertedRoles = await db
     .insert(roles)
     .values([
+      { name: "Developer", isSystem: true, description: "System Developer" },
       { name: "Admin", isSystem: true, description: "System Administrator" },
       { name: "Manager", isSystem: true, description: "Branch Manager" },
       { name: "Employee", isSystem: true, description: "Field Employee" }
@@ -37,6 +39,16 @@ async function main() {
   await db
     .insert(rolePermissions)
     .values([
+      // Developer permissions (Omnipotent bypass role)
+      { role: "Developer", featureKey: "dashboard", isEnabled: true },
+      { role: "Developer", featureKey: "crm", isEnabled: true },
+      { role: "Developer", featureKey: "sales", isEnabled: true },
+      { role: "Developer", featureKey: "inventory", isEnabled: true },
+      { role: "Developer", featureKey: "workforce", isEnabled: true },
+      { role: "Developer", featureKey: "documents", isEnabled: true },
+      { role: "Developer", featureKey: "replacements", isEnabled: true },
+      { role: "Developer", featureKey: "performance", isEnabled: true },
+
       // Admin permissions
       { role: "Admin", featureKey: "dashboard", isEnabled: true },
       { role: "Admin", featureKey: "crm", isEnabled: true },
@@ -99,6 +111,16 @@ async function main() {
     .insert(users)
     .values([
       {
+        employeeCode: "DEV001",
+        password: password,
+        email: "developer@viraterp.com",
+        firstName: "System",
+        lastName: "Developer",
+        role: "Developer",
+        branchId: hq.id,
+        isActive: true,
+      },
+      {
         employeeCode: "ADMIN001",
         password: password,
         email: "admin@viraterp.com",
@@ -132,8 +154,8 @@ async function main() {
     .returning();
 
   console.log("Users seeded:", insertedUsers.length);
-  const employee = insertedUsers[1];
-  const manager = insertedUsers[2];
+  const employee = insertedUsers[2];
+  const manager = insertedUsers[3];
 
   // Seed Products
   const insertedProducts = await db
@@ -226,7 +248,15 @@ async function main() {
       status: "Approved",
     }
   ]);
-  console.log("Replacements seeded");
+  // Seed System Settings
+  await db.insert(systemSettings).values({
+    id: "global",
+    maxUsers: 50,
+    isSystemLocked: false,
+    isReadOnly: false,
+    disabledFeaturesGlobal: [],
+  });
+  console.log("System Settings seeded");
 
   console.log("Database seeding completed.");
   process.exit(0);

@@ -14,8 +14,15 @@ interface Metric {
   trend: string;
 }
 
+interface UserInfo {
+  firstName: string;
+  lastName?: string | null;
+  role: string;
+  branchId?: number | null;
+}
+
 interface DashboardViewProps {
-  user: Record<string, any> | null;
+  user: UserInfo | null;
   metrics: Metric[];
   isManager: boolean;
   isLoading?: boolean;

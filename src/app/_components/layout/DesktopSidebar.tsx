@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingBag, Users, FileText, User, MapPin, BarChart3, Network, ShieldCheck, Contact, Download, Upload } from "lucide-react";
+import { Home, ShoppingBag, Users, FileText, User, MapPin, BarChart3, Network, ShieldCheck, Contact, Download, Upload, Sliders } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
@@ -76,6 +76,12 @@ export function DesktopSidebar() {
       label: "Bulk Imports", 
       icon: Upload,
       hidden: !isAdmin 
+    },
+    { 
+      href: "/admin/developer", 
+      label: "Developer Console", 
+      icon: Sliders,
+      hidden: user?.role !== "Developer" 
     },
     { href: "/profile", label: "My Profile", icon: User },
   ];

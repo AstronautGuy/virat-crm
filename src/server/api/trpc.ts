@@ -7,6 +7,7 @@ import { getSession, getSessionFromHeaders } from "@/server/lib/auth";
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema/users";
 import { rolePermissions } from "@/server/db/schema/rolePermissions";
+import { systemSettings } from "@/server/db/schema/systemSettings";
 import { eq, and } from "drizzle-orm";
 
 /**
@@ -25,10 +26,22 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
       })
     : null;
 
+  // Fetch system settings
+  const settings = (await db.query.systemSettings.findFirst({
+    where: eq(systemSettings.id, "global"),
+  })) ?? {
+    id: "global",
+    maxUsers: 50,
+    isSystemLocked: false,
+    isReadOnly: false,
+    disabledFeaturesGlobal: [] as string[],
+  };
+
   return {
     db,
     session,
     dbUser,
+    settings,
     ...opts,
   };
 };
@@ -79,10 +92,37 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
 /**
  * Protected (authenticated) procedure
  */
-const isAuthed = t.middleware(({ ctx, next }) => {
+const isAuthed = t.middleware(({ ctx, next, type }) => {
   if (!ctx.dbUser) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
+
+  // Developer bypasses all system locks and read-only locks
+  if (ctx.dbUser.role === "Developer") {
+    return next({
+      ctx: {
+        ...ctx,
+        dbUser: ctx.dbUser,
+      },
+    });
+  }
+
+  // System lock check
+  if (ctx.settings.isSystemLocked) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "SYSTEM_LOCKED: System has been suspended by the developer.",
+    });
+  }
+
+  // Read-only freeze check for mutations
+  if (ctx.settings.isReadOnly && type === "mutation") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "System is under maintenance: mutations are currently suspended",
+    });
+  }
+
   return next({
     ctx: {
       ...ctx,
@@ -106,7 +146,25 @@ export const featureProtectedProcedure = (featureKey: string) => {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "User profile not found in database." });
       }
 
-      // Admins bypass feature gates
+      // Sovereign Developer bypasses ALL feature gates and permission rules
+      if (ctx.dbUser.role === "Developer") {
+        return next({
+          ctx: {
+            ...ctx,
+            dbUser: ctx.dbUser,
+          },
+        });
+      }
+
+      // If a feature is globally disabled, block even Admins!
+      if (ctx.settings.disabledFeaturesGlobal?.includes(featureKey)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: `The feature '${featureKey}' is globally disabled.`,
+        });
+      }
+
+      // Admins bypass feature gates (if not globally disabled)
       if (ctx.dbUser.role === "Admin") {
         return next({
           ctx: {
@@ -145,7 +203,10 @@ export const featureProtectedProcedure = (featureKey: string) => {
  * Admin (authenticated + admin role) procedure
  */
 const isAdmin = t.middleware(({ ctx, next }) => {
-  if (!ctx.dbUser || ctx.dbUser.role !== "Admin") {
+  if (ctx.dbUser?.role === "Developer") {
+    return next({ ctx });
+  }
+  if (ctx.dbUser?.role !== "Admin") {
     throw new TRPCError({ code: "FORBIDDEN", message: "Admin role required." });
   }
   return next({
@@ -163,6 +224,9 @@ export const adminProcedure = protectedProcedure.use(isAdmin);
  * Manager (authenticated + manager or admin role) procedure
  */
 const isManager = t.middleware(({ ctx, next }) => {
+  if (ctx.dbUser?.role === "Developer") {
+    return next({ ctx });
+  }
   if (!ctx.dbUser || (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Manager")) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Manager or Admin role required." });
   }

@@ -16,7 +16,31 @@ export const crmRouter = createTRPCRouter({
     .input(z.object({
       search: z.string().optional(),
     }).optional())
-    .output(z.any())
+    .output(
+      z.array(
+        z.object({
+          id: z.string().uuid(),
+          name: z.string(),
+          mobile: z.string(),
+          village: z.string(),
+          district: z.string(),
+          state: z.string(),
+          status: z.enum(["Draft", "Approved"]),
+          totalPending: z.number(),
+          dob: z.any(),
+          pincode: z.string(),
+          address: z.string(),
+          branchId: z.number(),
+          createdBy: z.string().uuid(),
+          createdAt: z.any(),
+          updatedAt: z.any(),
+          creator: z.object({
+            firstName: z.string().nullable().optional(),
+            lastName: z.string().nullable().optional(),
+          }).passthrough().optional().nullable(),
+        }).passthrough()
+      )
+    )
     .query(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
       

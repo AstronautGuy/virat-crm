@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     where: eq(users.employeeCode, employeeCode),
   });
 
-  if (!user || !user.isActive) {
+  if (!user?.isActive) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 

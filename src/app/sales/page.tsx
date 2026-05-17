@@ -80,70 +80,73 @@ export default function SalesDashboard() {
             ) : (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {/* When loading, Skelon will use these as blueprint */}
-                {((isLoading ? Array.from({ length: 6 }) : filteredSales) as Record<string, any>[]).map((sale, idx) => (
-                  <Card key={sale?.id ?? idx} className="overflow-hidden border-none group">
-                    <CardHeader className="pb-3 bg-slate-50/50 group-hover:bg-primary/5 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base font-bold tracking-tight text-slate-800 truncate" title={sale?.orderNumber}>
-                          {sale?.orderNumber ?? "ORD-000000"}
-                        </CardTitle>
-                        <Badge
-                          className={cn(
-                            "text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg border-none",
-                            sale?.status === "Approved"
-                              ? "bg-green-100 text-green-700"
-                              : sale?.status === "Rejected"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-amber-100 text-amber-700"
-                          )}
-                        >
-                          {sale?.status ?? "Pending"}
-                        </Badge>
-                      </div>
-                      <CardDescription className="text-xs text-slate-400 font-medium">
-                        {sale?.createdAt ? new Date(sale.createdAt).toLocaleDateString() : "Date Placeholder"} • {sale?.customerName ?? "Customer Name"}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-5">
-                      <div className="grid grid-cols-2 gap-y-4 gap-x-6">
-                        <div className="flex flex-col">
-                          <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Amount</span>
-                          <span className="font-bold text-slate-900 text-lg">₹{sale?.invoiceAmount ?? "00,000"}</span>
+                {(isLoading ? Array.from({ length: 6 }) : (filteredSales ?? [])).map((saleItem, idx) => {
+                  const sale = saleItem as (typeof filteredSales)[number] | undefined;
+                  return (
+                    <Card key={sale?.id ?? idx} className="overflow-hidden border-none group">
+                      <CardHeader className="pb-3 bg-slate-50/50 group-hover:bg-primary/5 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base font-bold tracking-tight text-slate-800 truncate" title={sale?.orderNumber ?? ""}>
+                            {sale?.orderNumber ?? "ORD-000000"}
+                          </CardTitle>
+                          <Badge
+                            className={cn(
+                              "text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg border-none",
+                              sale?.status === "Approved"
+                                ? "bg-green-100 text-green-700"
+                                : sale?.status === "Rejected"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-amber-100 text-amber-700"
+                            )}
+                          >
+                            {sale?.status ?? "Pending"}
+                          </Badge>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Balance</span>
-                          <span className="font-bold text-red-500 text-lg">₹{sale?.balanceAmount ?? "00,000"}</span>
+                        <CardDescription className="text-xs text-slate-400 font-medium">
+                          {sale?.createdAt ? new Date(sale.createdAt).toLocaleDateString() : "Date Placeholder"} • {sale?.customerName ?? "Customer Name"}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-5">
+                        <div className="grid grid-cols-2 gap-y-4 gap-x-6">
+                          <div className="flex flex-col">
+                            <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Amount</span>
+                            <span className="font-bold text-slate-900 text-lg">₹{sale?.invoiceAmount ?? "00,000"}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Balance</span>
+                            <span className="font-bold text-red-500 text-lg">₹{sale?.balanceAmount ?? "00,000"}</span>
+                          </div>
+                          <div className="flex flex-col col-span-2 pt-4 border-t border-slate-50">
+                            <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-2 flex items-center gap-1.5">
+                              <FileText className="w-3.5 h-3.5" /> Documents
+                            </span>
+                            {sale?.id && sale?.files && <FileGallery entityType="sale" entityId={sale.id} initialFiles={sale.files} />}
+                          </div>
                         </div>
-                        <div className="flex flex-col col-span-2 pt-4 border-t border-slate-50">
-                          <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-2 flex items-center gap-1.5">
-                            <FileText className="w-3.5 h-3.5" /> Documents
-                          </span>
-                          {sale && <FileGallery entityType="sale" entityId={sale.id} initialFiles={sale.files} />}
-                        </div>
-                      </div>
 
-                      {sale?.status === "Pending" && (
-                        <div className="mt-6 flex gap-3 pt-4 border-t border-slate-50">
-                          <Button
-                            className="flex-1 rounded-xl h-11"
-                            onClick={() => updateStatus({ saleId: sale.id, status: "Approved" })}
-                            disabled={isUpdating}
-                          >
-                            <Check className="mr-2 h-4 w-4" /> Approve
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="flex-1 rounded-xl h-11 border-slate-200 text-slate-600"
-                            onClick={() => updateStatus({ saleId: sale.id, status: "Rejected" })}
-                            disabled={isUpdating}
-                          >
-                            <X className="mr-2 h-4 w-4" /> Reject
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                        {sale?.status === "Pending" && (
+                          <div className="mt-6 flex gap-3 pt-4 border-t border-slate-50">
+                            <Button
+                              className="flex-1 rounded-xl h-11"
+                              onClick={() => sale.id && updateStatus({ saleId: sale.id, status: "Approved" })}
+                              disabled={isUpdating}
+                            >
+                              <Check className="mr-2 h-4 w-4" /> Approve
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="flex-1 rounded-xl h-11 border-slate-200 text-slate-600"
+                              onClick={() => sale.id && updateStatus({ saleId: sale.id, status: "Rejected" })}
+                              disabled={isUpdating}
+                            >
+                              <X className="mr-2 h-4 w-4" /> Reject
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </div>

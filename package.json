@@ -110,10 +110,5 @@
   "ct3aMetadata": {
     "initVersion": "7.40.0"
   },
-  "pnpm": {
-    "overrides": {
-      "zod": "^3.24.2"
-    }
-  },
   "packageManager": "pnpm@10.33.0"
 }

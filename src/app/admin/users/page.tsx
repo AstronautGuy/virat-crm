@@ -90,6 +90,20 @@ export default function UsersAdminPage() {
   );
 }
 
+interface UserType {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  employeeCode: string | null;
+  role: string | null;
+  branchId: number | null;
+  managerId: string | null;
+  isActive: boolean;
+  branch?: { id: number; name: string } | null;
+  manager?: { id: string; firstName: string | null; lastName: string | null } | null;
+}
+
 function UserList() {
   const router = useRouter();
   const utils = api.useUtils();
@@ -103,8 +117,8 @@ function UserList() {
   const [branchFilter, setBranchFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; user: any } | null>(null);
-  const [resetUser, setResetUser] = useState<any | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; user: UserType } | null>(null);
+  const [resetUser, setResetUser] = useState<UserType | null>(null);
   const [newPassword, setNewPassword] = useState("");
 
   const toggleActiveMutation = api.users.toggleActiveStatus.useMutation({
@@ -128,7 +142,7 @@ function UserList() {
     }
   });
 
-  const [editUser, setEditUser] = useState<any | null>(null);
+  const [editUser, setEditUser] = useState<UserType | null>(null);
   const [editForm, setEditForm] = useState({
     firstName: "",
     lastName: "",
@@ -158,7 +172,7 @@ function UserList() {
     );
   }
 
-  const handleContextMenu = (e: React.MouseEvent, user: any) => {
+  const handleContextMenu = (e: React.MouseEvent, user: UserType) => {
     e.preventDefault();
     setContextMenu({
       x: e.clientX,
@@ -169,6 +183,7 @@ function UserList() {
 
   const handleResetPasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!resetUser) return;
     if (newPassword.length < 6) {
       toast.error("Password must be at least 6 characters");
       return;
@@ -181,6 +196,7 @@ function UserList() {
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editUser) return;
     if (!editForm.firstName.trim() || !editForm.lastName.trim() || !editForm.email.trim() || !editForm.employeeCode.trim()) {
       toast.error("Please fill in all required fields");
       return;
@@ -272,11 +288,9 @@ function UserList() {
               </SelectTrigger>
               <SelectContent className="rounded-xl">
                 <SelectItem value="All" className="rounded-lg">All Branches</SelectItem>
-                {/* eslint-disable @typescript-eslint/no-explicit-any */}
-                {(branches as any)?.map((b: any) => (
+                {branches?.map((b) => (
                   <SelectItem key={b.id} value={b.id.toString()} className="rounded-lg">{b.name}</SelectItem>
                 ))}
-                {/* eslint-enable @typescript-eslint/no-explicit-any */}
               </SelectContent>
             </Select>
           </div>
@@ -429,13 +443,13 @@ function UserList() {
               onClick={() => {
                 setEditUser(contextMenu.user);
                 setEditForm({
-                  firstName: contextMenu.user.firstName || "",
-                  lastName: contextMenu.user.lastName || "",
-                  email: contextMenu.user.email || "",
-                  employeeCode: contextMenu.user.employeeCode || "",
-                  role: contextMenu.user.role || "",
+                  firstName: contextMenu.user.firstName ?? "",
+                  lastName: contextMenu.user.lastName ?? "",
+                  email: contextMenu.user.email ?? "",
+                  employeeCode: contextMenu.user.employeeCode ?? "",
+                  role: contextMenu.user.role ?? "",
                   branchId: contextMenu.user.branchId ? contextMenu.user.branchId.toString() : "none",
-                  managerId: contextMenu.user.managerId || "none"
+                  managerId: contextMenu.user.managerId ?? "none"
                 });
                 setContextMenu(null);
               }}
@@ -605,11 +619,9 @@ function UserList() {
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
                       <SelectItem value="none" className="rounded-lg text-slate-400 italic">No Branch (N/A)</SelectItem>
-                      {/* eslint-disable @typescript-eslint/no-explicit-any */}
-                      {(branches as any)?.map((b: any) => (
+                      {branches?.map((b) => (
                         <SelectItem key={b.id} value={b.id.toString()} className="rounded-lg">{b.name}</SelectItem>
                       ))}
-                      {/* eslint-enable @typescript-eslint/no-explicit-any */}
                     </SelectContent>
                   </Select>
                 </div>
@@ -626,7 +638,7 @@ function UserList() {
                     <SelectContent className="rounded-xl">
                       <SelectItem value="none" className="rounded-lg text-slate-400 italic">No Manager (N/A)</SelectItem>
                       {users
-                        ?.filter((u) => u.id !== editUser.id && u.role !== "Employee") // Exclude self & non-managers to keep hierarchy logical
+                        ?.filter((u) => u.id !== editUser?.id && u.role !== "Employee") // Exclude self & non-managers to keep hierarchy logical
                         ?.map((u) => (
                           <SelectItem key={u.id} value={u.id} className="rounded-lg">
                             {u.firstName} {u.lastName} ({u.role})
@@ -669,7 +681,7 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
     email: "",
     employeeCode: "",
     password: "",
-    role: "Employee" as string,
+    role: "Employee",
     branchId: undefined as number | undefined,
     managerId: undefined as string | undefined,
   });
@@ -785,11 +797,9 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
                   <SelectValue placeholder="Select Branch" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */}
-                  {(branches as any)?.map((b: any) => (
+                  {branches?.map((b) => (
                     <SelectItem key={b.id} value={b.id.toString()}>{b.name}</SelectItem>
                   ))}
-                  {/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */}
                 </SelectContent>
               </Select>
             </div>
@@ -804,11 +814,9 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
                   <SelectValue placeholder="Optional" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */}
-                  {(managers as any)?.map((m: any) => (
+                  {managers?.map((m) => (
                     <SelectItem key={m.id} value={m.id}>{m.firstName} {m.lastName}</SelectItem>
                   ))}
-                  {/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */}
                 </SelectContent>
               </Select>
             </div>

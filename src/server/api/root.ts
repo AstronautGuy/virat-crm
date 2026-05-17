@@ -18,6 +18,7 @@ import { dailyReportsRouter } from "./routers/dailyReports";
 import { authRouter } from "./routers/auth";
 import { heartbeatRouter } from "./routers/heartbeat";
 import { rolesRouter } from "./routers/roles";
+import { developerRouter } from "./routers/developer";
 
 
 /**
@@ -44,6 +45,7 @@ export const appRouter = createTRPCRouter({
   auth: authRouter,
   heartbeat: heartbeatRouter,
   roles: rolesRouter,
+  developer: developerRouter,
 });
 
 // export type definition of API

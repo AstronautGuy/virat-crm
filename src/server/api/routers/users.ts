@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, featureProtectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { users } from "@/server/db/schema/users";
-import { eq, or } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 export const usersRouter = createTRPCRouter({
@@ -28,6 +28,19 @@ export const usersRouter = createTRPCRouter({
         throw new TRPCError({
           code: "CONFLICT",
           message: "User with this email or employee code already exists",
+        });
+      }
+
+      // Max active users license limit check
+      const activeUserCountResult = await ctx.db
+        .select({ count: sql<number>`count(*)` })
+        .from(users)
+        .where(eq(users.isActive, true));
+      const activeUserCount = activeUserCountResult[0]?.count ?? 0;
+      if (activeUserCount >= ctx.settings.maxUsers) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Maximum active user limit (${ctx.settings.maxUsers}) has been reached. Contact System Developer to upgrade your license.`,
         });
       }
 
@@ -107,8 +120,25 @@ export const usersRouter = createTRPCRouter({
       managerId: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.dbUser.role !== "Admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can create users" });
+      if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Developer") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins or developers can create users" });
+      }
+
+      if (input.role === "Developer" && ctx.dbUser.role !== "Developer") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only developers can assign the Developer role" });
+      }
+
+      // Max active users license limit check
+      const activeUserCountResult = await ctx.db
+        .select({ count: sql<number>`count(*)` })
+        .from(users)
+        .where(eq(users.isActive, true));
+      const activeUserCount = activeUserCountResult[0]?.count ?? 0;
+      if (activeUserCount >= ctx.settings.maxUsers) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Maximum active user limit (${ctx.settings.maxUsers}) has been reached. Contact System Developer to upgrade your license.`,
+        });
       }
 
       const hashedPassword = await bcrypt.hash(input.password, 10);
@@ -120,7 +150,7 @@ export const usersRouter = createTRPCRouter({
     }),
 
   getAllUsers: protectedProcedure.query(async ({ ctx }) => {
-    if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Manager") {
+    if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Manager" && ctx.dbUser.role !== "Developer") {
       throw new TRPCError({ code: "FORBIDDEN" });
     }
 
@@ -138,8 +168,35 @@ export const usersRouter = createTRPCRouter({
       isActive: z.boolean(),
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.dbUser.role !== "Admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can change active status" });
+      if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Developer") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins or developers can change active status" });
+      }
+
+      const targetUser = await ctx.db.query.users.findFirst({
+        where: eq(users.id, input.userId),
+      });
+
+      if (!targetUser) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      if (targetUser.role === "Developer" && ctx.dbUser.role !== "Developer") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Developer accounts cannot be deactivated by other roles." });
+      }
+
+      // Check max users cap if activating an inactive user
+      if (input.isActive && !targetUser.isActive) {
+        const activeUserCountResult = await ctx.db
+          .select({ count: sql<number>`count(*)` })
+          .from(users)
+          .where(eq(users.isActive, true));
+        const activeUserCount = activeUserCountResult[0]?.count ?? 0;
+        if (activeUserCount >= ctx.settings.maxUsers) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Maximum active user limit (${ctx.settings.maxUsers}) has been reached. Contact System Developer to upgrade your license.`,
+          });
+        }
       }
 
       await ctx.db
@@ -156,8 +213,20 @@ export const usersRouter = createTRPCRouter({
       newPassword: z.string().min(6),
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.dbUser.role !== "Admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can reset employee passwords" });
+      if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Developer") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins or developers can reset employee passwords" });
+      }
+
+      const targetUser = await ctx.db.query.users.findFirst({
+        where: eq(users.id, input.userId),
+      });
+
+      if (!targetUser) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      if (targetUser.role === "Developer" && ctx.dbUser.role !== "Developer") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Developer passwords cannot be reset by other roles." });
       }
 
       const hashedPassword = await bcrypt.hash(input.newPassword, 10);
@@ -181,8 +250,24 @@ export const usersRouter = createTRPCRouter({
       managerId: z.string().nullable().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.dbUser.role !== "Admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can edit user details" });
+      if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Developer") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins or developers can edit user details" });
+      }
+
+      const targetUser = await ctx.db.query.users.findFirst({
+        where: eq(users.id, input.userId),
+      });
+
+      if (!targetUser) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      if (targetUser.role === "Developer" && ctx.dbUser.role !== "Developer") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Developer details can only be modified by the Developer." });
+      }
+
+      if (input.role === "Developer" && ctx.dbUser.role !== "Developer") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only developers can assign the Developer role" });
       }
 
       if (input.managerId && input.managerId === input.userId) {

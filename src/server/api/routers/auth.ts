@@ -33,7 +33,7 @@ export const authRouter = createTRPCRouter({
         },
       });
 
-      if (!user || !user.password) {
+      if (!user?.password) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
       }
 

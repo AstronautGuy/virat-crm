@@ -29,7 +29,7 @@ if (!(ZodType.prototype as any)._zod) {
     get() {
       const typeName = this._def.typeName;
       let type = typeName ? typeName.replace(/^Zod/, "").toLowerCase() : "any";
-      
+
       if (typeName === "ZodEffects") {
         type = this._def.effect?.type === "transform" ? "transform" : "pipe";
       }
@@ -59,7 +59,7 @@ if (!(ZodType.prototype as any)._zod) {
       };
 
       const bag: any = {};
-      
+
       if (this._def.checks) {
         const patterns: Set<RegExp> = new Set();
         for (const check of this._def.checks) {
@@ -126,7 +126,7 @@ try {
   const openApiDocument = generateOpenApiDocument(appRouter, {
     title: "Virat CRM API",
     version: "1.0.0",
-    baseUrl: "http://localhost:3000/api/rest",
+    baseUrl: "virat-crm-git-dev-thespacestation.vercel.app",
   });
   console.log("Success! Generated OpenAPI document.");
   console.log(JSON.stringify(openApiDocument, null, 2).substring(0, 1000) + "...");

@@ -22,6 +22,12 @@
   - [ ] **Task 29.2**: Build the "Big Button" New Sale form.
   - [ ] **Task 29.3**: Implement SyncRepository for background data reconciliation.
 
+- **Phase 31: Developer Omnipotence & License Control**
+  - [ ] **Task 31.1**: Design system_settings schema & seed "Developer" role and account.
+  - [ ] **Task 31.2**: Implement tRPC middleware locks (system kill-switch, read-only guard).
+  - [ ] **Task 31.3**: Build Developer Admin Control Dashboard (Max Users, Feature Locks).
+  - [ ] **Task 31.4**: Mobile integration: display global lock screen under system lock.
+
 ## Backlog
 
 ### Phase 999.1: Follow-up — Phase 21 incomplete plans (BACKLOG)

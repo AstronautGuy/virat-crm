@@ -30,7 +30,7 @@ export default function RolesAdminPage() {
     onSuccess: () => {
       toast.success("Role created successfully");
       setFormData({ name: "", description: "" });
-      utils.roles.getAll.invalidate();
+      void utils.roles.getAll.invalidate();
     },
     onError: (e) => toast.error(e.message),
   });
@@ -38,7 +38,7 @@ export default function RolesAdminPage() {
   const deleteMutation = api.roles.delete.useMutation({
     onSuccess: () => {
       toast.success("Role deleted successfully");
-      utils.roles.getAll.invalidate();
+      void utils.roles.getAll.invalidate();
     },
     onError: (e) => toast.error(e.message),
   });
@@ -122,7 +122,7 @@ export default function RolesAdminPage() {
                         <TableRow key={role.name}>
                           <TableCell className="font-medium">{role.name}</TableCell>
                           <TableCell className="text-slate-500 text-sm">
-                            {role.description || "-"}
+                            {role.description ?? "-"}
                           </TableCell>
                           <TableCell>
                             {role.isSystem ? (
