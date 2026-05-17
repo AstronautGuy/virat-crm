@@ -1,6 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:virat_mobile/core/config.dart';
+
+class SystemLockController {
+  static final ValueNotifier<bool> isLocked = ValueNotifier<bool>(false);
+}
 
 class ApiClient {
   final Dio _dio = Dio();
@@ -19,9 +24,20 @@ class ApiClient {
         }
         return handler.next(options);
       },
+      onResponse: (response, handler) {
+        // If a successful response is received, we are not locked
+        SystemLockController.isLocked.value = false;
+        return handler.next(response);
+      },
       onError: (e, handler) {
         if (e.response?.statusCode == 401) {
           // Handle unauthorized (logout, etc.)
+        }
+        if (e.response?.statusCode == 403) {
+          final errStr = e.response?.toString() ?? '';
+          if (errStr.contains('SYSTEM_LOCKED')) {
+            SystemLockController.isLocked.value = true;
+          }
         }
         return handler.next(e);
       },

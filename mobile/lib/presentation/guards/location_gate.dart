@@ -84,14 +84,102 @@ class _LocationGateState extends State<LocationGate> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isLocationEnabled || !_isNotificationGranted) {
-      return _PermissionsScreen(
-        isLocationEnabled: _isLocationEnabled,
-        isNotificationGranted: _isNotificationGranted,
-        onRetry: _checkPermissions,
-      );
-    }
-    return widget.child;
+    return ValueListenableBuilder<bool>(
+      valueListenable: SystemLockController.isLocked,
+      builder: (context, isLocked, child) {
+        if (isLocked) {
+          return const _SystemLockedScreen();
+        }
+        if (!_isLocationEnabled || !_isNotificationGranted) {
+          return _PermissionsScreen(
+            isLocationEnabled: _isLocationEnabled,
+            isNotificationGranted: _isNotificationGranted,
+            onRetry: _checkPermissions,
+          );
+        }
+        return widget.child;
+      },
+    );
+  }
+}
+
+class _SystemLockedScreen extends StatelessWidget {
+  const _SystemLockedScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F172A), // Slate 900
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Pulsing Crimson Shield Lock
+              Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFEF4444), Color(0xFFB91C1C)], // Red 500 to Red 700
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFEF4444).withOpacity(0.3),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.lock_outline_rounded,
+                  size: 48,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              Text(
+                'SYSTEM SUSPENDED',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'This platform instance has been globally suspended by the developer.\n\nAll mobile and web services are locked. Please contact your system developer to renew or upgrade your license.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: const Color(0xFF94A3B8), // Slate 400
+                  fontSize: 13,
+                  height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 48),
+              
+              // Loader
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFEF4444)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
