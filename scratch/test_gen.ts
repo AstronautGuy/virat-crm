@@ -126,7 +126,7 @@ try {
   const openApiDocument = generateOpenApiDocument(appRouter, {
     title: "Virat CRM API",
     version: "1.0.0",
-    baseUrl: "virat-crm-git-dev-thespacestation.vercel.app",
+    baseUrl: "virat-crm.vercel.app",
   });
   console.log("Success! Generated OpenAPI document.");
   console.log(JSON.stringify(openApiDocument, null, 2).substring(0, 1000) + "...");

@@ -77,6 +77,7 @@ export const usersRouter = createTRPCRouter({
         isManager: ctx.dbUser.role === "Manager" || ctx.dbUser.role === "Admin",
         isAdmin: ctx.dbUser.role === "Admin",
       },
+      disabledFeaturesGlobal: ctx.settings.disabledFeaturesGlobal ?? [],
     };
   }),
 

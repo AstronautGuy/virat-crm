@@ -20,6 +20,13 @@ export function DesktopSidebar() {
   
   const getIsFeatureEnabled = (key: string) => {
     if (userLoading || permissionsLoading) return true; // Default to showing while loading to avoid flicker?
+    
+    // Developer role bypasses ALL feature locks
+    if (user?.role === "Developer") return true;
+
+    // Check if the feature is globally disabled by the Developer
+    if (user?.disabledFeaturesGlobal?.includes(key)) return false;
+
     const p = rolePermissions?.find(p => p.featureKey === key);
     if (p) return p.isEnabled;
     return user?.role === "Admin"; // Default for Admins

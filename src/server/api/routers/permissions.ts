@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, adminProcedure, publicProcedure } from "@/server/api/trpc";
+import { TRPCError } from "@trpc/server";
 import { rolePermissions } from "@/server/db/schema/rolePermissions";
 import { eq, and } from "drizzle-orm";
 
@@ -17,6 +18,13 @@ export const permissionsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (input.role === "Developer" && ctx.dbUser?.role !== "Developer") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Developer permissions cannot be modified by standard administrators.",
+        });
+      }
+
       // Check if entry exists
       const existing = await ctx.db
         .select()

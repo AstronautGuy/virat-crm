@@ -9,28 +9,38 @@ import { api } from "@/trpc/react";
 
 export function MobileNav() {
   const pathname = usePathname();
-  const { data: user } = api.users.getMe.useQuery();
+  const { data: user, isLoading: userLoading } = api.users.getMe.useQuery();
+  const { data: rolePermissions, isLoading: permissionsLoading } = api.permissions.getForRole.useQuery(
+    { role: user?.role ?? "Employee" },
+    { enabled: !!user?.role }
+  );
 
-  const isManager = user?.role === "Manager" || user?.role === "Admin";
-  const isAdmin = user?.role === "Admin";
+  const isManager = user?.role === "Manager" || user?.role === "Admin" || user?.role === "Developer";
+  const isAdmin = user?.role === "Admin" || user?.role === "Developer";
   
-  const canViewMap = isManager || isAdmin || (process.env.NODE_ENV === "development");
+  const getIsFeatureEnabled = (key: string) => {
+    if (userLoading || permissionsLoading) return true;
+    if (user?.role === "Developer") return true;
+    if (user?.disabledFeaturesGlobal?.includes(key)) return false;
+
+    const p = rolePermissions?.find(p => p.featureKey === key);
+    if (p) return p.isEnabled;
+    return user?.role === "Admin";
+  };
 
   const links = [
-    { href: "/", label: "Home", icon: Home },
-    { href: "/sales", label: "Sales", icon: ShoppingBag },
-    { href: "/crm", label: "CRM", icon: Contact },
-    { href: "/reports", label: "Reports", icon: FileText },
-    { href: "/attendance", label: "Staff", icon: Users },
-
-
+    { href: "/", label: "Home", icon: Home, hidden: !getIsFeatureEnabled("dashboard") },
+    { href: "/sales", label: "Sales", icon: ShoppingBag, hidden: !getIsFeatureEnabled("sales") },
+    { href: "/crm", label: "CRM", icon: Contact, hidden: !getIsFeatureEnabled("crm") },
+    { href: "/reports", label: "Reports", icon: FileText, hidden: !getIsFeatureEnabled("reports") },
+    { href: "/attendance", label: "Staff", icon: Users, hidden: !getIsFeatureEnabled("workforce") },
     { 
       href: "/admin/live-map", 
       label: "Live", 
       icon: MapPin,
-      hidden: !canViewMap
+      hidden: !getIsFeatureEnabled("live-map") || !isManager
     },
-    { href: "/documents", label: "Docs", icon: FileText },
+    { href: "/documents", label: "Docs", icon: FileText, hidden: !getIsFeatureEnabled("documents") },
     { href: "/profile", label: "Profile", icon: User },
   ];
 
