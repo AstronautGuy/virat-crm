@@ -99,7 +99,7 @@ void onStart(ServiceInstance service) async {
         final token = await storage.read(key: 'jwt_token');
         if (token != null) {
           await dio.post(
-            '/heartbeat/pulse',
+            'heartbeat/pulse',
             data: {
               'status': 'No GPS',
             },
@@ -132,7 +132,7 @@ void onStart(ServiceInstance service) async {
         // - lat and lng must be string representation of coordinate doubles
         // - key is 'status' (not 'connectivityStatus') with matching backend enum 'Online' | 'Offline'
         await dio.post(
-          '/heartbeat/pulse',
+          'heartbeat/pulse',
           data: {
             'lat': position.latitude.toString(),
             'lng': position.longitude.toString(),

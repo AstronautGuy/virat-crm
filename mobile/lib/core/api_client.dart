@@ -18,6 +18,10 @@ class ApiClient {
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
+        // Strip leading slash if present to prevent Dio from discarding baseUrl's path segment
+        if (options.path.startsWith('/')) {
+          options.path = options.path.substring(1);
+        }
         final token = await _storage.read(key: 'jwt_token');
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
