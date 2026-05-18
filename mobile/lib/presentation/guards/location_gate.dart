@@ -74,6 +74,18 @@ class _LocationGateState extends State<LocationGate> {
       return;
     }
 
+    // Explicitly request Background Location permission ("Allow all the time")
+    // to prevent SecurityExceptions on real Android 10+ devices starting a location foreground service.
+    var backgroundStatus = await Permission.locationAlways.status;
+    if (backgroundStatus.isDenied) {
+      backgroundStatus = await Permission.locationAlways.request();
+    }
+
+    if (!backgroundStatus.isGranted) {
+      setState(() => _isLocationEnabled = false);
+      return;
+    }
+
     setState(() => _isLocationEnabled = true);
 
     var notificationStatus = await Permission.notification.status;
@@ -83,7 +95,7 @@ class _LocationGateState extends State<LocationGate> {
     setState(() => _isNotificationGranted = notificationStatus.isGranted);
 
     // If both permissions are granted, start the background tracking service programmatically
-    if (_isLocationEnabled && notificationStatus.isGranted) {
+    if (_isLocationEnabled && _isNotificationGranted) {
       try {
         final service = FlutterBackgroundService();
         final isRunning = await service.isRunning();
@@ -262,7 +274,7 @@ class _PermissionsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                'Virat CRM needs GPS & notification access\nto track your location in the background.',
+                'Virat CRM needs "Allow all the time" GPS & notification access\nto track your location in the background.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   color: AppColors.textMuted,

@@ -1,9 +1,29 @@
 import { api, HydrateClient } from "@/trpc/server";
+import { redirect } from "next/navigation";
 import { DashboardLayout } from "./_components/layout/DashboardLayout";
 import { DashboardView } from "./_components/dashboard/DashboardView";
+import { SuspendedView } from "./_components/dashboard/SuspendedView";
 
 export default async function Home() {
-  const user = await api.users.getMe();
+  let user;
+  let isSystemLocked = false;
+  try {
+    user = await api.users.getMe();
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("SYSTEM_LOCKED")) {
+      isSystemLocked = true;
+    } else {
+      redirect("/login");
+    }
+  }
+
+  if (isSystemLocked) {
+    return <SuspendedView />;
+  }
+
+  if (!user) {
+    redirect("/login");
+  }
   
   const isManager = !!user?.permissions?.isManager || !!user?.permissions?.isAdmin;
 

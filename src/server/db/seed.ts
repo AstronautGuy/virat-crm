@@ -21,7 +21,22 @@ async function main() {
   await db.execute(sql`TRUNCATE TABLE "virat-crm_branch" CASCADE;`);
 
   // Hash passwords
-  const password = await bcrypt.hash("password123", 10);
+  const devPassword = await bcrypt.hash("password123", 10);
+  const adminPassword = await bcrypt.hash("password123", 10);
+
+  const mgr1Pass = await bcrypt.hash("ViratManager1", 10);
+  const mgr2Pass = await bcrypt.hash("ViratManager2", 10);
+
+  const emp1Pass = await bcrypt.hash("ViratEmp001", 10);
+  const emp2Pass = await bcrypt.hash("ViratEmp002", 10);
+  const emp3Pass = await bcrypt.hash("ViratEmp003", 10);
+  const emp4Pass = await bcrypt.hash("ViratEmp004", 10);
+  const emp5Pass = await bcrypt.hash("ViratEmp005", 10);
+  const emp6Pass = await bcrypt.hash("ViratEmp006", 10);
+  const emp7Pass = await bcrypt.hash("ViratEmp007", 10);
+  const emp8Pass = await bcrypt.hash("ViratEmp008", 10);
+  const emp9Pass = await bcrypt.hash("ViratEmp009", 10);
+  const emp10Pass = await bcrypt.hash("ViratEmp010", 10);
 
   // Seed Roles
   const insertedRoles = await db
@@ -74,6 +89,7 @@ async function main() {
       { role: "Employee", featureKey: "crm", isEnabled: true },
       { role: "Employee", featureKey: "sales", isEnabled: true },
       { role: "Employee", featureKey: "inventory", isEnabled: true },
+      { role: "Employee", featureKey: "workforce", isEnabled: true },
       { role: "Employee", featureKey: "documents", isEnabled: true },
       { role: "Employee", featureKey: "replacements", isEnabled: true },
     ]);
@@ -87,14 +103,14 @@ async function main() {
         name: "Headquarters",
         latitude: "28.6139",
         longitude: "77.2090",
-        radiusMeters: 100,
+        radiusMeters: 9999999, // Large radius for global physical testing
         isActive: true,
       },
       {
         name: "North Branch",
         latitude: "28.7041",
         longitude: "77.1025",
-        radiusMeters: 50,
+        radiusMeters: 9999999, // Large radius for global physical testing
         isActive: true,
       },
     ])
@@ -112,7 +128,7 @@ async function main() {
     .values([
       {
         employeeCode: "DEV001",
-        password: password,
+        password: devPassword,
         email: "developer@viraterp.com",
         firstName: "System",
         lastName: "Developer",
@@ -122,7 +138,7 @@ async function main() {
       },
       {
         employeeCode: "ADMIN001",
-        password: password,
+        password: adminPassword,
         email: "admin@viraterp.com",
         firstName: "System",
         lastName: "Admin",
@@ -130,23 +146,125 @@ async function main() {
         branchId: hq.id,
         isActive: true,
       },
+      // Managers
       {
-        employeeCode: "EMP001", 
-        password: password,
-        email: "employee1@viraterp.com",
-        firstName: "Test",
-        lastName: "Employee",
+        employeeCode: "MGR001",
+        password: mgr1Pass,
+        email: "mgr001@viraterp.com",
+        firstName: "Rajesh",
+        lastName: "Sharma",
+        role: "Manager",
+        branchId: hq.id,
+        isActive: true,
+      },
+      {
+        employeeCode: "MGR002",
+        password: mgr2Pass,
+        email: "mgr002@viraterp.com",
+        firstName: "Priya",
+        lastName: "Patel",
+        role: "Manager",
+        branchId: hq.id,
+        isActive: true,
+      },
+      // Employees
+      {
+        employeeCode: "EMP001",
+        password: emp1Pass,
+        email: "emp001@viraterp.com",
+        firstName: "Amit",
+        lastName: "Kumar",
         role: "Employee",
         branchId: hq.id,
         isActive: true,
       },
       {
-        employeeCode: "MGR001",
-        password: password,
-        email: "manager@viraterp.com",
-        firstName: "Mock",
-        lastName: "Manager",
-        role: "Manager",
+        employeeCode: "EMP002",
+        password: emp2Pass,
+        email: "emp002@viraterp.com",
+        firstName: "Sunita",
+        lastName: "Singh",
+        role: "Employee",
+        branchId: hq.id,
+        isActive: true,
+      },
+      {
+        employeeCode: "EMP003",
+        password: emp3Pass,
+        email: "emp003@viraterp.com",
+        firstName: "Vikram",
+        lastName: "Yadav",
+        role: "Employee",
+        branchId: hq.id,
+        isActive: true,
+      },
+      {
+        employeeCode: "EMP004",
+        password: emp4Pass,
+        email: "emp004@viraterp.com",
+        firstName: "Neha",
+        lastName: "Gupta",
+        role: "Employee",
+        branchId: hq.id,
+        isActive: true,
+      },
+      {
+        employeeCode: "EMP005",
+        password: emp5Pass,
+        email: "emp005@viraterp.com",
+        firstName: "Deepak",
+        lastName: "Verma",
+        role: "Employee",
+        branchId: hq.id,
+        isActive: true,
+      },
+      {
+        employeeCode: "EMP006",
+        password: emp6Pass,
+        email: "emp006@viraterp.com",
+        firstName: "Anjali",
+        lastName: "Rao",
+        role: "Employee",
+        branchId: hq.id,
+        isActive: true,
+      },
+      {
+        employeeCode: "EMP007",
+        password: emp7Pass,
+        email: "emp007@viraterp.com",
+        firstName: "Sandeep",
+        lastName: "Mishra",
+        role: "Employee",
+        branchId: hq.id,
+        isActive: true,
+      },
+      {
+        employeeCode: "EMP008",
+        password: emp8Pass,
+        email: "emp008@viraterp.com",
+        firstName: "Pooja",
+        lastName: "Choudhary",
+        role: "Employee",
+        branchId: hq.id,
+        isActive: true,
+      },
+      {
+        employeeCode: "EMP009",
+        password: emp9Pass,
+        email: "emp009@viraterp.com",
+        firstName: "Manoj",
+        lastName: "Joshi",
+        role: "Employee",
+        branchId: hq.id,
+        isActive: true,
+      },
+      {
+        employeeCode: "EMP010",
+        password: emp10Pass,
+        email: "emp010@viraterp.com",
+        firstName: "Kavita",
+        lastName: "Reddy",
+        role: "Employee",
         branchId: hq.id,
         isActive: true,
       }
@@ -154,8 +272,8 @@ async function main() {
     .returning();
 
   console.log("Users seeded:", insertedUsers.length);
-  const employee = insertedUsers[2];
-  const manager = insertedUsers[3];
+  const employee = insertedUsers.find(u => u.employeeCode === "EMP001");
+  const manager = insertedUsers.find(u => u.employeeCode === "MGR001");
 
   // Seed Products
   const insertedProducts = await db

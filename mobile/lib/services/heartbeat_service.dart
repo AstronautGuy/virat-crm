@@ -169,8 +169,24 @@ void onStart(ServiceInstance service) async {
             options: Options(headers: {'Authorization': 'Bearer $token'}),
           );
           debugPrint('[BG_SERVICE] Geolocation pulse sent successfully to server.');
+
+          // 5. Send location ping to update geofenced attendance logs (slabs)
+          try {
+            await dio.post(
+              'location/ping',
+              data: {
+                'latitude': position.latitude,
+                'longitude': position.longitude,
+                'accuracy': position.accuracy,
+              },
+              options: Options(headers: {'Authorization': 'Bearer $token'}),
+            );
+            debugPrint('[BG_SERVICE] Location ping sent successfully to server.');
+          } catch (pingErr) {
+            debugPrint('[BG_SERVICE_ERROR] Failed to send location ping to location/ping: $pingErr');
+          }
           
-          // 5. Trigger Background Sync
+          // 6. Trigger Background Sync
           if (!connectivityResult.contains(ConnectivityResult.none)) {
             await syncRepo.syncAll();
           }

@@ -7,10 +7,22 @@ import { useLocationBreadcrumbs } from "@/hooks/use-location-breadcrumbs";
 import { RefreshCcw, WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "../ErrorBoundary";
+import { api } from "@/trpc/react";
+import { SuspendedView } from "../dashboard/SuspendedView";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isSyncing, pendingCount } = useSyncManager();
   useLocationBreadcrumbs();
+
+  const { error } = api.users.getMe.useQuery(undefined, {
+    retry: false,
+  });
+
+  const isSystemLocked = error?.message?.includes("SYSTEM_LOCKED");
+
+  if (isSystemLocked) {
+    return <SuspendedView />;
+  }
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">

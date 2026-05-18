@@ -226,10 +226,12 @@ export const locationRouter = createTRPCRouter({
       if (visibleUserIds.length === 0) return [];
 
       const latestBreadcrumbs = await ctx.db.query.breadcrumbs.findMany({
-        where: and(
-          gte(breadcrumbs.createdAt, fifteenMinutesAgo),
-          inArray(breadcrumbs.userId, visibleUserIds)
-        ),
+        where: isSystemAdmin
+          ? inArray(breadcrumbs.userId, visibleUserIds)
+          : and(
+              gte(breadcrumbs.createdAt, fifteenMinutesAgo),
+              inArray(breadcrumbs.userId, visibleUserIds)
+            ),
         with: {
           user: true,
         },
@@ -243,7 +245,11 @@ export const locationRouter = createTRPCRouter({
         }
       });
 
-      return Array.from(userMap.values());
+      return Array.from(userMap.values()).map((b) => ({
+        ...b,
+        latitude: parseFloat(String(b.latitude)),
+        longitude: parseFloat(String(b.longitude)),
+      }));
     }),
 
   getRoutePlayback: featureProtectedProcedure("live-map")
@@ -286,6 +292,10 @@ export const locationRouter = createTRPCRouter({
         orderBy: [asc(breadcrumbs.createdAt)],
       });
 
-      return path;
+      return path.map((p) => ({
+        ...p,
+        latitude: parseFloat(String(p.latitude)),
+        longitude: parseFloat(String(p.longitude)),
+      }));
     }),
 });
