@@ -16,42 +16,54 @@ import 'package:virat_mobile/core/api_client.dart';
 import 'package:virat_mobile/core/config.dart';
 
 Future<void> initializeService() async {
-  final service = FlutterBackgroundService();
+  try {
+    final service = FlutterBackgroundService();
 
-  // Create standard Android Notification Channel to avoid Bad Notification exceptions
-  const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'heartbeat_channel', // must match the notificationChannelId below
-    'Virat CRM Heartbeat', // user-visible channel name
-    description: 'This channel is used for foreground real-time location tracking.',
-    importance: Importance.low, // low/min to avoid intrusive sound/vibration loops
-  );
+    // Create standard Android Notification Channel to avoid Bad Notification exceptions
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'heartbeat_channel', // must match the notificationChannelId below
+      'Virat CRM Heartbeat', // user-visible channel name
+      description: 'This channel is used for foreground real-time location tracking.',
+      importance: Importance.low, // low/min to avoid intrusive sound/vibration loops
+    );
 
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+    final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+        FlutterLocalNotificationsPlugin();
 
-  await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(channel);
+    try {
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(channel);
+      debugPrint('[BG_INIT] Successfully created notification channel.');
+    } catch (e) {
+      debugPrint('[BG_INIT_WARN] Non-fatal notification channel warning: $e');
+    }
 
-  await service.configure(
-    androidConfiguration: AndroidConfiguration(
-      onStart: onStart,
-      autoStart: true,
-      isForegroundMode: true,
-      notificationChannelId: 'heartbeat_channel',
-      initialNotificationTitle: 'Virat CRM Tracking',
-      initialNotificationContent: 'Active Tracking Enabled',
-      foregroundServiceNotificationId: 888,
-    ),
-    iosConfiguration: IosConfiguration(
-      autoStart: true,
-      onForeground: onStart,
-      onBackground: onIosBackground,
-    ),
-  );
+    await service.configure(
+      androidConfiguration: AndroidConfiguration(
+        onStart: onStart,
+        autoStart: true,
+        isForegroundMode: true,
+        notificationChannelId: 'heartbeat_channel',
+        initialNotificationTitle: 'Virat CRM Tracking',
+        initialNotificationContent: 'Active Tracking Enabled',
+        foregroundServiceNotificationId: 888,
+      ),
+      iosConfiguration: IosConfiguration(
+        autoStart: true,
+        onForeground: onStart,
+        onBackground: onIosBackground,
+      ),
+    );
 
-  await service.startService();
+    await service.startService();
+    debugPrint('[BG_INIT] Background service started successfully.');
+  } catch (e, stack) {
+    debugPrint('[BG_INIT_ERROR] Critical failure in background service startup: $e');
+    debugPrint('[BG_INIT_ERROR] Stacktrace: $stack');
+    rethrow;
+  }
 }
 
 @pragma('vm:entry-point')
@@ -62,108 +74,129 @@ bool onIosBackground(ServiceInstance service) {
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
-  DartPluginRegistrant.ensureInitialized();
-  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    DartPluginRegistrant.ensureInitialized();
+    WidgetsFlutterBinding.ensureInitialized();
+    debugPrint('[BG_SERVICE] Starting background isolate execution flow...');
 
-  final storage = const FlutterSecureStorage();
-  final dio = Dio(BaseOptions(baseUrl: AppConfig.baseUrl));
-  
-  // Initialize Isar for background sync
-  final dir = await getApplicationDocumentsDirectory();
-  Isar? isar = Isar.getInstance();
-  if (isar == null) {
-    isar = await Isar.open(
-      [SyncItemSchema, ProductSchema],
-      directory: dir.path,
-    );
-  }
-  
-  final syncRepo = SyncRepository(isar, ApiClient());
-
-  // Listen for connectivity changes to trigger sync
-  Connectivity().onConnectivityChanged.listen((result) {
-    if (!result.contains(ConnectivityResult.none)) {
-      syncRepo.syncAll();
+    final storage = const FlutterSecureStorage();
+    final dio = Dio(BaseOptions(baseUrl: AppConfig.baseUrl));
+    
+    // Initialize Isar for background sync with safety guards
+    final dir = await getApplicationDocumentsDirectory();
+    debugPrint('[BG_SERVICE] Isar directory resolved: ${dir.path}');
+    Isar? isar = Isar.getInstance();
+    if (isar == null) {
+      debugPrint('[BG_SERVICE] Opening new Isar instance...');
+      isar = await Isar.open(
+        [SyncItemSchema, ProductSchema],
+        directory: dir.path,
+      );
+      debugPrint('[BG_SERVICE] Isar opened successfully.');
+    } else {
+      debugPrint('[BG_SERVICE] Re-using existing Isar instance.');
     }
-  });
+    
+    final syncRepo = SyncRepository(isar, ApiClient());
 
-  // Local helper to execute the pulse both immediately on startup/login and periodically
-  Future<void> performPulse() async {
-    if (service is AndroidServiceInstance) {
-      if (!(await service.isForegroundService())) {
-        return;
+    // Listen for connectivity changes to trigger sync with safety guards
+    Connectivity().onConnectivityChanged.listen((result) {
+      try {
+        if (!result.contains(ConnectivityResult.none)) {
+          debugPrint('[BG_SERVICE] Network restored, triggering background synchronization.');
+          syncRepo.syncAll();
+        }
+      } catch (e) {
+        debugPrint('[BG_SERVICE_ERROR] Connectivity listener failure: $e');
       }
-    }
+    });
 
-    try {
-      // Check if location services are enabled at system level
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
+    // Local helper to execute the pulse both immediately on startup/login and periodically
+    Future<void> performPulse() async {
+      if (service is AndroidServiceInstance) {
+        if (!(await service.isForegroundService())) {
+          return;
+        }
+      }
+
+      try {
+        debugPrint('[BG_SERVICE] Sending telemetry pulse...');
+        // Check if location services are enabled at system level
+        bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          debugPrint('[BG_SERVICE] System GPS location service is currently disabled.');
+          final token = await storage.read(key: 'jwt_token');
+          if (token != null) {
+            await dio.post(
+              'heartbeat/pulse',
+              data: {
+                'status': 'No GPS',
+              },
+              options: Options(headers: {'Authorization': 'Bearer $token'}),
+            );
+          }
+          service.invoke('update', {
+            'last_pulse': DateTime.now().toIso8601String(),
+            'status': 'No GPS',
+          });
+          return;
+        }
+
+        // 1. Get Location
+        Position position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.medium,
+          ),
+        );
+        debugPrint('[BG_SERVICE] Geolocation pulse coordinates: ${position.latitude}, ${position.longitude}');
+
+        // 2. Get Connectivity
+        final connectivityResult = await Connectivity().checkConnectivity();
+        String status = connectivityResult.contains(ConnectivityResult.none) ? 'Offline' : 'Online';
+
+        // 3. Get Auth Token
         final token = await storage.read(key: 'jwt_token');
+
         if (token != null) {
+          // 4. Send Pulse matching backend Zod schema:
           await dio.post(
             'heartbeat/pulse',
             data: {
-              'status': 'No GPS',
+              'lat': position.latitude.toString(),
+              'lng': position.longitude.toString(),
+              'status': status,
             },
             options: Options(headers: {'Authorization': 'Bearer $token'}),
           );
+          debugPrint('[BG_SERVICE] Geolocation pulse sent successfully to server.');
+          
+          // 5. Trigger Background Sync
+          if (!connectivityResult.contains(ConnectivityResult.none)) {
+            await syncRepo.syncAll();
+          }
+        } else {
+          debugPrint('[BG_SERVICE] Telemetry omitted: User is not authenticated.');
         }
+
         service.invoke('update', {
           'last_pulse': DateTime.now().toIso8601String(),
-          'status': 'No GPS',
+          'status': status,
         });
-        return;
+      } catch (e, stack) {
+        debugPrint('[BG_SERVICE_ERROR] Failed during performPulse execution: $e');
+        debugPrint('[BG_SERVICE_ERROR] Stacktrace: $stack');
       }
-
-      // 1. Get Location
-      Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
-        ),
-      );
-
-      // 2. Get Connectivity
-      final connectivityResult = await Connectivity().checkConnectivity();
-      String status = connectivityResult.contains(ConnectivityResult.none) ? 'Offline' : 'Online';
-
-      // 3. Get Auth Token
-      final token = await storage.read(key: 'jwt_token');
-
-      if (token != null) {
-        // 4. Send Pulse matching backend Zod schema:
-        // - lat and lng must be string representation of coordinate doubles
-        // - key is 'status' (not 'connectivityStatus') with matching backend enum 'Online' | 'Offline'
-        await dio.post(
-          'heartbeat/pulse',
-          data: {
-            'lat': position.latitude.toString(),
-            'lng': position.longitude.toString(),
-            'status': status,
-          },
-          options: Options(headers: {'Authorization': 'Bearer $token'}),
-        );
-        
-        // 5. Trigger Background Sync
-        if (!connectivityResult.contains(ConnectivityResult.none)) {
-          await syncRepo.syncAll();
-        }
-      }
-
-      service.invoke('update', {
-        'last_pulse': DateTime.now().toIso8601String(),
-        'status': status,
-      });
-    } catch (e) {
-      debugPrint('Heartbeat Error: $e');
     }
-  }
 
-  // Trigger first pulse immediately on startup/login
-  performPulse();
-
-  // Schedule subsequent pulses periodically every 2 minutes
-  Timer.periodic(const Duration(minutes: 2), (timer) async {
+    // Trigger first pulse immediately on startup/login
     await performPulse();
-  });
+
+    // Schedule subsequent pulses periodically every 2 minutes
+    Timer.periodic(const Duration(minutes: 2), (timer) async {
+      await performPulse();
+    });
+  } catch (e, stack) {
+    debugPrint('[BG_SERVICE_CRITICAL] Background service worker encountered a fatal crash: $e');
+    debugPrint('[BG_SERVICE_CRITICAL] Stacktrace: $stack');
+  }
 }

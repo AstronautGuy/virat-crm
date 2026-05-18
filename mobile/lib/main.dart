@@ -8,8 +8,20 @@ import 'package:virat_mobile/presentation/guards/location_gate.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Background Service
-  await initializeService();
+  // Custom global error visualizer
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('[CRITICAL_FLUTTER_ERROR] Details: ${details.exception}\nStack: ${details.stack}');
+  };
+
+  try {
+    debugPrint('[STARTUP] Initializing background service...');
+    await initializeService();
+    debugPrint('[STARTUP] Background service initialized successfully.');
+  } catch (e, stack) {
+    debugPrint('[STARTUP_CRITICAL_ERROR] Background service failed: $e');
+    debugPrint('[STARTUP_CRITICAL_ERROR] Stacktrace: $stack');
+  }
 
   runApp(
     const ProviderScope(
