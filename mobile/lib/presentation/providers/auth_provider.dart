@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:virat_mobile/data/repositories/auth_repository.dart';
 import 'package:virat_mobile/presentation/providers/repository_provider.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 
 final permissionsProvider = StateProvider<Map<String, bool>>((ref) => {});
 final userRoleProvider = StateProvider<String?>((ref) => null);
@@ -43,6 +44,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
       await _repository.login(employeeCode, password);
       await _loadPermissions();
       state = const AsyncValue.data(null);
+      // Trigger background service telemetry pulse immediately
+      try {
+        FlutterBackgroundService().invoke('login');
+      } catch (e) {
+        // Safe check if service is not running yet
+      }
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       rethrow;
@@ -50,6 +57,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
   }
 
   Future<void> logout() async {
+    // Notify background service to stop tracking on logout
+    try {
+      FlutterBackgroundService().invoke('stopService');
+    } catch (e) {
+      // Safe check
+    }
     await _repository.logout();
     _ref.read(permissionsProvider.notifier).state = {};
     _ref.read(userRoleProvider.notifier).state = null;

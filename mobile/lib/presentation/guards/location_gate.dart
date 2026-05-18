@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart' hide ServiceStatus;
 import 'package:virat_mobile/core/theme.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:virat_mobile/core/api_client.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 
 class LocationGate extends StatefulWidget {
   final Widget child;
@@ -80,6 +81,23 @@ class _LocationGateState extends State<LocationGate> {
       notificationStatus = await Permission.notification.request();
     }
     setState(() => _isNotificationGranted = notificationStatus.isGranted);
+
+    // If both permissions are granted, start the background tracking service programmatically
+    if (_isLocationEnabled && notificationStatus.isGranted) {
+      try {
+        final service = FlutterBackgroundService();
+        final isRunning = await service.isRunning();
+        if (!isRunning) {
+          debugPrint('[LOCATION_GATE] Permissions verified. Starting background service...');
+          await service.startService();
+          debugPrint('[LOCATION_GATE] Background service started successfully.');
+        } else {
+          debugPrint('[LOCATION_GATE] Background service is already running.');
+        }
+      } catch (e) {
+        debugPrint('[LOCATION_GATE_ERROR] Failed to start background service: $e');
+      }
+    }
   }
 
   @override

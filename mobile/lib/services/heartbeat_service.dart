@@ -43,7 +43,7 @@ Future<void> initializeService() async {
     await service.configure(
       androidConfiguration: AndroidConfiguration(
         onStart: onStart,
-        autoStart: true,
+        autoStart: false,
         isForegroundMode: true,
         notificationChannelId: 'heartbeat_channel',
         initialNotificationTitle: 'Virat CRM Tracking',
@@ -51,7 +51,7 @@ Future<void> initializeService() async {
         foregroundServiceNotificationId: 888,
       ),
       iosConfiguration: IosConfiguration(
-        autoStart: true,
+        autoStart: false,
         onForeground: onStart,
         onBackground: onIosBackground,
       ),
@@ -187,6 +187,17 @@ void onStart(ServiceInstance service) async {
         debugPrint('[BG_SERVICE_ERROR] Stacktrace: $stack');
       }
     }
+
+    // Listen for custom events from the UI
+    service.on('login').listen((event) async {
+      debugPrint('[BG_SERVICE] Login event received, performing immediate telemetry pulse.');
+      await performPulse();
+    });
+
+    service.on('stopService').listen((event) {
+      debugPrint('[BG_SERVICE] Stop signal received, stopping background service.');
+      service.stopSelf();
+    });
 
     // Trigger first pulse immediately on startup/login
     await performPulse();
