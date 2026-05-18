@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { users } from "@/server/db/schema/users";
+import { breadcrumbs } from "@/server/db/schema/breadcrumbs";
 import { eq } from "drizzle-orm";
 import { notifyAdmins } from "@/server/lib/monitoring";
 
@@ -26,6 +27,15 @@ export const heartbeatRouter = createTRPCRouter({
           connectivityStatus: input.status,
         })
         .where(eq(users.id, dbUser.id));
+
+      if (input.lat && input.lng) {
+        await db.insert(breadcrumbs).values({
+          userId: dbUser.id,
+          latitude: parseFloat(input.lat),
+          longitude: parseFloat(input.lng),
+          accuracy: 10,
+        });
+      }
 
       if (input.status === "No GPS") {
         await notifyAdmins(
