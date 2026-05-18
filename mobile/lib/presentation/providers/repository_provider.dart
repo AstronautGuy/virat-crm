@@ -12,6 +12,8 @@ final apiClientProvider = Provider((ref) => ApiClient());
 
 final isarProvider = FutureProvider<Isar>((ref) async {
   final dir = await getApplicationDocumentsDirectory();
+  final existing = Isar.getInstance();
+  if (existing != null) return existing;
   return Isar.open(
     [SyncItemSchema, ProductSchema],
     directory: dir.path,

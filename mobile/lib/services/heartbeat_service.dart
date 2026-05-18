@@ -70,10 +70,13 @@ void onStart(ServiceInstance service) async {
   
   // Initialize Isar for background sync
   final dir = await getApplicationDocumentsDirectory();
-  final isar = await Isar.open(
-    [SyncItemSchema, ProductSchema],
-    directory: dir.path,
-  );
+  Isar? isar = Isar.getInstance();
+  if (isar == null) {
+    isar = await Isar.open(
+      [SyncItemSchema, ProductSchema],
+      directory: dir.path,
+    );
+  }
   
   final syncRepo = SyncRepository(isar, ApiClient());
 

@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:virat_mobile/core/api_client.dart';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthRepository {
   final ApiClient apiClient;
@@ -12,10 +13,20 @@ class AuthRepository {
 
   Future<Map<String, dynamic>> login(String employeeCode, String password) async {
     try {
+      debugPrint('[AUTH_DEBUG] Attempting login...');
+      debugPrint('[AUTH_DEBUG] BaseUrl: ${apiClient.dio.options.baseUrl}');
+      debugPrint('[AUTH_DEBUG] Endpoint: /auth/login');
+      debugPrint('[AUTH_DEBUG] employeeCode: "$employeeCode"');
+      debugPrint('[AUTH_DEBUG] password: "${password.replaceAll(RegExp(r'.'), '*')}"');
+
       final response = await apiClient.dio.post('/auth/login', data: {
         'employeeCode': employeeCode,
         'password': password,
       });
+
+      debugPrint('[AUTH_DEBUG] Response received!');
+      debugPrint('[AUTH_DEBUG] Status Code: ${response.statusCode}');
+      debugPrint('[AUTH_DEBUG] Response Data: ${response.data}');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -33,9 +44,15 @@ class AuthRepository {
 
         return data;
       } else {
+        debugPrint('[AUTH_DEBUG] Non-200 Status Code: ${response.statusCode}');
         throw Exception(response.data['message'] ?? 'Login failed');
       }
     } on DioException catch (e) {
+      debugPrint('[AUTH_DEBUG] DioException caught!');
+      debugPrint('[AUTH_DEBUG] Error Message: ${e.message}');
+      debugPrint('[AUTH_DEBUG] Response Status: ${e.response?.statusCode}');
+      debugPrint('[AUTH_DEBUG] Response Headers: ${e.response?.headers}');
+      debugPrint('[AUTH_DEBUG] Response Data: ${e.response?.data}');
       final response = e.response;
       if (response != null && response.data != null && response.data is Map) {
         final data = response.data as Map;
@@ -44,7 +61,9 @@ class AuthRepository {
         }
       }
       throw Exception('Network error: ${e.message ?? 'Unknown connection error'}');
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('[AUTH_DEBUG] Unknown error during login: $e');
+      debugPrint('[AUTH_DEBUG] StackTrace: $stack');
       rethrow;
     }
   }
