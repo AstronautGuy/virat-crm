@@ -226,12 +226,10 @@ export const locationRouter = createTRPCRouter({
       if (visibleUserIds.length === 0) return [];
 
       const latestBreadcrumbs = await ctx.db.query.breadcrumbs.findMany({
-        where: isSystemAdmin
-          ? inArray(breadcrumbs.userId, visibleUserIds)
-          : and(
-              gte(breadcrumbs.createdAt, fifteenMinutesAgo),
-              inArray(breadcrumbs.userId, visibleUserIds)
-            ),
+        where: and(
+          gte(breadcrumbs.createdAt, fifteenMinutesAgo),
+          inArray(breadcrumbs.userId, visibleUserIds)
+        ),
         with: {
           user: true,
         },
