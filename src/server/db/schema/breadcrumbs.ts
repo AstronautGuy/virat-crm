@@ -13,6 +13,7 @@ export const breadcrumbs = pgTable("virat-crm_breadcrumbs", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   createdAtIndex: index("breadcrumbs_created_at_idx").on(table.createdAt),
+  userCreatedIdx: index("breadcrumbs_user_created_idx").on(table.userId, table.createdAt),
 }));
 
 export const breadcrumbRelations = relations(breadcrumbs, ({ one }) => ({

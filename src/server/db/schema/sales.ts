@@ -51,6 +51,7 @@ export const sales = createTable(
     statusIdx: index("status_idx").on(table.status),
     createdAtIdx: index("created_at_idx").on(table.createdAt),
     userIdIdx: index("user_idx").on(table.userId),
+    branchCreatedIdx: index("sales_branch_created_idx").on(table.branchId, table.createdAt),
   })
 );
 
