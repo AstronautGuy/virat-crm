@@ -97,6 +97,14 @@ const isAuthed = t.middleware(({ ctx, next, type }) => {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
 
+  // Immediately block deactivated users (e.g. GPS violations)
+  if (!ctx.dbUser.isActive) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "ACCOUNT_DEACTIVATED: Your account has been suspended.",
+    });
+  }
+
   // Developer bypasses all system locks and read-only locks
   if (ctx.dbUser.role === "Developer") {
     return next({
