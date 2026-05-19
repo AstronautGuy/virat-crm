@@ -85,11 +85,60 @@ function testGPSViolationAlert() {
   console.log("✔ GPS Violation Alert Validation Tests Passed!");
 }
 
+// 4. Test Multi-Tenant Branch Isolation Logic
+function testBranchIsolation() {
+  console.log("Running Multi-Tenant Branch Isolation Tests...");
+
+  const mockHelper = (
+    ctx: { dbUser?: { role: string; branchId: number | null } | null },
+    targetBranchId?: number
+  ): number | undefined => {
+    const user = ctx.dbUser;
+    if (!user) {
+      throw new Error("UNAUTHORIZED: User profile not found.");
+    }
+    if (user.role === "Developer" || user.role === "Admin") {
+      return targetBranchId;
+    }
+    if (!user.branchId) {
+      throw new Error("FORBIDDEN: User has no branch assignment.");
+    }
+    if (targetBranchId !== undefined && targetBranchId !== user.branchId) {
+      throw new Error(`FORBIDDEN: Access Denied: You cannot query or modify data for Branch ${targetBranchId}.`);
+    }
+    return user.branchId;
+  };
+
+  // Standard user querying their own branch
+  const standardCtx = { dbUser: { role: "Employee", branchId: 3 } };
+  assert.strictEqual(mockHelper(standardCtx, 3), 3, "Standard user should access their own branch");
+  assert.strictEqual(mockHelper(standardCtx, undefined), 3, "Standard user should default to their own branch");
+
+  // Standard user querying different branch should fail
+  assert.throws(() => mockHelper(standardCtx, 5), /Access Denied/, "Standard user cannot query different branch");
+
+  // Admin querying any branch or all branches
+  const adminCtx = { dbUser: { role: "Admin", branchId: null } };
+  assert.strictEqual(mockHelper(adminCtx, 5), 5, "Admin should access any branch");
+  assert.strictEqual(mockHelper(adminCtx, undefined), undefined, "Admin should be allowed to bypass and query all branches");
+
+  // Developer querying any branch or all branches
+  const devCtx = { dbUser: { role: "Developer", branchId: 1 } };
+  assert.strictEqual(mockHelper(devCtx, 4), 4, "Developer should access any branch");
+  assert.strictEqual(mockHelper(devCtx, undefined), undefined, "Developer should query all branches");
+
+  // User with no profile should be unauthorized
+  assert.throws(() => mockHelper({ dbUser: null }), /User profile not found/, "Null dbUser should be unauthorized");
+
+  console.log("✔ Multi-Tenant Branch Isolation Tests Passed!");
+}
+
 function runAll() {
   try {
     testPincodeValidation();
     testRBAC();
     testGPSViolationAlert();
+    testBranchIsolation();
     console.log("All automated tests passed successfully.");
     process.exit(0);
   } catch (err) {
