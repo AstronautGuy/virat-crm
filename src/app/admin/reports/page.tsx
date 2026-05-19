@@ -21,6 +21,16 @@ import {
 import { cn } from "@/lib/utils";
 import { generateSalesXLSX, generateAttendanceXLSX } from "@/lib/excel";
 import { type LucideIcon } from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend
+} from "recharts";
 
 interface YearlyStat {
   year: number;
@@ -64,6 +74,7 @@ function ReportsPageContent() {
   const searchParams = useSearchParams();
   const initialUserId = searchParams ? searchParams.get("userId") : null;
 
+  const [activeTab, setActiveTab] = useState<"overview" | "predictive">("overview");
   const [preset, setPreset] = useState<"today" | "7d" | "30d" | "quarter" | "year" | "all">("30d");
   const [scope, setScope] = useState<"individual" | "team" | "management" | "branch">("individual");
   const [targetId, setTargetId] = useState<string | null>(initialUserId);
@@ -77,6 +88,14 @@ function ReportsPageContent() {
       targetId: targetId ?? undefined 
     },
     { enabled: !!scope }
+  );
+
+  const { data: forecastData, isLoading: isForecastLoading } = api.reports.getSalesForecast.useQuery(
+    {
+      scope: scope === "branch" ? "individual" : scope,
+      targetId: targetId ?? undefined,
+    },
+    { enabled: activeTab === "predictive" }
   );
 
   const handleDownloadSales = async () => {
@@ -101,223 +120,479 @@ function ReportsPageContent() {
           <p className="mt-2 text-lg text-gray-500">Generate and export deep-dive performance insights.</p>
         </div>
 
-        {/* Configuration Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Frequency Selection */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-            <div className="flex items-center space-x-2 text-blue-600 font-semibold">
-              <Calendar className="w-5 h-5" />
-              <span>Timeframe</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {PRESETS.map((p) => (
-                <button
-                  key={p.value}
-                  onClick={() => setPreset(p.value)}
-                  className={cn(
-                    "px-4 py-2 rounded-xl text-sm font-medium transition-all",
-                    preset === p.value 
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-100" 
-                      : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                  )}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Scope Selection */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-            <div className="flex items-center space-x-2 text-purple-600 font-semibold">
-              <Layers className="w-5 h-5" />
-              <span>Reporting Scope</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {SCOPES.map((s) => (
-                <button
-                  key={s.value}
-                  onClick={() => setScope(s.value)}
-                  className={cn(
-                    "flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
-                    scope === s.value 
-                      ? "bg-purple-600 text-white shadow-md shadow-purple-100" 
-                      : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                  )}
-                >
-                  <s.icon className="w-4 h-4" />
-                  <span>{s.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Target Selection */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-            <div className="flex items-center space-x-2 text-green-600 font-semibold">
-              <Users className="w-5 h-5" />
-              <span>Target Entity</span>
-            </div>
-            <select
-              value={targetId ?? ""}
-              onChange={(e) => setTargetId(e.target.value || null)}
-              className="w-full bg-gray-50 border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-green-500"
-            >
-              <option value="">Current User (Self)</option>
-              {selectableUsers?.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.firstName} {u.lastName} ({u.role})
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Tabs switcher */}
+        <div className="flex space-x-2 border-b border-gray-100 pb-px">
+          <button
+            onClick={() => setActiveTab("overview")}
+            className={cn(
+              "pb-4 px-4 text-sm font-semibold transition-all border-b-2 relative",
+              activeTab === "overview"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-400 hover:text-gray-600"
+            )}
+          >
+            Performance Overview
+          </button>
+          <button
+            onClick={() => setActiveTab("predictive")}
+            className={cn(
+              "pb-4 px-4 text-sm font-semibold transition-all border-b-2 relative flex items-center space-x-2",
+              activeTab === "predictive"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-400 hover:text-gray-600"
+            )}
+          >
+            <TrendingUp className="w-4 h-4" />
+            <span>Predictive Forecasting</span>
+            <span className="ml-1.5 px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase tracking-wider">Beta</span>
+          </button>
         </div>
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard 
-            title="Total Revenue" 
-            value={`₹${reportData?.summary.revenue.toLocaleString() ?? "0"}`} 
-            icon={TrendingUp} 
-            color="blue" 
-          />
-          <StatCard 
-            title="Pending Balance" 
-            value={`₹${reportData?.summary.balance.toLocaleString() ?? "0"}`} 
-            icon={Wallet} 
-            color="red" 
-          />
-          <StatCard 
-            title="Approved Orders" 
-            value={reportData?.summary.orders ?? 0} 
-            icon={CheckCircle2} 
-            color="green" 
-          />
-          <StatCard 
-            title="Field Visits" 
-            value={reportData?.summary.visits ?? 0} 
-            icon={Clock} 
-            color="purple" 
-          />
-        </div>
-
-        {/* Yearly Summary (for Lifetime) */}
-        {preset === "all" && reportData?.yearlyStats && reportData.yearlyStats.length > 0 && (
-          <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6">
-            <h3 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
-              <BarChart3 className="w-6 h-6 text-indigo-600" />
-              <span>Yearly Performance Snapshot</span>
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(reportData.yearlyStats as unknown as YearlyStat[]).map((year) => (
-                <div key={year.year} className="p-6 rounded-2xl bg-gray-50 border border-gray-100 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-black text-gray-900">{year.year}</span>
-                    <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full">Annual Summary</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Revenue</p>
-                      <p className="text-lg font-bold text-gray-900">₹{year.revenue.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Orders</p>
-                      <p className="text-lg font-bold text-gray-900">{year.orders}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Visits</p>
-                      <p className="text-lg font-bold text-gray-900">{year.visits}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Growth</p>
-                      <p className="text-lg font-bold text-green-600">+--%</p>
-                    </div>
-                  </div>
+        {activeTab === "predictive" ? (
+          <div className="flex flex-col space-y-8 animate-in fade-in duration-300">
+            {/* Configuration (just Scope & Target) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Scope Selection */}
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+                <div className="flex items-center space-x-2 text-purple-600 font-semibold">
+                  <Layers className="w-5 h-5" />
+                  <span>Reporting Scope</span>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+                <div className="flex flex-wrap gap-2">
+                  {SCOPES.map((s) => (
+                    <button
+                      key={s.value}
+                      onClick={() => setScope(s.value)}
+                      className={cn(
+                        "flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
+                        scope === s.value
+                          ? "bg-purple-600 text-white shadow-md shadow-purple-100"
+                          : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                      )}
+                    >
+                      <s.icon className="w-4 h-4" />
+                      <span>{s.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-        {/* Actions & Preview */}
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
-            <h3 className="font-bold text-gray-900 flex items-center space-x-2">
-              <Download className="w-5 h-5 text-blue-600" />
-              <span>Export Options</span>
-            </h3>
-            <div className="flex space-x-3">
-              <button
-                onClick={handleDownloadSales}
-                disabled={!reportData?.sales.length}
-                className="flex items-center space-x-2 px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-50"
-              >
-                <Download className="w-4 h-4" />
-                <span>Export Sales XLSX</span>
-              </button>
-              <button
-                onClick={handleDownloadAttendance}
-                disabled={!reportData?.attendance.length}
-                className="flex items-center space-x-2 px-5 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold hover:bg-purple-700 transition-all disabled:opacity-50"
-              >
-                <Download className="w-4 h-4" />
-                <span>Export Attendance XLSX</span>
-              </button>
+              {/* Target Selection */}
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+                <div className="flex items-center space-x-2 text-green-600 font-semibold">
+                  <Users className="w-5 h-5" />
+                  <span>Target Entity</span>
+                </div>
+                <select
+                  value={targetId ?? ""}
+                  onChange={(e) => setTargetId(e.target.value || null)}
+                  className="w-full bg-gray-50 border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">Current User (Self)</option>
+                  {selectableUsers?.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.firstName} {u.lastName} ({u.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
 
-          <div className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-bold">
-                  <tr>
-                    <th className="px-6 py-4">Order #</th>
-                    <th className="px-6 py-4">Employee</th>
-                    <th className="px-6 py-4">Customer</th>
-                    <th className="px-6 py-4">Amount</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Date</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {isLoading ? (
-                    <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400">Loading intelligence data...</td></tr>
-                  ) : reportData?.sales.length === 0 ? (
-                    <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400">No data found for this selection.</td></tr>
-                  ) : (
-                    reportData?.sales.slice(0, 10).map((s) => (
-                      <tr key={s.orderNumber} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-6 py-4 font-mono font-medium text-blue-600">{s.orderNumber}</td>
-                        <td className="px-6 py-4 text-sm font-medium">{s.userName}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{s.customerName}</td>
-                        <td className="px-6 py-4 text-sm font-bold">₹{parseFloat(s.invoiceAmount).toLocaleString()}</td>
-                        <td className="px-6 py-4">
-                          <span className={cn(
-                            "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                            s.status === "Approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
-                          )}>
-                            {s.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-xs text-gray-400">
-                          {new Date(s.date).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                  {reportData?.sales && reportData.sales.length > 10 && (
+            {/* Projections Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <StatCard
+                title="Forecasted Next Month"
+                value={isForecastLoading ? "Analyzing..." : `₹${forecastData?.stats.nextMonthRevenue.toLocaleString() ?? "0"}`}
+                icon={TrendingUp}
+                color="blue"
+              />
+              <StatCard
+                title="Historical Monthly Trend"
+                value={isForecastLoading ? "Analyzing..." : `${(forecastData?.stats.trend ?? 0) >= 0 ? "+" : ""}${forecastData?.stats.trend ?? 0}%`}
+                icon={BarChart3}
+                color="purple"
+              />
+              <StatCard
+                title="Prediction Confidence"
+                value={isForecastLoading ? "Analyzing..." : `${forecastData?.stats.confidence ?? 50}% R² Score`}
+                icon={CheckCircle2}
+                color="green"
+              />
+            </div>
+
+            {/* Sales Forecast Chart */}
+            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                  <span>Sales Trend & Projection Curve</span>
+                </h3>
+                <p className="text-xs text-gray-400 mt-1">12-Month Trailing Historical Sales (Solid) vs 3-Month Future Projections (Dotted).</p>
+              </div>
+
+              <div className="h-[400px] w-full pt-4">
+                {isForecastLoading ? (
+                  <div className="flex h-full items-center justify-center">
+                    <div className="text-center">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent mx-auto mb-2" />
+                      <p className="text-xs text-gray-500 font-medium">Running time-series projection algorithms...</p>
+                    </div>
+                  </div>
+                ) : !forecastData || (forecastData.history.length === 0 && forecastData.forecast.length === 0) ? (
+                  <div className="flex h-full items-center justify-center text-gray-400">
+                    No sales data available for projection in this scope.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={[
+                        ...(forecastData.history.map((h, idx) => ({
+                          period: h.period,
+                          Actual: h.revenue,
+                          Forecast: idx === forecastData.history.length - 1 ? h.revenue : null,
+                          Optimistic: idx === forecastData.history.length - 1 ? h.revenue : null,
+                          Pessimistic: idx === forecastData.history.length - 1 ? h.revenue : null,
+                        }))),
+                        ...(forecastData.forecast.map(f => ({
+                          period: f.period,
+                          Actual: null,
+                          Forecast: f.revenue,
+                          Optimistic: f.optimistic,
+                          Pessimistic: f.pessimistic,
+                        })))
+                      ]}
+                      margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="period" stroke="#94a3b8" fontSize={11} />
+                      <YAxis
+                        stroke="#94a3b8"
+                        fontSize={11}
+                        tickFormatter={(v) => `₹${v >= 1000 ? (v / 1000) + 'k' : v}`}
+                      />
+                      <ChartTooltip
+                        formatter={(value: any, name: any) => [
+                          value ? `₹${Number(value).toLocaleString()}` : "N/A",
+                          name
+                        ]}
+                        contentStyle={{
+                          backgroundColor: "rgba(255, 255, 255, 0.95)",
+                          borderRadius: "16px",
+                          border: "1px solid #e2e8f0",
+                          boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
+                        }}
+                      />
+                      <ChartLegend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
+                      <Line
+                        type="monotone"
+                        dataKey="Actual"
+                        stroke="#2563eb"
+                        strokeWidth={3}
+                        dot={{ r: 4, strokeWidth: 1 }}
+                        activeDot={{ r: 6 }}
+                        name="Actual Sales"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="Forecast"
+                        stroke="#4f46e5"
+                        strokeWidth={3}
+                        strokeDasharray="5 5"
+                        dot={{ r: 4, strokeWidth: 1 }}
+                        name="Projected Forecast"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="Optimistic"
+                        stroke="#10b981"
+                        strokeWidth={1.5}
+                        strokeDasharray="3 3"
+                        dot={false}
+                        name="Optimistic (+95%)"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="Pessimistic"
+                        stroke="#f43f5e"
+                        strokeWidth={1.5}
+                        strokeDasharray="3 3"
+                        dot={false}
+                        name="Pessimistic (-95%)"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+
+            {/* Projections breakdown list */}
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-gray-50 bg-gray-50/50">
+                <h3 className="font-bold text-gray-900 flex items-center space-x-2">
+                  <CheckCircle2 className="w-5 h-5 text-indigo-600" />
+                  <span>Forecast Projection Range Breakdown</span>
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-bold">
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-xs text-gray-400 italic">
-                        Previewing first 10 records. Download full XLSX for complete data.
-                      </td>
+                      <th className="px-6 py-4">Projection Period</th>
+                      <th className="px-6 py-4">Pessimistic Lower Bound</th>
+                      <th className="px-6 py-4">Expected Forecast</th>
+                      <th className="px-6 py-4">Optimistic Upper Bound</th>
+                      <th className="px-6 py-4">Accuracy Confidence</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {isForecastLoading ? (
+                      <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-400">Loading forecast table...</td></tr>
+                    ) : !forecastData || forecastData.forecast.length === 0 ? (
+                      <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-400">No projections available.</td></tr>
+                    ) : (
+                      forecastData.forecast.map((f, idx) => (
+                        <tr key={f.period} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-6 py-4 font-semibold text-gray-900">{f.period}</td>
+                          <td className="px-6 py-4 text-sm text-red-600 font-medium">₹{f.pessimistic.toLocaleString()}</td>
+                          <td className="px-6 py-4 text-sm text-indigo-600 font-bold">₹{f.revenue.toLocaleString()}</td>
+                          <td className="px-6 py-4 text-sm text-green-600 font-medium">₹{f.optimistic.toLocaleString()}</td>
+                          <td className="px-6 py-4">
+                            <span className={cn(
+                              "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                              idx === 0 ? "bg-green-100 text-green-700" : idx === 1 ? "bg-yellow-100 text-yellow-700" : "bg-orange-100 text-orange-700"
+                            )}>
+                              {idx === 0 ? "High Confidence" : idx === 1 ? "Moderate" : "Speculative"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
+        ) : (
+          <>
+            {/* Configuration Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Timeframe Selection */}
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+                <div className="flex items-center space-x-2 text-blue-600 font-semibold">
+                  <Calendar className="w-5 h-5" />
+                  <span>Timeframe</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {PRESETS.map((p) => (
+                    <button
+                      key={p.value}
+                      onClick={() => setPreset(p.value)}
+                      className={cn(
+                        "px-4 py-2 rounded-xl text-sm font-medium transition-all",
+                        preset === p.value 
+                          ? "bg-blue-600 text-white shadow-md shadow-blue-100" 
+                          : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                      )}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Scope Selection */}
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+                <div className="flex items-center space-x-2 text-purple-600 font-semibold">
+                  <Layers className="w-5 h-5" />
+                  <span>Reporting Scope</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {SCOPES.map((s) => (
+                    <button
+                      key={s.value}
+                      onClick={() => setScope(s.value)}
+                      className={cn(
+                        "flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
+                        scope === s.value 
+                          ? "bg-purple-600 text-white shadow-md shadow-purple-100" 
+                          : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                      )}
+                    >
+                      <s.icon className="w-4 h-4" />
+                      <span>{s.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Target Selection */}
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+                <div className="flex items-center space-x-2 text-green-600 font-semibold">
+                  <Users className="w-5 h-5" />
+                  <span>Target Entity</span>
+                </div>
+                <select
+                  value={targetId ?? ""}
+                  onChange={(e) => setTargetId(e.target.value || null)}
+                  className="w-full bg-gray-50 border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">Current User (Self)</option>
+                  {selectableUsers?.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.firstName} {u.lastName} ({u.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Summary Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatCard 
+                title="Total Revenue" 
+                value={`₹${reportData?.summary.revenue.toLocaleString() ?? "0"}`} 
+                icon={TrendingUp} 
+                color="blue" 
+              />
+              <StatCard 
+                title="Pending Balance" 
+                value={`₹${reportData?.summary.balance.toLocaleString() ?? "0"}`} 
+                icon={Wallet} 
+                color="red" 
+              />
+              <StatCard 
+                title="Approved Orders" 
+                value={reportData?.summary.orders ?? 0} 
+                icon={CheckCircle2} 
+                color="green" 
+              />
+              <StatCard 
+                title="Field Visits" 
+                value={reportData?.summary.visits ?? 0} 
+                icon={Clock} 
+                color="purple" 
+              />
+            </div>
+
+            {/* Yearly Summary (for Lifetime) */}
+            {preset === "all" && reportData?.yearlyStats && reportData.yearlyStats.length > 0 && (
+              <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-6">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
+                  <BarChart3 className="w-6 h-6 text-indigo-600" />
+                  <span>Yearly Performance Snapshot</span>
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {(reportData.yearlyStats as unknown as YearlyStat[]).map((year) => (
+                    <div key={year.year} className="p-6 rounded-2xl bg-gray-50 border border-gray-100 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl font-black text-gray-900">{year.year}</span>
+                        <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full">Annual Summary</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Revenue</p>
+                          <p className="text-lg font-bold text-gray-900">₹{year.revenue.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Orders</p>
+                          <p className="text-lg font-bold text-gray-900">{year.orders}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Visits</p>
+                          <p className="text-lg font-bold text-gray-900">{year.visits}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Growth</p>
+                          <p className="text-lg font-bold text-green-600">+--%</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Actions & Preview */}
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+                <h3 className="font-bold text-gray-900 flex items-center space-x-2">
+                  <Download className="w-5 h-5 text-blue-600" />
+                  <span>Export Options</span>
+                </h3>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleDownloadSales}
+                    disabled={!reportData?.sales.length}
+                    className="flex items-center space-x-2 px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-50"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Export Sales XLSX</span>
+                  </button>
+                  <button
+                    onClick={handleDownloadAttendance}
+                    disabled={!reportData?.attendance.length}
+                    className="flex items-center space-x-2 px-5 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold hover:bg-purple-700 transition-all disabled:opacity-50"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Export Attendance XLSX</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-bold">
+                      <tr>
+                        <th className="px-6 py-4">Order #</th>
+                        <th className="px-6 py-4">Employee</th>
+                        <th className="px-6 py-4">Customer</th>
+                        <th className="px-6 py-4">Amount</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {isLoading ? (
+                        <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400">Loading intelligence data...</td></tr>
+                      ) : reportData?.sales.length === 0 ? (
+                        <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400">No data found for this selection.</td></tr>
+                      ) : (
+                        reportData?.sales.slice(0, 10).map((s) => (
+                          <tr key={s.orderNumber} className="hover:bg-gray-50/50 transition-colors">
+                            <td className="px-6 py-4 font-mono font-medium text-blue-600">{s.orderNumber}</td>
+                            <td className="px-6 py-4 text-sm font-medium">{s.userName}</td>
+                            <td className="px-6 py-4 text-sm text-gray-600">{s.customerName}</td>
+                            <td className="px-6 py-4 text-sm font-bold">₹{parseFloat(s.invoiceAmount).toLocaleString()}</td>
+                            <td className="px-6 py-4">
+                              <span className={cn(
+                                "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                                s.status === "Approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                              )}>
+                                {s.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-xs text-gray-400">
+                              {new Date(s.date).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                      {reportData?.sales && reportData.sales.length > 10 && (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-4 text-center text-xs text-gray-400 italic">
+                            Previewing first 10 records. Download full XLSX for complete data.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
         </div>
-      </div>
       </FeatureGate>
     </DashboardLayout>
   );

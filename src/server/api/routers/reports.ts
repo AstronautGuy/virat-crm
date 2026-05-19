@@ -158,4 +158,163 @@ export const reportsRouter = createTRPCRouter({
         summary,
       };
     }),
+
+  getSalesForecast: featureProtectedProcedure("reports")
+    .input(z.object({
+      scope: z.enum(["individual", "team", "management", "branch"]),
+      targetId: z.string().uuid().optional(),
+      branchId: z.number().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const currentUser = ctx.dbUser;
+
+      // 1. Identify Target Users based on Scope
+      let targetUserIds: string[] = [];
+      const effectiveId = input.targetId ?? currentUser.id;
+
+      if (input.scope === "individual") {
+        targetUserIds = [effectiveId];
+      } else if (input.scope === "team") {
+        const team = await ctx.db.query.users.findMany({
+          where: eq(users.managerId, effectiveId),
+          columns: { id: true },
+        });
+        targetUserIds = team.map(u => u.id);
+      } else if (input.scope === "branch") {
+        if (currentUser.role !== "Admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const branchUsers = await ctx.db.query.users.findMany({
+          where: eq(users.branchId, input.branchId!),
+          columns: { id: true },
+        });
+        targetUserIds = branchUsers.map(u => u.id);
+      } else if (input.scope === "management") {
+        const descendantsQuery = sql`
+          WITH RECURSIVE subordinates AS (
+            SELECT id FROM "virat-crm_user" WHERE manager_id = ${effectiveId}
+            UNION
+            SELECT e.id FROM "virat-crm_user" e
+            INNER JOIN subordinates s ON s.id = e.manager_id
+          )
+          SELECT id FROM subordinates;
+        `;
+        const rows = await ctx.db.execute(descendantsQuery) as unknown as { id: string }[];
+        targetUserIds = rows.map((r) => String(r.id));
+      }
+
+      if (targetUserIds.length === 0 && input.scope !== "individual") {
+        return { history: [], forecast: [], stats: { trend: 0, confidence: 50, nextMonthRevenue: 0 } };
+      }
+
+      // Query historical sales for the last 12 months
+      const twelveMonthsAgo = new Date();
+      twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
+      twelveMonthsAgo.setDate(1);
+      twelveMonthsAgo.setHours(0, 0, 0, 0);
+
+      const salesData = await ctx.db
+        .select({
+          invoiceAmount: sales.invoiceAmount,
+          date: sales.createdAt,
+        })
+        .from(sales)
+        .where(
+          and(
+            inArray(sales.userId, targetUserIds),
+            gte(sales.createdAt, twelveMonthsAgo)
+          )
+        );
+
+      // Group sales by month
+      const salesByMonth = new Map<string, number>();
+      const monthsList: { label: string; key: string; date: Date }[] = [];
+      const current = new Date();
+
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(current.getFullYear(), current.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const label = d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+        monthsList.push({ label, key, date: d });
+        salesByMonth.set(key, 0);
+      }
+
+      for (const sale of salesData) {
+        const d = new Date(sale.date);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (salesByMonth.has(key)) {
+          salesByMonth.set(key, salesByMonth.get(key)! + parseFloat(sale.invoiceAmount));
+        }
+      }
+
+      const history = monthsList.map((m, idx) => ({
+        index: idx,
+        period: m.label,
+        revenue: salesByMonth.get(m.key) ?? 0,
+      }));
+
+      // Time-series Forecasting using Linear Regression
+      const N = history.length;
+      const sumX = history.reduce((acc, h) => acc + h.index, 0);
+      const sumY = history.reduce((acc, h) => acc + h.revenue, 0);
+      const meanX = sumX / N;
+      const meanY = sumY / N;
+
+      let num = 0;
+      let den = 0;
+      for (const h of history) {
+        num += (h.index - meanX) * (h.revenue - meanY);
+        den += Math.pow(h.index - meanX, 2);
+      }
+
+      const slope = den === 0 ? 0 : num / den;
+      const intercept = meanY - slope * meanX;
+
+      // Standard Error of Estimate
+      let sumSqResiduals = 0;
+      let sumSqTotal = 0;
+      for (const h of history) {
+        const predicted = slope * h.index + intercept;
+        sumSqResiduals += Math.pow(h.revenue - predicted, 2);
+        sumSqTotal += Math.pow(h.revenue - meanY, 2);
+      }
+
+      const standardError = N > 2 ? Math.sqrt(sumSqResiduals / (N - 2)) : 0;
+
+      // Coefficient of determination (R^2)
+      const rSquared = sumSqTotal === 0 ? 1 : 1 - sumSqResiduals / sumSqTotal;
+      const confidence = Math.min(99, Math.max(50, Math.round(rSquared * 100)));
+
+      // Generate forecast for next 3 periods
+      const forecast: { period: string; revenue: number; optimistic: number; pessimistic: number }[] = [];
+      const nextMonthDate = new Date(current.getFullYear(), current.getMonth() + 1, 1);
+
+      for (let i = 0; i < 3; i++) {
+        const futureDate = new Date(nextMonthDate.getFullYear(), nextMonthDate.getMonth() + i, 1);
+        const label = futureDate.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+        const futureIndex = N + i;
+        const predicted = Math.max(0, slope * futureIndex + intercept);
+
+        // Standard error escalates over time (error increases further out)
+        const errorMultiplier = 1.96 + 0.3 * i;
+        const margin = standardError * errorMultiplier;
+
+        forecast.push({
+          period: label,
+          revenue: Math.round(predicted),
+          optimistic: Math.round(predicted + margin),
+          pessimistic: Math.round(Math.max(0, predicted - margin)),
+        });
+      }
+
+      const trend = meanY === 0 ? 0 : Math.round((slope / meanY) * 100);
+
+      return {
+        history: history.map(h => ({ period: h.period, revenue: Math.round(h.revenue) })),
+        forecast,
+        stats: {
+          trend,
+          confidence,
+          nextMonthRevenue: forecast[0]?.revenue ?? 0,
+        },
+      };
+    }),
 });
