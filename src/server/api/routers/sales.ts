@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, featureProtectedProcedure, enforceBranchIsolation } from "@/server/api/trpc";
 import { sales, saleItems, inventory, inventoryTransactions } from "@/server/db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import { sendNotificationToUser } from "@/server/lib/push";
@@ -48,14 +48,9 @@ export const salesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const currentUser = ctx.dbUser;
-      const targetBranchId = input.branchId ?? currentUser.branchId;
-
-      if (!targetBranchId) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Branch ID is required",
-        });
+      const targetBranchId = enforceBranchIsolation(ctx, input.branchId ?? undefined);
+      if (targetBranchId === undefined) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Branch selection is required for this action." });
       }
 
       return await ctx.db.transaction(async (tx) => {
@@ -123,8 +118,8 @@ export const salesRouter = createTRPCRouter({
           .insert(sales)
           .values({
             branchId: targetBranchId,
-            userId: currentUser.id,
-            managerId: currentUser.managerId,
+            userId: ctx.dbUser!.id,
+            managerId: ctx.dbUser!.managerId,
             orderNumber,
             transactionNumber,
             pincode: input.pincode,
@@ -163,7 +158,7 @@ export const salesRouter = createTRPCRouter({
             input.items.map((item) => ({
               productId: item.productId,
               branchId: targetBranchId,
-              userId: currentUser.id,
+              userId: ctx.dbUser!.id,
               type: "Sale",
               quantity: -item.quantity,
               referenceId: newSale.id.toString(),
@@ -192,7 +187,7 @@ export const salesRouter = createTRPCRouter({
   getSales: featureProtectedProcedure("sales").query(async ({ ctx }) => {
     const currentUser = ctx.dbUser;
 
-    if (currentUser.role === "Admin") {
+    if (currentUser.role === "Admin" || currentUser.role === "Developer") {
       return ctx.db.query.sales.findMany({
         with: { 
           user: true, 
@@ -207,9 +202,11 @@ export const salesRouter = createTRPCRouter({
       });
     }
 
+    const assignedBranchId = enforceBranchIsolation(ctx);
+
     // Filter by branch for non-admins
     return ctx.db.query.sales.findMany({
-      where: eq(sales.branchId, currentUser.branchId!),
+      where: eq(sales.branchId, assignedBranchId!),
       with: { 
         user: true, 
         manager: true, 
@@ -235,6 +232,9 @@ export const salesRouter = createTRPCRouter({
         });
 
         if (!targetSale) throw new TRPCError({ code: "NOT_FOUND", message: "Sale not found" });
+
+        // Enforce branch isolation for target sale
+        enforceBranchIsolation(ctx, targetSale.branchId);
 
         // RBAC Check for Managers/Admins
         if (currentUser.role !== "Admin") {

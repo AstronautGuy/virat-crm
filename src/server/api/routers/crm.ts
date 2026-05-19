@@ -5,6 +5,7 @@ import {
   managerProcedure,
   featureProtectedProcedure,
   featureManagerProcedure,
+  enforceBranchIsolation,
 } from "@/server/api/trpc";
 import { customers, sales } from "@/server/db/schema";
 import { eq, and, sql, desc, or, type SQL } from "drizzle-orm";
@@ -47,8 +48,9 @@ export const crmRouter = createTRPCRouter({
       const filters: SQL[] = [];
       
       // Branch isolation: Employees and Managers only see their branch
-      if (dbUser.role !== "Admin") {
-        filters.push(eq(customers.branchId, dbUser.branchId!));
+      if (dbUser.role !== "Admin" && dbUser.role !== "Developer") {
+        const assignedBranchId = enforceBranchIsolation(ctx);
+        filters.push(eq(customers.branchId, assignedBranchId!));
       }
 
       if (input?.search) {
@@ -94,7 +96,7 @@ export const crmRouter = createTRPCRouter({
   getCustomerById: featureProtectedProcedure("crm")
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const { db, dbUser } = ctx;
+      const { db } = ctx;
       
       const customer = await db.query.customers.findFirst({
         where: eq(customers.id, input.id),
@@ -106,10 +108,8 @@ export const crmRouter = createTRPCRouter({
 
       if (!customer) throw new TRPCError({ code: "NOT_FOUND" });
 
-      // Check access
-      if (dbUser.role !== "Admin" && customer.branchId !== dbUser.branchId) {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
+      // Enforce branch isolation
+      enforceBranchIsolation(ctx, customer.branchId);
 
       // Get Order History Summary
       const orders = await db.query.sales.findMany({
@@ -144,9 +144,9 @@ export const crmRouter = createTRPCRouter({
       const { db, dbUser } = ctx;
       if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
       
-      const targetBranchId = input.branchId ?? dbUser.branchId;
-      if (!targetBranchId) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Branch selection is required" });
+      const targetBranchId = enforceBranchIsolation(ctx, input.branchId ?? undefined);
+      if (targetBranchId === undefined) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Branch selection is required for this action." });
       }
 
       const { branchId, ...rest } = input;
@@ -178,9 +178,9 @@ export const crmRouter = createTRPCRouter({
       const { db, dbUser } = ctx;
       if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
       
-      const targetBranchId = input.branchId ?? dbUser.branchId;
-      if (!targetBranchId) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Branch selection is required" });
+      const targetBranchId = enforceBranchIsolation(ctx, input.branchId ?? undefined);
+      if (targetBranchId === undefined) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Branch selection is required for this action." });
       }
 
       const { branchId, ...rest } = input;
@@ -197,6 +197,13 @@ export const crmRouter = createTRPCRouter({
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
+      const targetCustomer = await db.query.customers.findFirst({
+        where: eq(customers.id, input.id),
+      });
+      if (!targetCustomer) throw new TRPCError({ code: "NOT_FOUND", message: "Customer not found" });
+
+      enforceBranchIsolation(ctx, targetCustomer.branchId);
+
       return await db.update(customers)
         .set({ status: "Approved" })
         .where(eq(customers.id, input.id))
@@ -218,6 +225,14 @@ export const crmRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
       const { id, ...data } = input;
+
+      const targetCustomer = await db.query.customers.findFirst({
+        where: eq(customers.id, id),
+      });
+      if (!targetCustomer) throw new TRPCError({ code: "NOT_FOUND", message: "Customer not found" });
+
+      enforceBranchIsolation(ctx, targetCustomer.branchId);
+
       return await db.update(customers)
         .set(data)
         .where(eq(customers.id, id))

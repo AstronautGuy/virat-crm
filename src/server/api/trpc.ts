@@ -254,3 +254,38 @@ export const managerProcedure = protectedProcedure.use(isManager);
  */
 export const featureManagerProcedure = (featureKey: string) => 
   featureProtectedProcedure(featureKey).use(isManagerMiddleware);
+
+/**
+ * Multi-Tenant Security Helper:
+ * Restricts queries and mutations strictly to the user's assigned branch.
+ * Bypasses checks for Developer and Admin roles.
+ */
+export function enforceBranchIsolation(
+  ctx: { dbUser?: { role: string; branchId: number | null } | null },
+  targetBranchId?: number
+): number | undefined {
+  const user = ctx.dbUser;
+  if (!user) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "User profile not found." });
+  }
+
+  // Developer and Admin bypass checks
+  if (user.role === "Developer" || user.role === "Admin") {
+    return targetBranchId;
+  }
+
+  // Enforce branch assignment for standard users / managers
+  if (!user.branchId) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "User has no branch assignment." });
+  }
+
+  // If standard user attempts to target another branch, throw Forbidden
+  if (targetBranchId !== undefined && targetBranchId !== user.branchId) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: `Access Denied: You cannot query or modify data for Branch ${targetBranchId}.`,
+    });
+  }
+
+  return user.branchId;
+}

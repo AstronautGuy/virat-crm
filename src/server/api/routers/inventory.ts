@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, featureProtectedProcedure, protectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, featureProtectedProcedure, protectedProcedure, enforceBranchIsolation } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { inventory, inventoryTransactions, stockTransfers } from "@/server/db/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
@@ -25,15 +25,10 @@ export const inventoryRouter = createTRPCRouter({
       }),
     })))
     .query(async ({ ctx, input }) => {
-      const isAdmin = ctx.dbUser.role === "Admin";
-      const branchId = isAdmin ? input.branchId : (input.branchId ?? ctx.dbUser.branchId);
-      
-      if (!branchId && !isAdmin) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Branch ID is required" });
-      }
+      const branchId = enforceBranchIsolation(ctx, input.branchId ?? undefined);
 
       const rows = await ctx.db.query.inventory.findMany({
-        where: branchId ? eq(inventory.branchId, branchId) : undefined,
+        where: branchId ? eq(inventory.branchId, branchId!) : undefined,
         with: {
           product: true,
         },
@@ -82,10 +77,7 @@ export const inventoryRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const isAdmin = ctx.dbUser.role === "Admin";
-      if (!isAdmin && input.branchId !== ctx.dbUser.branchId) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to adjust stock for this branch" });
-      }
+      enforceBranchIsolation(ctx, input.branchId);
 
       return await ctx.db.transaction(async (tx) => {
         // Atomic Upsert: Update quantity or Insert if not exists
@@ -125,9 +117,7 @@ export const inventoryRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (input.fromBranchId !== ctx.dbUser.branchId) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Origin branch must be your assigned branch" });
-      }
+      enforceBranchIsolation(ctx, input.fromBranchId);
 
       const [transfer] = await ctx.db
         .insert(stockTransfers)
@@ -162,7 +152,7 @@ export const inventoryRouter = createTRPCRouter({
         // Authorization: User must belong to either origin (to ship/cancel) or destination (to receive)
         const isOriginUser = ctx.dbUser.branchId === transfer.fromBranchId;
         const isDestUser = ctx.dbUser.branchId === transfer.toBranchId;
-        const isAdmin = ctx.dbUser.role === "Admin";
+        const isAdmin = ctx.dbUser.role === "Admin" || ctx.dbUser.role === "Developer";
 
         if (!isAdmin && !isOriginUser && !isDestUser) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to update this transfer" });
@@ -231,8 +221,11 @@ export const inventoryRouter = createTRPCRouter({
 
   getTransfers: featureProtectedProcedure("inventory")
     .query(async ({ ctx }) => {
+      const { dbUser } = ctx;
+      const isAdmin = dbUser.role === "Admin" || dbUser.role === "Developer";
+
       return ctx.db.query.stockTransfers.findMany({
-        where: sql`${stockTransfers.fromBranchId} = ${ctx.dbUser.branchId} OR ${stockTransfers.toBranchId} = ${ctx.dbUser.branchId}`,
+        where: isAdmin ? undefined : sql`${stockTransfers.fromBranchId} = ${dbUser.branchId} OR ${stockTransfers.toBranchId} = ${dbUser.branchId}`,
         with: {
           fromBranch: true,
           toBranch: true,
