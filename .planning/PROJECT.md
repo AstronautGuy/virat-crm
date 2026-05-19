@@ -12,29 +12,33 @@ Secure, mobile-first operations management that ensures authenticated access and
 
 ### Validated
 
-- ✓ Manage employee profiles and hierarchy
-- ✓ Track branch locations
-- ✓ Log daily attendance and sales transactions
-- ✓ Manage leave requests
-- ✓ Upload and store staff documents
-- ✓ Mobile-first PWA with bottom navigation
+- ✓ Manage employee profiles and hierarchy (M1)
+- ✓ Track branch locations (M1)
+- ✓ Log daily attendance and sales transactions (M1)
+- ✓ Manage leave requests (M1)
+- ✓ Upload and store staff documents (M1)
+- ✓ Mobile-first PWA with bottom navigation (M2)
 - ✓ Advanced Field Intelligence (M3)
 - ✓ Dynamic RBAC & Feature Gating (M4)
 - ✓ Inventory Orchestration & Operational Scaling (M5)
+- ✓ CRM Master & Manager Editing (M6)
+- ✓ Bulk Operations Utility (M6)
+- ✓ Soft Modernism UI/UX Rework (M6)
+- ✓ Advanced Predictive Analytics & Mathematical Forecasting (M7)
+- ✓ Offline Sync & Isar DB Replication (M7)
+- ✓ Sovereign Overrides & Developer License Controls (M7)
+- ✓ Location-Gated Fleet Tracking & Background Interceptors (M7)
 
-- ✓ CRM Master (Customer database, Interaction logs, Credit limits)
-- ✓ Manager-Only Customer Editing (RBAC restriction)
-- ✓ Bulk Operations Utility (Excel/CSV imports/exports)
-- ✓ Soft Modernism UI/UX Rework
+### Active (Milestone 8: Planning)
 
-### Active (Milestone 7: Advanced Intelligence & Scaling)
-
-- [ ] Advanced Predictive Analytics
-- [ ] Real-time Inventory Alerts
-- [ ] Multi-tenant branch isolation hardening
+- [ ] Multi-tenant branch isolation hardening & database partitioning
+- [ ] Real-time Inventory Alerts & SMS/Email notifications
+- [ ] Advanced performance optimization (caching & Edge compute)
 
 ### Out of Scope
-...
+- Automated Email/SMS marketing (Deferred to M8).
+- Global credit limit enforcement (Order-wise tracking preferred).
+
 ### Shipped Milestones
 - **v1: Foundations**: Auth, DB, Geofencing, Storage, PWA.
 - **v2: Intelligence**: Analytics, Push, Offline Sync, Hardening.
@@ -42,9 +46,10 @@ Secure, mobile-first operations management that ensures authenticated access and
 - **v4: Access Control**: Dynamic RBAC, Feature Gating, Security Hardening.
 - **v5: Inventory**: Multi-branch stock transfers, atomic transactions, archival.
 - **v6: CRM & Bulk**: Customer master, Manager RBAC, Excel utilities, Soft Modernism UI.
+- **v7: Advanced Intelligence**: Predictive modeling, Isar sync database queue, sovereign locks & licensing controls.
 
-### Next Milestone: M7 (Advanced Intelligence & Scaling)
-- Goal: Implement predictive modeling for sales trends and harden the multi-tenant architecture for 100+ branches.
+### Next Milestone: M8 (Advanced Multi-Tenant Isolation & Live Alerts)
+- Goal: Harden database isolation boundaries, implement live alerts, and prepare for multi-branch enterprise expansion.
 
 ## Constraints
 
@@ -75,4 +80,4 @@ Secure, mobile-first operations management that ensures authenticated access and
 This document evolves at phase transitions and milestone boundaries.
 
 ---
-*Last updated: 2026-05-15 after Milestone 6 Completion*
+*Last updated: 2026-05-19 after Milestone 7 Completion*
