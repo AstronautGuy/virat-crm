@@ -3,9 +3,9 @@
 ## [v6: CRM & Bulk Operations](file:///c:/Users/TheAstronautGuy/WebstormProjects/virat-crm/.planning/milestones/v6-ROADMAP.md) (Shipped 2026-05-15)
 
 ## Milestone 7: Advanced Intelligence & Scaling
-- **Phase 26: Predictive Analytics Engine**
-  - [ ] **Task 26.1**: Implement time-series modeling for sales trends.
-  - [ ] **Task 26.2**: Dashboard: Sales forecasting visualizations.
+- **Phase 26: Predictive Analytics Engine** (Done 2026-05-19)
+  - [x] **Task 26.1**: Implement time-series modeling for sales trends.
+  - [x] **Task 26.2**: Dashboard: Sales forecasting visualizations.
 
 - **Phase 27: Flutter Discovery & API Architecture** (Done 2026-05-15)
   - [x] **Task 27.1**: Implement tRPC-to-REST bridging for Flutter consumption.
