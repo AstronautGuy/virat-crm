@@ -35,3 +35,10 @@ final syncRepositoryProvider = FutureProvider<SyncRepository>((ref) async {
   final apiClient = ref.watch(apiClientProvider);
   return SyncRepository(isar, apiClient);
 });
+
+final pendingSyncCountProvider = StreamProvider<int>((ref) {
+  final syncRepoFuture = ref.watch(syncRepositoryProvider.future);
+  return Stream.fromFuture(syncRepoFuture)
+      .asyncExpand((repo) => repo.watchPendingCount());
+});
+

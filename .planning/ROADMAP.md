@@ -17,10 +17,10 @@
   - [x] **Task 28.2**: Build "Big Button" UI for Auth and Dashboard.
   - [x] **Task 28.3**: Implement mandatory location gate.
 
-- **Phase 29: Flutter CRM Workflows (Sales & Customers)**
-  - [ ] **Task 29.1**: Implement Customer Search & Creation (REST Bridge).
-  - [ ] **Task 29.2**: Build the "Big Button" New Sale form.
-  - [ ] **Task 29.3**: Implement SyncRepository for background data reconciliation.
+- **Phase 29: Flutter CRM Workflows (Sales & Customers)** (Done 2026-05-19)
+  - [x] **Task 29.1**: Implement Customer Search & Creation (REST Bridge).
+  - [x] **Task 29.2**: Build the "Big Button" New Sale form.
+  - [x] **Task 29.3**: Implement SyncRepository for background data reconciliation.
 
 - **Phase 31: Developer Omnipotence & License Control** (Done 2026-05-19)
   - [x] **Task 31.1**: Design system_settings schema & seed "Developer" role and account.

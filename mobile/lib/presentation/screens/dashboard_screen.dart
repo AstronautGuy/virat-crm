@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:virat_mobile/core/theme.dart';
 import 'package:virat_mobile/presentation/providers/auth_provider.dart';
+import 'package:virat_mobile/presentation/providers/repository_provider.dart';
 import 'package:virat_mobile/presentation/widgets/app_menu_button.dart';
 import 'package:virat_mobile/presentation/screens/new_sale_screen.dart';
 import 'package:virat_mobile/presentation/screens/customer_screens.dart';
@@ -18,6 +19,8 @@ class DashboardScreen extends ConsumerWidget {
     final role = ref.watch(userRoleProvider);
     final name = ref.watch(userNameProvider);
     final permissions = ref.watch(permissionsProvider);
+    final pendingCountAsync = ref.watch(pendingSyncCountProvider);
+    final pendingCount = pendingCountAsync.value ?? 0;
 
     // Helper to check user access to a specific feature key
     bool hasAccess(String featureKey) {
@@ -105,8 +108,67 @@ class DashboardScreen extends ConsumerWidget {
         label: 'SYNC\nDATA',
         icon: Icons.cloud_sync_rounded,
         gradient: AppColors.gradientSync,
-        onPressed: () {
-          // TODO: Trigger manual sync
+        badge: pendingCount > 0 ? '$pendingCount' : null,
+        onPressed: () async {
+          try {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Synchronizing data with server...',
+                      style: GoogleFonts.poppins(),
+                    ),
+                  ],
+                ),
+                duration: const Duration(seconds: 1),
+              ),
+            );
+
+            final syncRepo = await ref.read(syncRepositoryProvider.future);
+            await syncRepo.syncAll();
+
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(Icons.check_circle_rounded,
+                          color: AppColors.statusGreen),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Sync completed successfully!',
+                        style: GoogleFonts.poppins(color: AppColors.textPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Sync failed: $e',
+                    style: GoogleFonts.poppins(color: AppColors.textPrimary),
+                  ),
+                  backgroundColor: AppColors.statusRed,
+                ),
+              );
+            }
+          }
         },
       ),
     );
