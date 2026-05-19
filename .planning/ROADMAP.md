@@ -7,8 +7,8 @@
 ## Milestone 8: Advanced Multi-Tenant Isolation & Live Alerts
 
 - **Phase 32: Requirements, Discovery & Index Optimization**
-  - [ ] **Task 32.1**: Establish query patterns and apply database-level compound indexing for high-frequency operations.
-  - [ ] **Task 32.2**: Formulate the multi-tenant isolation boundary spec.
+  - [x] **Task 32.1**: Establish query patterns and apply database-level compound indexing for high-frequency operations.
+  - [x] **Task 32.2**: Formulate the multi-tenant isolation boundary spec.
 
 - **Phase 33: Multi-Tenant Hardening (tRPC & REST Gateways)**
   - [ ] **Task 33.1**: Build automated query filters on tRPC procedures for Sales, CRM, Products, and Inventory.
