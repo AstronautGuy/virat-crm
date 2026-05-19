@@ -16,6 +16,7 @@ export const inventory = createTable(
       .references(() => branches.id)
       .notNull(),
     quantity: integer("quantity").notNull().default(0),
+    minThreshold: integer("min_threshold").notNull().default(5),
     updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(() => new Date()),
   },
   (table) => ({

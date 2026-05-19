@@ -133,12 +133,96 @@ function testBranchIsolation() {
   console.log("✔ Multi-Tenant Branch Isolation Tests Passed!");
 }
 
+// 5. Test Real-Time Low Stock Alerts Notification Routing
+interface TestInventory {
+  productId: number;
+  branchId: number;
+  quantity: number;
+  minThreshold: number;
+  productName: string;
+  branchName: string;
+}
+
+interface TestUser {
+  id: string;
+  role: string;
+  branchId: number | null;
+}
+
+function simulateLowStockAlerts(stock: TestInventory, usersList: TestUser[]) {
+  const dbNotifications: { userId: string; title: string; message: string }[] = [];
+  const pushDispatches: { userId: string; title: string; body: string }[] = [];
+
+  if (stock.quantity <= stock.minThreshold) {
+    const title = "⚠️ Low Stock Alert";
+    const message = `Stock level for "${stock.productName}" at branch "${stock.branchName}" has fallen to ${stock.quantity} (Threshold: ${stock.minThreshold}).`;
+
+    const recipients = usersList.filter(
+      (u) =>
+        u.role === "Admin" ||
+        u.role === "Developer" ||
+        (u.role === "Manager" && u.branchId === stock.branchId)
+    );
+
+    for (const recipient of recipients) {
+      dbNotifications.push({
+        userId: recipient.id,
+        title,
+        message,
+      });
+      pushDispatches.push({
+        userId: recipient.id,
+        title,
+        body: message,
+      });
+    }
+  }
+
+  return { dbNotifications, pushDispatches };
+}
+
+function testLowStockAlerts() {
+  console.log("Running Real-Time Low Stock Alerts Tests...");
+
+  const users: TestUser[] = [
+    { id: "admin-1", role: "Admin", branchId: null },
+    { id: "dev-1", role: "Developer", branchId: null },
+    { id: "mgr-branch-1", role: "Manager", branchId: 1 },
+    { id: "mgr-branch-2", role: "Manager", branchId: 2 },
+    { id: "emp-branch-1", role: "Employee", branchId: 1 },
+  ];
+
+  // Case A: Quantity is above threshold (No alerts)
+  const stockAbove = { productId: 101, branchId: 1, quantity: 10, minThreshold: 5, productName: "Product A", branchName: "Branch A" };
+  const resAbove = simulateLowStockAlerts(stockAbove, users);
+  assert.strictEqual(resAbove.dbNotifications.length, 0, "No notifications should be generated when above threshold");
+  assert.strictEqual(resAbove.pushDispatches.length, 0, "No push messages should be dispatched when above threshold");
+
+  // Case B: Quantity drops below or equal to threshold (Alerts routed to correct users)
+  const stockBelow = { productId: 101, branchId: 1, quantity: 3, minThreshold: 5, productName: "Product A", branchName: "Branch A" };
+  const resBelow = simulateLowStockAlerts(stockBelow, users);
+  
+  // Should notify: Admin, Developer, and Manager of Branch 1 (Total: 3 users)
+  assert.strictEqual(resBelow.dbNotifications.length, 3, "Notifications should be generated for exactly 3 eligible users");
+  
+  const recipientIds = resBelow.dbNotifications.map(n => n.userId);
+  assert.ok(recipientIds.includes("admin-1"), "Admin should be notified");
+  assert.ok(recipientIds.includes("dev-1"), "Developer should be notified");
+  assert.ok(recipientIds.includes("mgr-branch-1"), "Manager of Branch 1 should be notified");
+  
+  assert.ok(!recipientIds.includes("mgr-branch-2"), "Manager of Branch 2 should NOT be notified");
+  assert.ok(!recipientIds.includes("emp-branch-1"), "Standard employee should NOT be notified");
+
+  console.log("✔ Real-Time Low Stock Alerts Tests Passed!");
+}
+
 function runAll() {
   try {
     testPincodeValidation();
     testRBAC();
     testGPSViolationAlert();
     testBranchIsolation();
+    testLowStockAlerts();
     console.log("All automated tests passed successfully.");
     process.exit(0);
   } catch (err) {

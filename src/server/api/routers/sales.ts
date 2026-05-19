@@ -3,6 +3,7 @@ import { createTRPCRouter, featureProtectedProcedure, enforceBranchIsolation } f
 import { sales, saleItems, inventory, inventoryTransactions } from "@/server/db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import { sendNotificationToUser } from "@/server/lib/push";
+import { checkAndNotifyLowStock } from "@/server/lib/alerts";
 import { TRPCError } from "@trpc/server";
 
 export const salesRouter = createTRPCRouter({
@@ -75,6 +76,9 @@ export const salesRouter = createTRPCRouter({
             .update(inventory)
             .set({ quantity: stockEntry.quantity - item.quantity })
             .where(eq(inventory.id, stockEntry.id));
+
+          // Trigger Low Stock Alerts
+          await checkAndNotifyLowStock(tx, targetBranchId, item.productId);
         }
 
         // 2. Fetch Pincode Details

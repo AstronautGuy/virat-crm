@@ -3,6 +3,7 @@ import { createTRPCRouter, featureProtectedProcedure, protectedProcedure, enforc
 import { TRPCError } from "@trpc/server";
 import { inventory, inventoryTransactions, stockTransfers } from "@/server/db/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
+import { checkAndNotifyLowStock } from "@/server/lib/alerts";
 
 export const inventoryRouter = createTRPCRouter({
   getBranches: protectedProcedure
@@ -102,6 +103,8 @@ export const inventoryRouter = createTRPCRouter({
           quantity: input.quantity,
           reason: input.reason,
         });
+
+        await checkAndNotifyLowStock(tx, input.branchId, input.productId);
 
         return { success: true, newQuantity: result[0]?.quantity };
       });
@@ -205,6 +208,10 @@ export const inventoryRouter = createTRPCRouter({
                 reason: `Transfer from branch ${transfer.fromBranchId}`,
               }
             ]);
+
+            // Trigger Low Stock Alerts
+            await checkAndNotifyLowStock(tx, transfer.fromBranchId, item.productId);
+            await checkAndNotifyLowStock(tx, transfer.toBranchId, item.productId);
           }
         }
 
@@ -232,6 +239,25 @@ export const inventoryRouter = createTRPCRouter({
           requestedBy: true,
         },
         orderBy: [desc(stockTransfers.createdAt)],
+      });
+    }),
+
+  getLowStockItems: featureProtectedProcedure("inventory")
+    .query(async ({ ctx }) => {
+      const { dbUser } = ctx;
+      const isAdmin = dbUser.role === "Admin" || dbUser.role === "Developer";
+
+      return ctx.db.query.inventory.findMany({
+        where: isAdmin
+          ? sql`${inventory.quantity} <= ${inventory.minThreshold}`
+          : and(
+              eq(inventory.branchId, dbUser.branchId!),
+              sql`${inventory.quantity} <= ${inventory.minThreshold}`
+            ),
+        with: {
+          product: true,
+          branch: true,
+        },
       });
     }),
 });

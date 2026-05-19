@@ -9,9 +9,12 @@ import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { api } from "@/trpc/react";
 import { SuspendedView } from "../dashboard/SuspendedView";
+import { usePathname } from "next/navigation";
+import { NotificationBell } from "../notifications/NotificationBell";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isSyncing, pendingCount } = useSyncManager();
+  const pathname = usePathname();
   useLocationBreadcrumbs();
 
   const { error } = api.users.getMe.useQuery(undefined, {
@@ -23,6 +26,26 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   if (isSystemLocked) {
     return <SuspendedView />;
   }
+
+  const getPageTitle = (path: string) => {
+    if (path === "/") return "Dashboard Overview";
+    if (path.startsWith("/sales")) return "Sales Register";
+    if (path.startsWith("/inventory")) return "Inventory & Stock";
+    if (path.startsWith("/crm")) return "Customer Master";
+    if (path.startsWith("/reports")) return "Daily Activity Reports";
+    if (path.startsWith("/attendance")) return "Workforce Management";
+    if (path.startsWith("/admin/live-map")) return "Live Field View";
+    if (path.startsWith("/admin/reports")) return "Intelligence & Analytics";
+    if (path.startsWith("/admin/org-chart")) return "Organization Structure";
+    if (path.startsWith("/documents")) return "Document Repository";
+    if (path.startsWith("/admin/feature-access")) return "Feature Access Control";
+    if (path.startsWith("/admin/users")) return "User & Agent Management";
+    if (path.startsWith("/admin/exports")) return "Bulk Data Export";
+    if (path.startsWith("/admin/imports")) return "Bulk Data Import";
+    if (path.startsWith("/admin/developer")) return "Developer Sandbox Console";
+    if (path.startsWith("/profile")) return "User Profile Settings";
+    return "Virat CRM Portal";
+  };
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -46,6 +69,20 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             )}
           </div>
         )}
+
+        {/* Premium Top Navigation Header */}
+        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-card/65 backdrop-blur-md px-6 md:px-8">
+          <div className="flex flex-col">
+            <span className="text-[9px] uppercase font-bold tracking-widest text-slate-400">Portal</span>
+            <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5 tracking-tight">
+              {getPageTitle(pathname)}
+            </h2>
+          </div>
+          <div className="flex items-center gap-4">
+            <NotificationBell />
+          </div>
+        </header>
+
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           <ErrorBoundary>
             {children}

@@ -1,0 +1,1 @@
+ALTER TABLE "virat-crm_inventory" ADD COLUMN "min_threshold" integer DEFAULT 5 NOT NULL;
