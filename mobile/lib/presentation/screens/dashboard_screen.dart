@@ -9,6 +9,9 @@ import 'package:virat_mobile/presentation/widgets/app_menu_button.dart';
 import 'package:virat_mobile/presentation/screens/new_sale_screen.dart';
 import 'package:virat_mobile/presentation/screens/customer_screens.dart';
 import 'package:virat_mobile/presentation/screens/profile_screen.dart';
+import 'package:virat_mobile/presentation/providers/notification_provider.dart';
+import 'package:virat_mobile/presentation/widgets/notifications_panel.dart';
+
 
 
 class DashboardScreen extends ConsumerWidget {
@@ -221,6 +224,9 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                   // GPS pulse indicator
                   const _GpsPulse(),
+                  const SizedBox(width: 14),
+                  // Notification Bell Icon
+                  const _NotificationBellButton(),
                   const SizedBox(width: 14),
                   // User avatar button
                   GestureDetector(
@@ -470,3 +476,83 @@ class _GpsPulseState extends State<_GpsPulse>
     );
   }
 }
+
+class _NotificationBellButton extends ConsumerWidget {
+  const _NotificationBellButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final count = ref.watch(unreadNotificationsCountProvider);
+
+    return GestureDetector(
+      onTap: () {
+        // Fetch notifications live on tap to ensure up-to-date panel state
+        ref.read(notificationsStateProvider.notifier).fetchNotifications();
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.transparent,
+          isScrollControlled: true,
+          builder: (context) => const NotificationsPanel(),
+        );
+      },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.08),
+                width: 1,
+              ),
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.notifications_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+          if (count > 0)
+            Positioned(
+              top: -4,
+              right: -4,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEF4444),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0xFFEF4444),
+                      blurRadius: 6,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 16,
+                  minHeight: 16,
+                ),
+                child: Center(
+                  child: Text(
+                    '$count',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+

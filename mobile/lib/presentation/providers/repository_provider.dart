@@ -7,6 +7,7 @@ import 'package:virat_mobile/data/models/product.dart';
 import 'package:virat_mobile/data/repositories/auth_repository.dart';
 import 'package:virat_mobile/data/repositories/crm_repository.dart';
 import 'package:virat_mobile/data/repositories/sync_repository.dart';
+import 'package:virat_mobile/data/repositories/notification_repository.dart';
 
 final apiClientProvider = Provider((ref) => ApiClient());
 
@@ -30,6 +31,11 @@ final crmRepositoryProvider = Provider((ref) {
   return CrmRepository(apiClient);
 });
 
+final notificationRepositoryProvider = Provider((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return NotificationRepository(apiClient);
+});
+
 final syncRepositoryProvider = FutureProvider<SyncRepository>((ref) async {
   final isar = await ref.watch(isarProvider.future);
   final apiClient = ref.watch(apiClientProvider);
@@ -41,4 +47,5 @@ final pendingSyncCountProvider = StreamProvider<int>((ref) {
   return Stream.fromFuture(syncRepoFuture)
       .asyncExpand((repo) => repo.watchPendingCount());
 });
+
 

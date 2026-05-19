@@ -4,15 +4,46 @@ import { notifications, pushSubscriptions } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 
 export const notificationsRouter = createTRPCRouter({
-  getMyNotifications: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db.query.notifications.findMany({
-      where: eq(notifications.userId, ctx.dbUser.id),
-      orderBy: (notifications, { desc }) => [desc(notifications.createdAt)],
-    });
-  }),
+  getMyNotifications: protectedProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: "/notifications/list",
+        summary: "Get notifications for logged-in user",
+        tags: ["Notifications"],
+      },
+    })
+    .input(z.void())
+    .output(
+      z.array(
+        z.object({
+          id: z.number(),
+          userId: z.string(),
+          title: z.string(),
+          message: z.string(),
+          isRead: z.boolean(),
+          createdAt: z.date(),
+        })
+      )
+    )
+    .query(async ({ ctx }) => {
+      return ctx.db.query.notifications.findMany({
+        where: eq(notifications.userId, ctx.dbUser.id),
+        orderBy: (n, { desc }) => [desc(n.createdAt)],
+      });
+    }),
 
   markAsRead: protectedProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/notifications/read",
+        summary: "Mark notification as read",
+        tags: ["Notifications"],
+      },
+    })
     .input(z.object({ notificationId: z.number() }))
+    .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
         .update(notifications)
@@ -27,14 +58,25 @@ export const notificationsRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  markAllAsRead: protectedProcedure.mutation(async ({ ctx }) => {
-    await ctx.db
-      .update(notifications)
-      .set({ isRead: true })
-      .where(eq(notifications.userId, ctx.dbUser.id));
+  markAllAsRead: protectedProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/notifications/read-all",
+        summary: "Mark all notifications as read",
+        tags: ["Notifications"],
+      },
+    })
+    .input(z.void())
+    .output(z.object({ success: z.boolean() }))
+    .mutation(async ({ ctx }) => {
+      await ctx.db
+        .update(notifications)
+        .set({ isRead: true })
+        .where(eq(notifications.userId, ctx.dbUser.id));
 
-    return { success: true };
-  }),
+      return { success: true };
+    }),
 
   savePushSubscription: protectedProcedure
     .input(z.object({

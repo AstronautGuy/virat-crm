@@ -7,6 +7,10 @@ class SystemLockController {
   static final ValueNotifier<bool> isLocked = ValueNotifier<bool>(false);
 }
 
+class BranchIsolationController {
+  static final ValueNotifier<bool> isIsolated = ValueNotifier<bool>(false);
+}
+
 class ApiClient {
   final Dio _dio = Dio();
   final _storage = const FlutterSecureStorage();
@@ -31,6 +35,7 @@ class ApiClient {
       onResponse: (response, handler) {
         // If a successful response is received, we are not locked
         SystemLockController.isLocked.value = false;
+        BranchIsolationController.isIsolated.value = false;
         return handler.next(response);
       },
       onError: (e, handler) {
@@ -41,6 +46,8 @@ class ApiClient {
           final errStr = e.response?.toString() ?? '';
           if (errStr.contains('SYSTEM_LOCKED')) {
             SystemLockController.isLocked.value = true;
+          } else if (errStr.contains('Access Denied') || errStr.contains('branch') || errStr.contains('Branch')) {
+            BranchIsolationController.isIsolated.value = true;
           }
         }
         return handler.next(e);
@@ -50,3 +57,4 @@ class ApiClient {
 
   Dio get dio => _dio;
 }
+

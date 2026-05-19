@@ -120,18 +120,131 @@ class _LocationGateState extends State<LocationGate> {
         if (isLocked) {
           return const _SystemLockedScreen();
         }
-        if (!_isLocationEnabled || !_isNotificationGranted) {
-          return _PermissionsScreen(
-            isLocationEnabled: _isLocationEnabled,
-            isNotificationGranted: _isNotificationGranted,
-            onRetry: _checkPermissions,
-          );
-        }
-        return widget.child;
+        return ValueListenableBuilder<bool>(
+          valueListenable: BranchIsolationController.isIsolated,
+          builder: (context, isIsolated, child) {
+            if (isIsolated) {
+              return const _BranchIsolatedScreen();
+            }
+            if (!_isLocationEnabled || !_isNotificationGranted) {
+              return _PermissionsScreen(
+                isLocationEnabled: _isLocationEnabled,
+                isNotificationGranted: _isNotificationGranted,
+                onRetry: _checkPermissions,
+              );
+            }
+            return widget.child;
+          },
+        );
       },
     );
   }
 }
+
+class _BranchIsolatedScreen extends StatelessWidget {
+  const _BranchIsolatedScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F172A), // Slate 900
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Glowing Orange/Red Shield with Alert icon
+              Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFF97316), Color(0xFFEF4444)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFEF4444).withOpacity(0.3),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.gpp_bad_rounded,
+                  size: 48,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              Text(
+                'ACCESS DENIED',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'TENANT BRANCH ISOLATION',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: const Color(0xFFF97316),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'You have been locked out due to a branch isolation violation.\n\nYou cannot query or modify data belonging to another tenant branch. Please check your assigned branch or contact your administrator.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: const Color(0xFF94A3B8),
+                  fontSize: 13,
+                  height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 48),
+              
+              // Reset Button to clear error and retry
+              ElevatedButton.icon(
+                onPressed: () {
+                  BranchIsolationController.isIsolated.value = false;
+                },
+                icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                label: Text(
+                  'RETRY / RECONNECT',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFEF4444),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
 class _SystemLockedScreen extends StatelessWidget {
   const _SystemLockedScreen();
