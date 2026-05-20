@@ -192,6 +192,114 @@ export const locationRouter = createTRPCRouter({
       const user = ctx.dbUser;
       if (user.role === "Admin") return { success: true, ignored: true }; // Admins are not tracked
 
+      // If user is not assigned to a branch, just log breadcrumb and return
+      if (!user.branchId) {
+        await ctx.db.insert(breadcrumbs).values({
+          userId: user.id,
+          latitude: input.latitude,
+          longitude: input.longitude,
+          accuracy: input.accuracy,
+        });
+        return { success: true };
+      }
+
+      // Fetch branch data for geofencing
+      const branch = await ctx.db.query.branches.findFirst({ where: eq(branches.id, user.branchId) });
+      if (!branch) {
+        // Fallback to breadcrumb only if branch not found
+        await ctx.db.insert(breadcrumbs).values({
+          userId: user.id,
+          latitude: input.latitude,
+          longitude: input.longitude,
+          accuracy: input.accuracy,
+        });
+        return { success: true };
+      }
+
+      // Geofencing Validation
+      const distance = haversineDistance(
+        input.latitude,
+        input.longitude,
+        parseFloat(branch.latitude),
+        parseFloat(branch.longitude)
+      );
+
+      const isWithinRadius = distance <= branch.radiusMeters;
+      
+      if (!isWithinRadius) {
+        // Log as breadcrumb only, don't update locationLogs (Attendance)
+        await ctx.db.insert(breadcrumbs).values({
+          userId: user.id,
+          latitude: input.latitude,
+          longitude: input.longitude,
+          accuracy: input.accuracy,
+        });
+        return { success: true, warning: "Location outside branch geofence. Attendance not recorded." };
+      }
+
+      const slabName = getCurrentSlab();
+      const dateStr = getFormattedDate();
+
+      // Round coordinates to 4 decimal places (~11 meters)
+      const roundedLat = input.latitude.toFixed(4);
+      const roundedLng = input.longitude.toFixed(4);
+      const coordsKey = `${roundedLat},${roundedLng}`;
+
+      const existingSlab = await ctx.db.query.locationLogs.findFirst({
+        where: and(
+          eq(locationLogs.userId, user.id),
+          eq(locationLogs.date, dateStr),
+          eq(locationLogs.slab, slabName)
+        )
+      });
+
+      let frequencyMap: Record<string, number> = {};
+      if (existingSlab?.frequencyMap) {
+        frequencyMap = existingSlab.frequencyMap;
+      }
+
+      // Increment frequency for current location
+      frequencyMap[coordsKey] = (frequencyMap[coordsKey] ?? 0) + 1;
+
+      // EOD Cleanup: Clear breadcrumbs older than 24 hours
+      if (!existingSlab) {
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        await ctx.db.delete(breadcrumbs).where(lt(breadcrumbs.createdAt, twentyFourHoursAgo));
+      }
+
+      // Find the most frequent location in the slab
+      let maxCount = 0;
+      let mostFrequentKey = coordsKey;
+      for (const [key, count] of Object.entries(frequencyMap)) {
+        if (count > maxCount) {
+          maxCount = count;
+          mostFrequentKey = key;
+        }
+      }
+
+      const [finalLat, finalLng] = mostFrequentKey.split(',');
+
+      if (existingSlab) {
+        await ctx.db.update(locationLogs).set({
+          frequencyMap,
+          latitude: finalLat,
+          longitude: finalLng,
+          recordedAt: new Date(),
+        }).where(eq(locationLogs.id, existingSlab.id));
+      } else {
+        /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
+        await ctx.db.insert(locationLogs).values({
+          userId: user.id,
+          date: dateStr,
+          slab: slabName,
+          frequencyMap,
+          latitude: finalLat,
+          longitude: finalLng,
+        } as any);
+        /* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
+      }
+
+      // Also log breadcrumb for high-resolution tracking
       await ctx.db.insert(breadcrumbs).values({
         userId: user.id,
         latitude: input.latitude,
