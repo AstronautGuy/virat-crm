@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { api } from "@/trpc/react";
 
 const TRACKING_INTERVAL = 5 * 60 * 1000; // 5 minutes
-const MIN_ACCURACY = 100; // 100 meters
 
 export function useLocationBreadcrumbs() {
   const { data: user } = api.users.getMe.useQuery();
@@ -12,7 +11,7 @@ export function useLocationBreadcrumbs() {
   const logBreadcrumb = (api.location.logBreadcrumb as any).useMutation();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const captureLocation = () => {
+  const captureLocation = useCallback(() => {
     if (!navigator.geolocation) return;
     if (user?.role === "Admin") return; // Admins are not tracked
 
@@ -20,15 +19,12 @@ export function useLocationBreadcrumbs() {
       (position) => {
         const { latitude, longitude, accuracy } = position.coords;
 
-        // Only log if accuracy is decent (or if it's the best we have)
-        if (accuracy < MIN_ACCURACY) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-          logBreadcrumb.mutate({
-            latitude,
-            longitude,
-            accuracy,
-          });
-        }
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        logBreadcrumb.mutate({
+          latitude,
+          longitude,
+          accuracy,
+        });
       },
       (error) => {
         // If high accuracy failed, try again with low accuracy
@@ -55,7 +51,7 @@ export function useLocationBreadcrumbs() {
         maximumAge: 1000 * 60 * 5, // Accept cached location up to 5 mins old
       }
     );
-  };
+  }, [user, logBreadcrumb]);
 
   useEffect(() => {
     // Don't start tracking until we know the user's role
@@ -75,7 +71,7 @@ export function useLocationBreadcrumbs() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [user]);
+  }, [user, captureLocation]);
 
   return null;
 }

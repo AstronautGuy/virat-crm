@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, featureProtectedProcedure, protectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { breadcrumbs, users, locationLogs, branches } from "@/server/db/schema";
 import { eq, and, desc, inArray, gte, lte, asc, lt, type SQL } from "drizzle-orm";
@@ -39,11 +39,19 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 
 export const locationRouter = createTRPCRouter({
   ping: featureProtectedProcedure("workforce")
+    .meta({ openapi: { method: "POST", path: "/location/ping", summary: "Record location ping", tags: ["Location"] } })
     .input(
       z.object({
         latitude: z.number(),
         longitude: z.number(),
         accuracy: z.number().optional(),
+      })
+    )
+    .output(
+      z.object({
+        success: z.boolean(),
+        warning: z.string().optional(),
+        ignored: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -200,8 +208,6 @@ export const locationRouter = createTRPCRouter({
       const currentUser = ctx.dbUser;
       const isSystemAdmin = currentUser.role === "Admin";
 
-      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-
       // 1. Identify Visible Users based on RBAC and Branch
       let visibleUserIds: string[] = [];
       
@@ -225,29 +231,47 @@ export const locationRouter = createTRPCRouter({
 
       if (visibleUserIds.length === 0) return [];
 
-      const latestBreadcrumbs = await ctx.db.query.breadcrumbs.findMany({
-        where: and(
-          gte(breadcrumbs.createdAt, fifteenMinutesAgo),
-          inArray(breadcrumbs.userId, visibleUserIds)
-        ),
-        with: {
-          user: true,
-        },
-        orderBy: (breadcrumbs, { desc }) => [desc(breadcrumbs.createdAt)],
-      });
+      const latestBreadcrumbs = await ctx.db
+        .selectDistinctOn([breadcrumbs.userId], {
+          id: breadcrumbs.id,
+          userId: breadcrumbs.userId,
+          latitude: breadcrumbs.latitude,
+          longitude: breadcrumbs.longitude,
+          accuracy: breadcrumbs.accuracy,
+          createdAt: breadcrumbs.createdAt,
+          user: {
+            id: users.id,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            email: users.email,
+            role: users.role,
+          },
+        })
+        .from(breadcrumbs)
+        .innerJoin(users, eq(breadcrumbs.userId, users.id))
+        .where(inArray(breadcrumbs.userId, visibleUserIds))
+        .orderBy(breadcrumbs.userId, desc(breadcrumbs.createdAt));
 
-      const userMap = new Map<string, typeof latestBreadcrumbs[number]>();
-      latestBreadcrumbs.forEach((b) => {
-        if (!userMap.has(b.userId)) {
-          userMap.set(b.userId, b);
-        }
+      return latestBreadcrumbs.map((b) => {
+        // Convert timestamp without timezone from local server time to actual UTC Date
+        const utcCreatedAt = new Date(Date.UTC(
+          b.createdAt.getFullYear(),
+          b.createdAt.getMonth(),
+          b.createdAt.getDate(),
+          b.createdAt.getHours(),
+          b.createdAt.getMinutes(),
+          b.createdAt.getSeconds(),
+          b.createdAt.getMilliseconds()
+        ));
+        const isOnline = Date.now() - utcCreatedAt.getTime() < 15 * 60 * 1000;
+        return {
+          ...b,
+          createdAt: utcCreatedAt,
+          latitude: parseFloat(String(b.latitude)),
+          longitude: parseFloat(String(b.longitude)),
+          isOnline,
+        };
       });
-
-      return Array.from(userMap.values()).map((b) => ({
-        ...b,
-        latitude: parseFloat(String(b.latitude)),
-        longitude: parseFloat(String(b.longitude)),
-      }));
     }),
 
   getRoutePlayback: featureProtectedProcedure("live-map")
@@ -290,10 +314,23 @@ export const locationRouter = createTRPCRouter({
         orderBy: [asc(breadcrumbs.createdAt)],
       });
 
-      return path.map((p) => ({
-        ...p,
-        latitude: parseFloat(String(p.latitude)),
-        longitude: parseFloat(String(p.longitude)),
-      }));
+      return path.map((p) => {
+        // Convert timestamp without timezone from local server time to actual UTC Date
+        const utcCreatedAt = new Date(Date.UTC(
+          p.createdAt.getFullYear(),
+          p.createdAt.getMonth(),
+          p.createdAt.getDate(),
+          p.createdAt.getHours(),
+          p.createdAt.getMinutes(),
+          p.createdAt.getSeconds(),
+          p.createdAt.getMilliseconds()
+        ));
+        return {
+          ...p,
+          createdAt: utcCreatedAt,
+          latitude: parseFloat(String(p.latitude)),
+          longitude: parseFloat(String(p.longitude)),
+        };
+      });
     }),
 });
