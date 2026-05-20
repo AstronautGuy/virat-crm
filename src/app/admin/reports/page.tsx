@@ -271,10 +271,13 @@ function ReportsPageContent() {
                         tickFormatter={(v) => `₹${v >= 1000 ? (v / 1000) + 'k' : v}`}
                       />
                       <ChartTooltip
-                        formatter={(value: any, name: any) => [
-                          value ? `₹${Number(value).toLocaleString()}` : "N/A",
-                          name
-                        ]}
+                        formatter={(value: unknown, name: unknown) => {
+                          const numVal = typeof value === "number" || typeof value === "string" ? Number(value) : null;
+                          return [
+                            numVal ? `₹${numVal.toLocaleString()}` : "N/A",
+                            String(name)
+                          ];
+                        }}
                         contentStyle={{
                           backgroundColor: "rgba(255, 255, 255, 0.95)",
                           borderRadius: "16px",

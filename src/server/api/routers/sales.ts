@@ -122,8 +122,8 @@ export const salesRouter = createTRPCRouter({
           .insert(sales)
           .values({
             branchId: targetBranchId,
-            userId: ctx.dbUser!.id,
-            managerId: ctx.dbUser!.managerId,
+            userId: ctx.dbUser.id,
+            managerId: ctx.dbUser.managerId,
             orderNumber,
             transactionNumber,
             pincode: input.pincode,
@@ -162,7 +162,7 @@ export const salesRouter = createTRPCRouter({
             input.items.map((item) => ({
               productId: item.productId,
               branchId: targetBranchId,
-              userId: ctx.dbUser!.id,
+              userId: ctx.dbUser.id,
               type: "Sale",
               quantity: -item.quantity,
               referenceId: newSale.id.toString(),

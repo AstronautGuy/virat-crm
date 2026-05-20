@@ -1,10 +1,12 @@
 import { notifications, users, inventory } from "@/server/db/schema";
 import { eq, and, or } from "drizzle-orm";
 import { sendNotificationToUser } from "./push";
-import { sendSMSAlert, sendEmailAlert } from "./communication";
+import { type db } from "@/server/db";
+
+type TransactionClient = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export async function checkAndNotifyLowStock(
-  tx: any,
+  tx: TransactionClient,
   branchId: number,
   productId: number
 ) {
@@ -21,12 +23,12 @@ export async function checkAndNotifyLowStock(
       },
     });
 
-    if (!stock || !stock.product || !stock.branch) {
+    if (!stock?.product || !stock?.branch) {
       return;
     }
 
     // 2. Check if quantity is below or equal to minThreshold
-    if (stock.quantity <= stock.minThreshold) {
+    if (stock.quantity <= (stock.minThreshold ?? 0)) {
       const title = "⚠️ Low Stock Alert";
       const message = `Stock level for "${stock.product.name}" at branch "${stock.branch.name}" has fallen to ${stock.quantity} (Threshold: ${stock.minThreshold}).`;
 

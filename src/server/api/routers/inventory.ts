@@ -29,7 +29,7 @@ export const inventoryRouter = createTRPCRouter({
       const branchId = enforceBranchIsolation(ctx, input.branchId ?? undefined);
 
       const rows = await ctx.db.query.inventory.findMany({
-        where: branchId ? eq(inventory.branchId, branchId!) : undefined,
+        where: branchId ? eq(inventory.branchId, branchId) : undefined,
         with: {
           product: true,
         },
@@ -251,7 +251,7 @@ export const inventoryRouter = createTRPCRouter({
         where: isAdmin
           ? sql`${inventory.quantity} <= ${inventory.minThreshold}`
           : and(
-              eq(inventory.branchId, dbUser.branchId!),
+              eq(inventory.branchId, dbUser.branchId ?? 0),
               sql`${inventory.quantity} <= ${inventory.minThreshold}`
             ),
         with: {
