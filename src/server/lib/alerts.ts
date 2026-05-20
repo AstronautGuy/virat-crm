@@ -1,6 +1,7 @@
 import { notifications, users, inventory } from "@/server/db/schema";
 import { eq, and, or } from "drizzle-orm";
 import { sendNotificationToUser } from "./push";
+import { sendSMSAlert, sendEmailAlert } from "./communication";
 
 export async function checkAndNotifyLowStock(
   tx: any,

@@ -25,9 +25,17 @@
   - [ ] **Task 35.2**: Implement premium low-stock bell drawer inside the Flutter application.
   - [ ] **Task 35.3**: Verify strict branch isolation responses throw elegant lockout guards on mobile.
 
+## Milestone 9: Enterprise Scalability & Communications
+
+- **Phase 36: SMS & Email Notification Hub**
+  - [ ] **Task 36.1**: Build unified communications gateway library (`src/server/lib/communication.ts`).
+  - [ ] **Task 36.2**: Integrate SMS and Email alerts within inventory alerts triggers.
+  - [ ] **Task 36.3**: Create user settings switches for communication channels.
+
 ## Backlog
 
 ### Phase 999.1: Follow-up — Phase 21 incomplete plans (BACKLOG)
+
 
 **Goal:** Resolve plans that ran without producing summaries during Phase 21 execution
 **Source phase:** 21

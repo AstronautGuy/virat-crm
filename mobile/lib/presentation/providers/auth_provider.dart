@@ -46,7 +46,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
       state = const AsyncValue.data(null);
       // Trigger background service telemetry pulse immediately
       try {
-        FlutterBackgroundService().invoke('login');
+        final service = FlutterBackgroundService();
+        final isRunning = await service.isRunning();
+        if (!isRunning) {
+          await service.startService();
+        } else {
+          service.invoke('login');
+        }
       } catch (e) {
         // Safe check if service is not running yet
       }

@@ -20,7 +20,10 @@ export const users = createTable("user", {
   lastActiveAt: timestamp("last_active_at", { withTimezone: true }),
   lastLat: varchar("last_lat", { length: 32 }),
   lastLng: varchar("last_lng", { length: 32 }),
-  connectivityStatus: varchar("connectivity_status", { length: 32 }),
+   connectivityStatus: varchar("connectivity_status", { length: 32 }),
+  phone: varchar("phone", { length: 32 }),
+  emailNotifications: boolean("email_notifications").default(true).notNull(),
+  smsNotifications: boolean("sms_notifications").default(true).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(() => new Date()),
 });

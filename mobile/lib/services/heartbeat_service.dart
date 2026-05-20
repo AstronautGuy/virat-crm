@@ -143,12 +143,26 @@ void onStart(ServiceInstance service) async {
         }
 
         // 1. Get Location
-        Position position = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.medium,
-          ),
-        );
-        debugPrint('[BG_SERVICE] Geolocation pulse coordinates: ${position.latitude}, ${position.longitude}');
+        Position? position;
+        try {
+          position = await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.medium,
+              timeLimit: Duration(seconds: 15),
+            ),
+          );
+        } catch (e) {
+          debugPrint('[BG_SERVICE_ERROR] Failed to fetch current position: $e. Falling back to last known position.');
+          try {
+            position = await Geolocator.getLastKnownPosition();
+          } catch (_) {}
+        }
+
+        if (position != null) {
+          debugPrint('[BG_SERVICE] Geolocation pulse coordinates: ${position.latitude}, ${position.longitude}');
+        } else {
+          debugPrint('[BG_SERVICE] Geolocation coordinates currently unavailable (weak signal or timeout).');
+        }
 
         // 2. Get Connectivity
         final connectivityResult = await Connectivity().checkConnectivity();
@@ -162,8 +176,8 @@ void onStart(ServiceInstance service) async {
           await dio.post(
             'heartbeat/pulse',
             data: {
-              'lat': position.latitude.toString(),
-              'lng': position.longitude.toString(),
+              'lat': position?.latitude.toString(),
+              'lng': position?.longitude.toString(),
               'status': status,
             },
             options: Options(headers: {'Authorization': 'Bearer $token'}),
@@ -171,19 +185,21 @@ void onStart(ServiceInstance service) async {
           debugPrint('[BG_SERVICE] Geolocation pulse sent successfully to server.');
 
           // 5. Send location ping to update geofenced attendance logs (slabs)
-          try {
-            await dio.post(
-              'location/ping',
-              data: {
-                'latitude': position.latitude,
-                'longitude': position.longitude,
-                'accuracy': position.accuracy,
-              },
-              options: Options(headers: {'Authorization': 'Bearer $token'}),
-            );
-            debugPrint('[BG_SERVICE] Location ping sent successfully to server.');
-          } catch (pingErr) {
-            debugPrint('[BG_SERVICE_ERROR] Failed to send location ping to location/ping: $pingErr');
+          if (position != null) {
+            try {
+              await dio.post(
+                'location/ping',
+                data: {
+                  'latitude': position.latitude,
+                  'longitude': position.longitude,
+                  'accuracy': position.accuracy,
+                },
+                options: Options(headers: {'Authorization': 'Bearer $token'}),
+              );
+              debugPrint('[BG_SERVICE] Location ping sent successfully to server.');
+            } catch (pingErr) {
+              debugPrint('[BG_SERVICE_ERROR] Failed to send location ping to location/ping: $pingErr');
+            }
           }
           
           // 6. Trigger Background Sync

@@ -57,6 +57,13 @@
       "when": 1779173628060,
       "tag": "0007_talented_lockheed",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1779174792131,
+      "tag": "0008_big_outlaw_kid",
+      "breakpoints": true
     }
   ]
 }
