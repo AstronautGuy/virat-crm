@@ -8,7 +8,9 @@ async function main() {
     const allUsers = await db.select().from(users);
     console.log(`Found ${allUsers.length} users:`);
     for (const u of allUsers) {
-      console.log(`- ${u.employeeCode} (${u.role}): email=${u.email}, active=${u.isActive}`);
+      console.log(
+        `- ${u.employeeCode} (${u.role}): email=${u.email}, active=${u.isActive}`,
+      );
     }
   } catch (e) {
     console.error("DB Query error:", e);

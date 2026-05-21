@@ -13,15 +13,18 @@ autonomous: true
 # Plan 1: Kinde Auth & tRPC Middleware
 
 ## Goal
+
 Implement Kinde authentication with Next.js App Router and set up tRPC context and middleware to enforce server-side RBAC.
 
 ## Tasks
 
 ### [Task 1] Configure Kinde Auth Environment
+
 <read_first>
+
 - src/env.js
 - .env.example
-</read_first>
+  </read_first>
 
 <action>
 Update environment variables for Kinde Auth integration.
@@ -40,9 +43,11 @@ Add the following keys to `.env.example` and validation to `src/env.js` (both se
 </acceptance_criteria>
 
 ### [Task 2] Create Kinde Auth API Route
+
 <read_first>
+
 - src/app/api/auth/[kindeAuth]/route.ts (this will be a new file)
-</read_first>
+  </read_first>
 
 <action>
 Create `src/app/api/auth/[kindeAuth]/route.ts`.
@@ -54,10 +59,12 @@ Export `GET` handler using `handleAuth()` from `@kinde-oss/kinde-auth-nextjs/ser
 </acceptance_criteria>
 
 ### [Task 3] Setup tRPC Auth Middleware
+
 <read_first>
+
 - src/server/api/trpc.ts
 - .planning/phases/1/1-RESEARCH.md
-</read_first>
+  </read_first>
 
 <action>
 Update `src/server/api/trpc.ts` to include Kinde auth.
@@ -74,9 +81,11 @@ Update `src/server/api/trpc.ts` to include Kinde auth.
 </acceptance_criteria>
 
 ### [Task 4] Hydrate RootLayout with Auth State
+
 <read_first>
+
 - src/app/layout.tsx
-</read_first>
+  </read_first>
 
 <action>
 Update `src/app/layout.tsx` to conditionally render based on authentication state, or demonstrate fetching the user.
@@ -90,6 +99,7 @@ Log the user and admin status to verify server-side extraction is working.
 </acceptance_criteria>
 
 ## Verification
+
 <requirements>
 - AUTH-01: Implement Kinde Auth for employee login mapping `ecode` to username
 - AUTH-02: Enforce strict server-side RBAC using tRPC middleware
@@ -97,7 +107,8 @@ Log the user and admin status to verify server-side extraction is working.
 </requirements>
 
 <must_haves>
+
 - tRPC context must have `user` object available.
 - `protectedProcedure` throws UNAUTHORIZED for unauthenticated users.
 - `adminProcedure` throws FORBIDDEN for non-admin users.
-</must_haves>
+  </must_haves>

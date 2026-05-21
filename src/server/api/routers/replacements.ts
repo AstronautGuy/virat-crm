@@ -11,16 +11,23 @@ export const replacementsRouter = createTRPCRouter({
       z.object({
         originalSaleId: z.number(),
         reason: z.string(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const originalSale = await ctx.db.query.sales.findFirst({
         where: eq(sales.id, input.originalSaleId),
       });
 
-      if (!originalSale) throw new TRPCError({ code: "NOT_FOUND", message: "Original sale not found" });
-      
-      if (ctx.dbUser.role !== "Admin" && originalSale.userId !== ctx.dbUser.id) {
+      if (!originalSale)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Original sale not found",
+        });
+
+      if (
+        ctx.dbUser.role !== "Admin" &&
+        originalSale.userId !== ctx.dbUser.id
+      ) {
         const descendantsQuery = sql`
           WITH RECURSIVE subordinates AS (
             SELECT id FROM "virat-crm_user" WHERE manager_id = ${ctx.dbUser.id}
@@ -33,7 +40,10 @@ export const replacementsRouter = createTRPCRouter({
 
         const rows = await ctx.db.execute(descendantsQuery);
         if (rows.length === 0) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Unauthorized to create replacement for this sale" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Unauthorized to create replacement for this sale",
+          });
         }
       }
 
@@ -53,28 +63,30 @@ export const replacementsRouter = createTRPCRouter({
       return replacement;
     }),
 
-  getMyReplacements: featureProtectedProcedure("sales").query(async ({ ctx }) => {
-    return ctx.db.query.replacements.findMany({
-      where: eq(replacements.userId, ctx.dbUser.id),
-      with: {
-        sale: true,
-        files: {
-          where: (files, { eq }) => eq(files.entityType, "replacement")
-        }
-      },
-      orderBy: (replacements, { desc }) => [desc(replacements.createdAt)],
-    });
-  }),
+  getMyReplacements: featureProtectedProcedure("sales").query(
+    async ({ ctx }) => {
+      return ctx.db.query.replacements.findMany({
+        where: eq(replacements.userId, ctx.dbUser.id),
+        with: {
+          sale: true,
+          files: {
+            where: (files, { eq }) => eq(files.entityType, "replacement"),
+          },
+        },
+        orderBy: (replacements, { desc }) => [desc(replacements.createdAt)],
+      });
+    },
+  ),
 
   getReplacements: featureProtectedProcedure("sales").query(async ({ ctx }) => {
     if (ctx.dbUser.role === "Admin") {
       return ctx.db.query.replacements.findMany({
-        with: { 
-          sale: true, 
-          user: true, 
+        with: {
+          sale: true,
+          user: true,
           files: {
-            where: (files, { eq }) => eq(files.entityType, "replacement")
-          }
+            where: (files, { eq }) => eq(files.entityType, "replacement"),
+          },
         },
         orderBy: (replacements, { desc }) => [desc(replacements.createdAt)],
       });
@@ -83,34 +95,49 @@ export const replacementsRouter = createTRPCRouter({
     // Filter by branch for non-admins
     return ctx.db.query.replacements.findMany({
       where: eq(replacements.branchId, ctx.dbUser.branchId!),
-      with: { 
-        sale: true, 
-        user: true, 
+      with: {
+        sale: true,
+        user: true,
         files: {
-          where: (files, { eq }) => eq(files.entityType, "replacement")
-        }
+          where: (files, { eq }) => eq(files.entityType, "replacement"),
+        },
       },
       orderBy: (replacements, { desc }) => [desc(replacements.createdAt)],
     });
   }),
 
   updateReplacementStatus: featureProtectedProcedure("sales")
-    .input(z.object({ replacementId: z.number(), status: z.enum(["Pending", "Approved", "Rejected"]) }))
+    .input(
+      z.object({
+        replacementId: z.number(),
+        status: z.enum(["Pending", "Approved", "Rejected"]),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const targetReplacement = await ctx.db.query.replacements.findFirst({
         where: eq(replacements.id, input.replacementId),
       });
 
-      if (!targetReplacement) throw new TRPCError({ code: "NOT_FOUND", message: "Replacement not found" });
+      if (!targetReplacement)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Replacement not found",
+        });
 
       if (ctx.dbUser.role !== "Admin") {
         if (ctx.dbUser.role !== "Manager") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Unauthorized to update status" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Unauthorized to update status",
+          });
         }
 
         // Managers can only update if it's in their branch
         if (targetReplacement.branchId !== ctx.dbUser.branchId) {
-           throw new TRPCError({ code: "FORBIDDEN", message: "Unauthorized: Replacement does not belong to your branch" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Unauthorized: Replacement does not belong to your branch",
+          });
         }
       }
 

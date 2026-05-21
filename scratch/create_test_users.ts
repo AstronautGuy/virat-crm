@@ -10,7 +10,9 @@ async function run() {
   // Get dynamic branch
   const existingBranch = await db.query.branches.findFirst();
   if (!existingBranch) {
-    console.error("Error: No branch found in the database. Please seed branches first.");
+    console.error(
+      "Error: No branch found in the database. Please seed branches first.",
+    );
     process.exit(1);
   }
   const branchId = existingBranch.id;
@@ -57,7 +59,9 @@ async function run() {
     } else {
       const [inserted] = await db.insert(users).values(mgr).returning();
       if (inserted) {
-        console.log(`Created Manager: ${inserted.firstName} (${inserted.employeeCode})`);
+        console.log(
+          `Created Manager: ${inserted.firstName} (${inserted.employeeCode})`,
+        );
         createdManagers.push(inserted);
       }
     }
@@ -95,7 +99,7 @@ async function run() {
     const num = i + 2; // EMP002 to EMP011
     const empCode = `EMP${String(num).padStart(3, "0")}`;
     const nameInfo = employeeNames[i]!;
-    
+
     // Distribute managers evenly among employees
     const assignedManager = createdManagers[i % createdManagers.length];
 
@@ -127,7 +131,9 @@ async function run() {
     } else {
       const [inserted] = await db.insert(users).values(empData).returning();
       if (inserted) {
-        console.log(`Created Employee: ${inserted.firstName} (${inserted.employeeCode}) assigned to manager ${assignedManager?.employeeCode}`);
+        console.log(
+          `Created Employee: ${inserted.firstName} (${inserted.employeeCode}) assigned to manager ${assignedManager?.employeeCode}`,
+        );
         credentialsTable.push({
           Name: `${inserted.firstName} ${inserted.lastName}`,
           Role: inserted.role,
@@ -139,11 +145,15 @@ async function run() {
     }
   }
 
-  console.log("\n==============================================================");
+  console.log(
+    "\n==============================================================",
+  );
   console.log("SUCCESSFULLY GENERATED TEST USERS CREDENTIALS");
   console.log("==============================================================");
   console.table(credentialsTable);
-  console.log("==============================================================\n");
+  console.log(
+    "==============================================================\n",
+  );
 
   process.exit(0);
 }

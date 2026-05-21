@@ -12,26 +12,32 @@ interface FeatureGateProps {
   className?: string;
 }
 
-export function FeatureGate({ featureKey, children, fallback, className }: FeatureGateProps) {
+export function FeatureGate({
+  featureKey,
+  children,
+  fallback,
+  className,
+}: FeatureGateProps) {
   const { data: user, isLoading: userLoading } = api.users.getMe.useQuery();
-  const { data: rolePermissions, isLoading: permissionsLoading } = api.permissions.getForRole.useQuery(
-    { role: user?.role ?? "Employee" },
-    { enabled: !!user?.role }
-  );
+  const { data: rolePermissions, isLoading: permissionsLoading } =
+    api.permissions.getForRole.useQuery(
+      { role: user?.role ?? "Employee" },
+      { enabled: !!user?.role },
+    );
 
   const isLoading = userLoading || permissionsLoading;
-  
+
   // Admins bypass all gates
   if (user?.role === "Admin") return <>{children}</>;
 
-  const permission = rolePermissions?.find(p => p.featureKey === featureKey);
+  const permission = rolePermissions?.find((p) => p.featureKey === featureKey);
   const isEnabled = permission ? permission.isEnabled : false;
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 animate-pulse">
-        <div className="w-12 h-12 bg-gray-100 rounded-full" />
-        <div className="h-4 w-48 bg-gray-100 rounded" />
+      <div className="flex min-h-[400px] animate-pulse flex-col items-center justify-center space-y-4">
+        <div className="h-12 w-12 rounded-full bg-gray-100" />
+        <div className="h-4 w-48 rounded bg-gray-100" />
       </div>
     );
   }
@@ -40,46 +46,55 @@ export function FeatureGate({ featureKey, children, fallback, className }: Featu
     if (fallback) return <>{fallback}</>;
 
     return (
-      <div className={cn(
-        "flex flex-col items-center justify-center min-h-[70vh] text-center p-8 bg-gradient-to-b from-white to-gray-50/50 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-200/20 animate-in fade-in zoom-in-95 duration-700",
-        className
-      )}>
+      <div
+        className={cn(
+          "animate-in fade-in zoom-in-95 flex min-h-[70vh] flex-col items-center justify-center rounded-[2.5rem] border border-gray-100 bg-gradient-to-b from-white to-gray-50/50 p-8 text-center shadow-xl shadow-gray-200/20 duration-700",
+          className,
+        )}
+      >
         <div className="relative mb-8">
-          <div className="absolute inset-0 bg-red-200 blur-2xl opacity-20 rounded-full animate-pulse" />
-          <div className="relative p-6 bg-red-50 rounded-3xl border border-red-100/50 shadow-inner">
-            <ShieldAlert className="w-16 h-16 text-red-500" />
+          <div className="absolute inset-0 animate-pulse rounded-full bg-red-200 opacity-20 blur-2xl" />
+          <div className="relative rounded-3xl border border-red-100/50 bg-red-50 p-6 shadow-inner">
+            <ShieldAlert className="h-16 w-16 text-red-500" />
           </div>
         </div>
-        
-        <div className="inline-flex items-center space-x-2 px-3 py-1 bg-red-50 text-red-600 rounded-full text-[10px] font-bold uppercase tracking-wider mb-4 border border-red-100">
-          <Lock className="w-3 h-3" />
+
+        <div className="mb-4 inline-flex items-center space-x-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-[10px] font-bold tracking-wider text-red-600 uppercase">
+          <Lock className="h-3 w-3" />
           <span>Administrator Only</span>
         </div>
 
-        <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-3">Access Restricted</h2>
-        
-        <p className="text-gray-500 max-w-md leading-relaxed mb-10 text-lg">
-          The <span className="text-gray-900 font-semibold italic">&quot;{featureKey.replace("-", " ")}&quot;</span> module is currently restricted for your access level. Please contact your system administrator to request access.
+        <h2 className="mb-3 text-4xl font-extrabold tracking-tight text-gray-900">
+          Access Restricted
+        </h2>
+
+        <p className="mb-10 max-w-md text-lg leading-relaxed text-gray-500">
+          The{" "}
+          <span className="font-semibold text-gray-900 italic">
+            &quot;{featureKey.replace("-", " ")}&quot;
+          </span>{" "}
+          module is currently restricted for your access level. Please contact
+          your system administrator to request access.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-5">
+        <div className="flex flex-col gap-5 sm:flex-row">
           <Link
             href="/"
-            className="group flex items-center justify-center space-x-3 px-8 py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all active:scale-95 shadow-lg shadow-gray-200"
+            className="group flex items-center justify-center space-x-3 rounded-2xl bg-gray-900 px-8 py-4 font-bold text-white shadow-lg shadow-gray-200 transition-all hover:bg-black active:scale-95"
           >
-            <Home className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+            <Home className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
             <span>Return Dashboard</span>
           </Link>
           <button
             onClick={() => window.location.reload()}
-            className="px-8 py-4 bg-white text-gray-700 border border-gray-200 rounded-2xl font-bold hover:bg-gray-50 transition-all active:scale-95"
+            className="rounded-2xl border border-gray-200 bg-white px-8 py-4 font-bold text-gray-700 transition-all hover:bg-gray-50 active:scale-95"
           >
             Refresh Status
           </button>
         </div>
 
-        <div className="mt-16 pt-8 border-t border-gray-100 w-full max-w-xs">
-          <p className="text-[10px] text-gray-400 font-medium uppercase tracking-[0.2em]">
+        <div className="mt-16 w-full max-w-xs border-t border-gray-100 pt-8">
+          <p className="text-[10px] font-medium tracking-[0.2em] text-gray-400 uppercase">
             Virat Security Protocol &bull; RBAC v4.0
           </p>
         </div>

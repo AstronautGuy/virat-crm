@@ -1,19 +1,22 @@
 # Virat CRM - Mobile Flutter Specification (v1.0)
 
 ## Overview
+
 A high-accessibility companion app for field staff. Focuses on Mandatory Connectivity, GPS Tracking, and simplified CRM workflows.
 
 ## Design Philosophy: "Big Button" UI
+
 - **Accessibility**: Minimalist interface with large interactive elements (min-height: 80px).
 - **Typography**: Inter (Match Web UI), minimum font size 18pt for primary actions.
 - **Feedback**: Haptic feedback on all successful button presses.
-- **Color Palette**: 
+- **Color Palette**:
   - Primary: `#3B82F6` (Blue 500)
   - Success: `#10B981` (Emerald 500)
   - Alert/Danger: `#EF4444` (Red 500)
   - Background: Soft Gray/White for high contrast.
 
 ## Core Features
+
 1. **Persistent Authentication**:
    - Login via Employee Code + Password.
    - Store JWT in `flutter_secure_storage`.
@@ -29,6 +32,7 @@ A high-accessibility companion app for field staff. Focuses on Mandatory Connect
    - **Sales**: Quick order entry (Select Product -> Enter Quantity -> Submit).
 
 ## API Integration
+
 - **Base URL**: `https://your-crm-domain.com/api/rest`
 - **Auth**: `Authorization: Bearer <token>`
 - **Endpoints**:
@@ -39,11 +43,13 @@ A high-accessibility companion app for field staff. Focuses on Mandatory Connect
   - `POST /sales/create`: Submit new sale.
 
 ## Monitoring & Compliance
+
 - The backend runs a 15-minute inactivity check.
 - If a user fails to send a heartbeat, Admins are notified immediately.
 - The app should prevent usage of CRM features if Connectivity/GPS status is red.
 
 ## Tech Stack (Recommended)
+
 - **Framework**: Flutter (Stable)
 - **State Management**: Provider or Riverpod
 - **Storage**: `flutter_secure_storage`

@@ -8,10 +8,14 @@ import ExcelJS from "exceljs";
 export async function GET() {
   try {
     const session = await getSession();
-    if (!session?.userId) return new NextResponse("Unauthorized", { status: 401 });
+    if (!session?.userId)
+      return new NextResponse("Unauthorized", { status: 401 });
 
-    const user = await db.query.users.findFirst({ where: eq(users.id, session.userId) });
-    if (user?.role !== "Admin") return new NextResponse("Forbidden", { status: 403 });
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.userId),
+    });
+    if (user?.role !== "Admin")
+      return new NextResponse("Forbidden", { status: 403 });
 
     // Fetch all sales with relations
     const salesData = await db.query.sales.findMany({
@@ -20,8 +24,8 @@ export async function GET() {
         branch: true,
         customer: true,
         items: {
-          with: { product: true }
-        }
+          with: { product: true },
+        },
       },
       orderBy: (sales, { desc }) => [desc(sales.createdAt)],
     });
@@ -31,7 +35,7 @@ export async function GET() {
     workbook.created = new Date();
 
     const sheet = workbook.addWorksheet("Sales Data", {
-      views: [{ state: "frozen", ySplit: 1 }]
+      views: [{ state: "frozen", ySplit: 1 }],
     });
 
     sheet.columns = [
@@ -51,12 +55,16 @@ export async function GET() {
 
     // Style the header row
     sheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
-    sheet.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } }; // Slate 900
+    sheet.getRow(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0F172A" },
+    }; // Slate 900
     sheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
     salesData.forEach((s) => {
       const itemsSummary = s.items
-        .map(item => `${item.product?.name ?? "Unknown"} (${item.quantity})`)
+        .map((item) => `${item.product?.name ?? "Unknown"} (${item.quantity})`)
         .join(", ");
 
       sheet.addRow({
@@ -80,7 +88,8 @@ export async function GET() {
 
     return new NextResponse(buffer, {
       headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="sales-export-${new Date().toISOString().split("T")[0]}.xlsx"`,
       },
     });

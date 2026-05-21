@@ -23,8 +23,8 @@ export const notificationsRouter = createTRPCRouter({
           message: z.string(),
           isRead: z.boolean(),
           createdAt: z.date(),
-        })
-      )
+        }),
+      ),
     )
     .query(async ({ ctx }) => {
       return ctx.db.query.notifications.findMany({
@@ -51,8 +51,8 @@ export const notificationsRouter = createTRPCRouter({
         .where(
           and(
             eq(notifications.id, input.notificationId),
-            eq(notifications.userId, ctx.dbUser.id)
-          )
+            eq(notifications.userId, ctx.dbUser.id),
+          ),
         );
 
       return { success: true };
@@ -79,14 +79,16 @@ export const notificationsRouter = createTRPCRouter({
     }),
 
   savePushSubscription: protectedProcedure
-    .input(z.object({
-      endpoint: z.string(),
-      keys: z.object({
-        p256dh: z.string(),
-        auth: z.string(),
+    .input(
+      z.object({
+        endpoint: z.string(),
+        keys: z.object({
+          p256dh: z.string(),
+          auth: z.string(),
+        }),
+        userAgent: z.string().optional(),
       }),
-      userAgent: z.string().optional(),
-    }))
+    )
     .mutation(async ({ ctx, input }) => {
       await ctx.db
         .insert(pushSubscriptions)

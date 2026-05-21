@@ -4,9 +4,10 @@ import twilio from "twilio";
 
 // Initialize APIs if keys are available
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
-const twilioClient = env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN
-  ? twilio(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN)
-  : null;
+const twilioClient =
+  env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN
+    ? twilio(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN)
+    : null;
 
 // Mock message caching for verification and automated tests
 export interface MockCommunication {
@@ -25,7 +26,7 @@ export const mockSentLogs: MockCommunication[] = [];
  */
 export async function sendSMSAlert(to: string, body: string): Promise<boolean> {
   const normalizedPhone = to.startsWith("+") ? to : `+${to}`;
-  
+
   if (twilioClient && env.TWILIO_PHONE_NUMBER) {
     try {
       await twilioClient.messages.create({
@@ -36,7 +37,10 @@ export async function sendSMSAlert(to: string, body: string): Promise<boolean> {
       console.log(`[SMS Gateway] Dispatched SMS to ${normalizedPhone}`);
       return true;
     } catch (err) {
-      console.error(`[SMS Gateway Error] Failed to send SMS to ${normalizedPhone}:`, err);
+      console.error(
+        `[SMS Gateway Error] Failed to send SMS to ${normalizedPhone}:`,
+        err,
+      );
       // Fail gracefully so as to not crash mutations
     }
   }
@@ -46,7 +50,7 @@ export async function sendSMSAlert(to: string, body: string): Promise<boolean> {
   console.log(`To: ${normalizedPhone}`);
   console.log(`Body: ${body}`);
   console.log(`-------------------------\n`);
-  
+
   mockSentLogs.push({
     type: "sms",
     to: normalizedPhone,
@@ -64,7 +68,7 @@ export async function sendEmailAlert(
   to: string,
   subject: string,
   html: string,
-  text: string
+  text: string,
 ): Promise<boolean> {
   if (resend) {
     try {
@@ -78,7 +82,10 @@ export async function sendEmailAlert(
       console.log(`[Email Gateway] Dispatched HTML Email to ${to}`);
       return true;
     } catch (err) {
-      console.error(`[Email Gateway Error] Failed to send email to ${to}:`, err);
+      console.error(
+        `[Email Gateway Error] Failed to send email to ${to}:`,
+        err,
+      );
     }
   }
 

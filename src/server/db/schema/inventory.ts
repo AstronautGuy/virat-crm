@@ -1,4 +1,10 @@
-import { pgTableCreator, serial, integer, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  pgTableCreator,
+  serial,
+  integer,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { products } from "./products";
 import { branches } from "./branches";
@@ -17,11 +23,16 @@ export const inventory = createTable(
       .notNull(),
     quantity: integer("quantity").notNull().default(0),
     minThreshold: integer("min_threshold").notNull().default(5),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(() => new Date()),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+      () => new Date(),
+    ),
   },
   (table) => ({
-    productBranchIdx: uniqueIndex("product_branch_idx").on(table.productId, table.branchId),
-  })
+    productBranchIdx: uniqueIndex("product_branch_idx").on(
+      table.productId,
+      table.branchId,
+    ),
+  }),
 );
 
 export const inventoryRelations = relations(inventory, ({ one }) => ({

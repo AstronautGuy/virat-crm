@@ -2,12 +2,22 @@ import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { breadcrumbs, users, locationLogs, branches } from "@/server/db/schema";
-import { eq, and, desc, inArray, gte, lte, asc, lt, type SQL } from "drizzle-orm";
+import {
+  eq,
+  and,
+  desc,
+  inArray,
+  gte,
+  lte,
+  asc,
+  lt,
+  type SQL,
+} from "drizzle-orm";
 
 function getCurrentSlab() {
   const now = new Date();
   const hours = now.getHours();
-  
+
   if (hours >= 0 && hours < 10) return "00:00-10:00";
   if (hours >= 10 && hours < 14) return "10:00-14:00";
   if (hours >= 14 && hours < 18) return "14:00-18:00";
@@ -17,21 +27,26 @@ function getCurrentSlab() {
 
 function getFormattedDate(date: Date = new Date()) {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
-function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+function haversineDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+) {
   const R = 6371e3; // Earth radius in meters
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lon2 - lon1) * Math.PI / 180;
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
 
-  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
   return R * c; // in meters
@@ -39,41 +54,58 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 
 export const locationRouter = createTRPCRouter({
   ping: featureProtectedProcedure("workforce")
-    .meta({ openapi: { method: "POST", path: "/location/ping", summary: "Record location ping", tags: ["Location"] } })
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/location/ping",
+        summary: "Record location ping",
+        tags: ["Location"],
+      },
+    })
     .input(
       z.object({
         latitude: z.number(),
         longitude: z.number(),
         accuracy: z.number().optional(),
-      })
+      }),
     )
     .output(
       z.object({
         success: z.boolean(),
         warning: z.string().optional(),
         ignored: z.boolean().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const user = ctx.dbUser;
       if (user.role === "Admin") return { success: true, ignored: true }; // Admins are not tracked
-      if (!user.branchId) throw new TRPCError({ code: "BAD_REQUEST", message: "User is not assigned to a branch" });
+      if (!user.branchId)
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "User is not assigned to a branch",
+        });
 
       // Fetch branch data for geofencing
-      const branch = await ctx.db.query.branches.findFirst({ where: eq(branches.id, user.branchId) });
-      if (!branch) throw new TRPCError({ code: "BAD_REQUEST", message: "Branch not found" });
+      const branch = await ctx.db.query.branches.findFirst({
+        where: eq(branches.id, user.branchId),
+      });
+      if (!branch)
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Branch not found",
+        });
 
       // 1. Server-Side Geofencing Validation
       const distance = haversineDistance(
         input.latitude,
         input.longitude,
         parseFloat(branch.latitude),
-        parseFloat(branch.longitude)
+        parseFloat(branch.longitude),
       );
 
       const isWithinRadius = distance <= branch.radiusMeters;
-      
-      // We log the ping regardless for route playback, but we only mark "Attendance" (slab logs) 
+
+      // We log the ping regardless for route playback, but we only mark "Attendance" (slab logs)
       // if they are within the geofence to prevent spoofing.
       if (!isWithinRadius) {
         // Log as breadcrumb only, don't update locationLogs (Attendance)
@@ -83,7 +115,10 @@ export const locationRouter = createTRPCRouter({
           longitude: input.longitude,
           accuracy: input.accuracy,
         });
-        return { success: true, warning: "Location outside branch geofence. Attendance not recorded." };
+        return {
+          success: true,
+          warning: "Location outside branch geofence. Attendance not recorded.",
+        };
       }
 
       const slabName = getCurrentSlab();
@@ -98,8 +133,8 @@ export const locationRouter = createTRPCRouter({
         where: and(
           eq(locationLogs.userId, user.id),
           eq(locationLogs.date, dateStr),
-          eq(locationLogs.slab, slabName)
-        )
+          eq(locationLogs.slab, slabName),
+        ),
       });
 
       let frequencyMap: Record<string, number> = {};
@@ -113,7 +148,9 @@ export const locationRouter = createTRPCRouter({
       // EOD Cleanup: Clear breadcrumbs older than 24 hours
       if (!existingSlab) {
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        await ctx.db.delete(breadcrumbs).where(lt(breadcrumbs.createdAt, twentyFourHoursAgo));
+        await ctx.db
+          .delete(breadcrumbs)
+          .where(lt(breadcrumbs.createdAt, twentyFourHoursAgo));
       }
 
       // Find the most frequent location in the slab
@@ -126,15 +163,18 @@ export const locationRouter = createTRPCRouter({
         }
       }
 
-      const [finalLat, finalLng] = mostFrequentKey.split(',');
+      const [finalLat, finalLng] = mostFrequentKey.split(",");
 
       if (existingSlab) {
-        await ctx.db.update(locationLogs).set({
-          frequencyMap,
-          latitude: finalLat,
-          longitude: finalLng,
-          recordedAt: new Date(),
-        }).where(eq(locationLogs.id, existingSlab.id));
+        await ctx.db
+          .update(locationLogs)
+          .set({
+            frequencyMap,
+            latitude: finalLat,
+            longitude: finalLng,
+            recordedAt: new Date(),
+          })
+          .where(eq(locationLogs.id, existingSlab.id));
       } else {
         /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
         await ctx.db.insert(locationLogs).values({
@@ -164,7 +204,7 @@ export const locationRouter = createTRPCRouter({
       z.object({
         userId: z.string().uuid(),
         date: z.date(),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const dateStr = getFormattedDate(input.date);
@@ -172,7 +212,7 @@ export const locationRouter = createTRPCRouter({
       const logs = await ctx.db.query.locationLogs.findMany({
         where: and(
           eq(locationLogs.userId, input.userId),
-          eq(locationLogs.date, dateStr)
+          eq(locationLogs.date, dateStr),
         ),
         orderBy: [desc(locationLogs.recordedAt)],
       });
@@ -186,7 +226,7 @@ export const locationRouter = createTRPCRouter({
         latitude: z.number(),
         longitude: z.number(),
         accuracy: z.number().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const user = ctx.dbUser;
@@ -204,7 +244,9 @@ export const locationRouter = createTRPCRouter({
       }
 
       // Fetch branch data for geofencing
-      const branch = await ctx.db.query.branches.findFirst({ where: eq(branches.id, user.branchId) });
+      const branch = await ctx.db.query.branches.findFirst({
+        where: eq(branches.id, user.branchId),
+      });
       if (!branch) {
         // Fallback to breadcrumb only if branch not found
         await ctx.db.insert(breadcrumbs).values({
@@ -221,11 +263,11 @@ export const locationRouter = createTRPCRouter({
         input.latitude,
         input.longitude,
         parseFloat(branch.latitude),
-        parseFloat(branch.longitude)
+        parseFloat(branch.longitude),
       );
 
       const isWithinRadius = distance <= branch.radiusMeters;
-      
+
       if (!isWithinRadius) {
         // Log as breadcrumb only, don't update locationLogs (Attendance)
         await ctx.db.insert(breadcrumbs).values({
@@ -234,7 +276,10 @@ export const locationRouter = createTRPCRouter({
           longitude: input.longitude,
           accuracy: input.accuracy,
         });
-        return { success: true, warning: "Location outside branch geofence. Attendance not recorded." };
+        return {
+          success: true,
+          warning: "Location outside branch geofence. Attendance not recorded.",
+        };
       }
 
       const slabName = getCurrentSlab();
@@ -249,8 +294,8 @@ export const locationRouter = createTRPCRouter({
         where: and(
           eq(locationLogs.userId, user.id),
           eq(locationLogs.date, dateStr),
-          eq(locationLogs.slab, slabName)
-        )
+          eq(locationLogs.slab, slabName),
+        ),
       });
 
       let frequencyMap: Record<string, number> = {};
@@ -264,7 +309,9 @@ export const locationRouter = createTRPCRouter({
       // EOD Cleanup: Clear breadcrumbs older than 24 hours
       if (!existingSlab) {
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        await ctx.db.delete(breadcrumbs).where(lt(breadcrumbs.createdAt, twentyFourHoursAgo));
+        await ctx.db
+          .delete(breadcrumbs)
+          .where(lt(breadcrumbs.createdAt, twentyFourHoursAgo));
       }
 
       // Find the most frequent location in the slab
@@ -277,15 +324,18 @@ export const locationRouter = createTRPCRouter({
         }
       }
 
-      const [finalLat, finalLng] = mostFrequentKey.split(',');
+      const [finalLat, finalLng] = mostFrequentKey.split(",");
 
       if (existingSlab) {
-        await ctx.db.update(locationLogs).set({
-          frequencyMap,
-          latitude: finalLat,
-          longitude: finalLng,
-          recordedAt: new Date(),
-        }).where(eq(locationLogs.id, existingSlab.id));
+        await ctx.db
+          .update(locationLogs)
+          .set({
+            frequencyMap,
+            latitude: finalLat,
+            longitude: finalLng,
+            recordedAt: new Date(),
+          })
+          .where(eq(locationLogs.id, existingSlab.id));
       } else {
         /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
         await ctx.db.insert(locationLogs).values({
@@ -318,7 +368,7 @@ export const locationRouter = createTRPCRouter({
 
       // 1. Identify Visible Users based on RBAC and Branch
       let visibleUserIds: string[] = [];
-      
+
       const filters: SQL[] = [];
       if (!isSystemAdmin) {
         // Manager sees their branch + subordinates
@@ -335,7 +385,7 @@ export const locationRouter = createTRPCRouter({
         where: filters.length > 0 ? and(...filters) : undefined,
         columns: { id: true },
       });
-      visibleUserIds = visibleUsers.map(u => u.id);
+      visibleUserIds = visibleUsers.map((u) => u.id);
 
       if (visibleUserIds.length === 0) return [];
 
@@ -362,15 +412,17 @@ export const locationRouter = createTRPCRouter({
 
       return latestBreadcrumbs.map((b) => {
         // Convert timestamp without timezone from local server time to actual UTC Date
-        const utcCreatedAt = new Date(Date.UTC(
-          b.createdAt.getFullYear(),
-          b.createdAt.getMonth(),
-          b.createdAt.getDate(),
-          b.createdAt.getHours(),
-          b.createdAt.getMinutes(),
-          b.createdAt.getSeconds(),
-          b.createdAt.getMilliseconds()
-        ));
+        const utcCreatedAt = new Date(
+          Date.UTC(
+            b.createdAt.getFullYear(),
+            b.createdAt.getMonth(),
+            b.createdAt.getDate(),
+            b.createdAt.getHours(),
+            b.createdAt.getMinutes(),
+            b.createdAt.getSeconds(),
+            b.createdAt.getMilliseconds(),
+          ),
+        );
         const isOnline = Date.now() - utcCreatedAt.getTime() < 15 * 60 * 1000;
         return {
           ...b,
@@ -387,7 +439,7 @@ export const locationRouter = createTRPCRouter({
       z.object({
         userId: z.string().uuid(),
         date: z.string(), // YYYY-MM-DD
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const currentUser = ctx.dbUser;
@@ -398,16 +450,19 @@ export const locationRouter = createTRPCRouter({
         const targetUser = await ctx.db.query.users.findFirst({
           where: and(
             eq(users.id, input.userId),
-            eq(users.managerId, currentUser.id)
+            eq(users.managerId, currentUser.id),
           ),
         });
-        if (!targetUser) throw new Error("Not authorized to view this user's route");
+        if (!targetUser)
+          throw new Error("Not authorized to view this user's route");
       }
 
       // Fetch breadcrumbs for a specific day - RESTRICTED TO TODAY
       const todayStr = getFormattedDate();
       if (input.date !== todayStr) {
-        throw new Error("Historical route playback is restricted. Please use Intelligence Reports for long-term analysis.");
+        throw new Error(
+          "Historical route playback is restricted. Please use Intelligence Reports for long-term analysis.",
+        );
       }
 
       const startOfDay = new Date(`${input.date}T00:00:00Z`);
@@ -417,22 +472,24 @@ export const locationRouter = createTRPCRouter({
         where: and(
           eq(breadcrumbs.userId, input.userId),
           gte(breadcrumbs.createdAt, startOfDay),
-          lte(breadcrumbs.createdAt, endOfDay)
+          lte(breadcrumbs.createdAt, endOfDay),
         ),
         orderBy: [asc(breadcrumbs.createdAt)],
       });
 
       return path.map((p) => {
         // Convert timestamp without timezone from local server time to actual UTC Date
-        const utcCreatedAt = new Date(Date.UTC(
-          p.createdAt.getFullYear(),
-          p.createdAt.getMonth(),
-          p.createdAt.getDate(),
-          p.createdAt.getHours(),
-          p.createdAt.getMinutes(),
-          p.createdAt.getSeconds(),
-          p.createdAt.getMilliseconds()
-        ));
+        const utcCreatedAt = new Date(
+          Date.UTC(
+            p.createdAt.getFullYear(),
+            p.createdAt.getMonth(),
+            p.createdAt.getDate(),
+            p.createdAt.getHours(),
+            p.createdAt.getMinutes(),
+            p.createdAt.getSeconds(),
+            p.createdAt.getMilliseconds(),
+          ),
+        );
         return {
           ...p,
           createdAt: utcCreatedAt,

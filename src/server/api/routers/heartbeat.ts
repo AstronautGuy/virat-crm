@@ -7,19 +7,33 @@ import { notifyAdmins } from "@/server/lib/monitoring";
 
 export const heartbeatRouter = createTRPCRouter({
   pulse: featureProtectedProcedure("workforce")
-    .meta({ openapi: { method: "POST", path: "/heartbeat/pulse", summary: "Record user heartbeat", tags: ["Monitoring"] } })
-    .input(z.object({
-      lat: z.string().optional(),
-      lng: z.string().optional(),
-      status: z.enum(["Online", "Offline", "Low Battery", "No GPS"]).default("Online"),
-    }))
-    .output(z.object({
-      success: z.boolean(),
-    }))
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/heartbeat/pulse",
+        summary: "Record user heartbeat",
+        tags: ["Monitoring"],
+      },
+    })
+    .input(
+      z.object({
+        lat: z.string().optional(),
+        lng: z.string().optional(),
+        status: z
+          .enum(["Online", "Offline", "Low Battery", "No GPS"])
+          .default("Online"),
+      }),
+    )
+    .output(
+      z.object({
+        success: z.boolean(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
 
-      await db.update(users)
+      await db
+        .update(users)
         .set({
           lastActiveAt: new Date(),
           lastLat: input.lat,
@@ -40,10 +54,11 @@ export const heartbeatRouter = createTRPCRouter({
       if (input.status === "No GPS") {
         await notifyAdmins(
           "GPS Violation Alert",
-          `${dbUser.firstName} ${dbUser.lastName} (${dbUser.employeeCode}) has disabled their device's GPS!`
+          `${dbUser.firstName} ${dbUser.lastName} (${dbUser.employeeCode}) has disabled their device's GPS!`,
         );
         // Automatically deactivate user for GPS violation lockout
-        await db.update(users)
+        await db
+          .update(users)
           .set({ isActive: false })
           .where(eq(users.id, dbUser.id));
       }

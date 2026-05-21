@@ -19,9 +19,7 @@ export function PageWrapper({ children, isLoading }: PageWrapperProps) {
       exit="exit"
       className="w-full"
     >
-      <Skelon loading={isLoading ?? false}>
-        {children}
-      </Skelon>
+      <Skelon loading={isLoading ?? false}>{children}</Skelon>
     </motion.div>
   );
 }

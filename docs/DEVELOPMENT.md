@@ -1,4 +1,5 @@
 <!-- generated-by: gsd-doc-writer -->
+
 ## Local Setup
 
 To set up the project for development:
@@ -10,22 +11,22 @@ To set up the project for development:
 
 The following commands are available via the `scripts` section in `package.json`:
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Starts the Next.js development server with Turbopack enabled. |
-| `npm run build` | Builds the Next.js application for production. |
-| `npm run start` | Starts the Next.js production server (requires `build` first). |
-| `npm run preview` | Runs a production build and immediately starts the server. |
-| `npm run lint` | Runs ESLint to check for code quality issues. |
-| `npm run lint:fix` | Runs ESLint and automatically fixes fixable issues. |
-| `npm run format:check` | Checks code formatting against Prettier rules. |
-| `npm run format:write` | Automatically formats all supported files using Prettier. |
-| `npm run typecheck` | Runs the TypeScript compiler to check for type errors without emitting files. |
-| `npm run check` | Runs both linting and type checking sequentially. |
-| `npm run db:generate` | Generates Drizzle ORM SQL migration files based on schema changes. |
-| `npm run db:migrate` | Applies generated SQL migrations to the database. |
-| `npm run db:push` | Pushes schema changes directly to the database without generating migration files. |
-| `npm run db:studio` | Opens Drizzle Studio, a visual GUI for exploring your database. |
+| Command                | Description                                                                        |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| `npm run dev`          | Starts the Next.js development server with Turbopack enabled.                      |
+| `npm run build`        | Builds the Next.js application for production.                                     |
+| `npm run start`        | Starts the Next.js production server (requires `build` first).                     |
+| `npm run preview`      | Runs a production build and immediately starts the server.                         |
+| `npm run lint`         | Runs ESLint to check for code quality issues.                                      |
+| `npm run lint:fix`     | Runs ESLint and automatically fixes fixable issues.                                |
+| `npm run format:check` | Checks code formatting against Prettier rules.                                     |
+| `npm run format:write` | Automatically formats all supported files using Prettier.                          |
+| `npm run typecheck`    | Runs the TypeScript compiler to check for type errors without emitting files.      |
+| `npm run check`        | Runs both linting and type checking sequentially.                                  |
+| `npm run db:generate`  | Generates Drizzle ORM SQL migration files based on schema changes.                 |
+| `npm run db:migrate`   | Applies generated SQL migrations to the database.                                  |
+| `npm run db:push`      | Pushes schema changes directly to the database without generating migration files. |
+| `npm run db:studio`    | Opens Drizzle Studio, a visual GUI for exploring your database.                    |
 
 ## Code Style
 

@@ -21,8 +21,8 @@ async function main() {
       .where(
         and(
           eq(rolePermissions.role, role),
-          eq(rolePermissions.featureKey, featureKey)
-        )
+          eq(rolePermissions.featureKey, featureKey),
+        ),
       );
 
     if (existing.length === 0) {
@@ -39,8 +39,8 @@ async function main() {
         .where(
           and(
             eq(rolePermissions.role, role),
-            eq(rolePermissions.featureKey, featureKey)
-          )
+            eq(rolePermissions.featureKey, featureKey),
+          ),
         );
       console.log(`Updated permission for ${role}`);
     }

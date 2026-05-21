@@ -1,4 +1,5 @@
 <!-- generated-by: gsd-doc-writer -->
+
 ## System Overview
 
 Virat ERP is a comprehensive, self-hosted relational professional management system built on the T3 Stack with a native-like mobile experience. The system is designed to provide secure, role-based access to business functions (attendance, document management, CRM workflows) via a Next.js App Router web application and a Flutter-based mobile progressive application. The architecture is primarily layered, separating presentation, API routing (tRPC and REST), and data access (Drizzle ORM).
@@ -9,11 +10,11 @@ Virat ERP is a comprehensive, self-hosted relational professional management sys
 graph TD
     Client_Web[Web Client - Next.js] -->|tRPC / REST| API[API Layer - Next.js App Router]
     Client_Mobile[Mobile App - Flutter] -->|tRPC / REST| API
-    
+
     API -->|Auth| Auth[Kinde Auth Server]
     API -->|Query/Mutation| ORM[Drizzle ORM]
     API -->|Upload/Download| Storage[Cloudflare R2]
-    
+
     ORM -->|TCP/IP| DB[(PostgreSQL)]
 ```
 
@@ -40,7 +41,7 @@ virat-erp/
 ├── src/
 │   ├── app/              # Next.js App Router pages, layouts, and REST API routes
 │   ├── components/       # Reusable UI components (shadcn/ui and custom)
-│   ├── server/           
+│   ├── server/
 │   │   ├── api/          # tRPC routers and context initialization
 │   │   ├── auth/         # Kinde RBAC integration and session handlers
 │   │   └── db/           # Drizzle ORM schema, migrations, and database connection

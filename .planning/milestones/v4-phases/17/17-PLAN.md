@@ -19,6 +19,7 @@ This plan covers the final audit of the RBAC system, performance checks for gate
 ## Tasks
 
 ### 1. RBAC Verification Matrix [BLOCKING]
+
 <task>
 <read_first>
 - .planning/phases/17/17-CONTEXT.md
@@ -37,6 +38,7 @@ Manually verify (or simulate) access for each cell in the matrix and record the 
 </task>
 
 ### 2. Performance Audit: Gated Components
+
 <task>
 <read_first>
 - src/app/_components/auth/FeatureGate.tsx
@@ -53,6 +55,7 @@ Verify that `DesktopSidebar` uses the cached permissions from the TRPC query cor
 </task>
 
 ### 3. Security Hardening: Middleware Stress Test
+
 <task>
 <read_first>
 - src/server/api/trpc.ts
@@ -71,6 +74,7 @@ Add explicit error logging for blocked attempts to facilitate future audits.
 </task>
 
 ### 4. UX Polish: Access Denied UI
+
 <task>
 <read_first>
 - src/app/_components/auth/FeatureGate.tsx
@@ -88,6 +92,7 @@ Refine the fallback UI in `FeatureGate`. Instead of a simple "Access Denied" tex
 </task>
 
 ## Verification
+
 - [ ] AUDIT-RESULTS.md shows 100% compliance with intended RBAC rules.
 - [ ] `pnpm exec tsc --noEmit` still passes.
 - [ ] Manual walkthrough of a disabled feature shows the new premium "Access Denied" UI.

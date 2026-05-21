@@ -1,7 +1,9 @@
 <!-- generated-by: gsd-doc-writer -->
+
 ## Prerequisites
 
 Before setting up the project, ensure you have the following installed and configured:
+
 - **Node.js**: `>= 18.17.0`
 - **Package Manager**: npm, pnpm, or yarn (pnpm is recommended as per `packageManager` field in `package.json`)
 - **PostgreSQL**: A running instance of PostgreSQL
@@ -11,11 +13,13 @@ Before setting up the project, ensure you have the following installed and confi
 ## Installation Steps
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/AstronautGuy/virat-crm.git
    ```
 
 2. Navigate into the project directory:
+
    ```bash
    cd virat-crm
    ```
@@ -29,12 +33,15 @@ Before setting up the project, ensure you have the following installed and confi
 ## First Run
 
 1. **Environment Setup**: Copy the example environment file and fill in your secrets.
+
    ```bash
    cp .env.example .env.local
    ```
+
    Open `.env.local` and add your database URL, Kinde credentials, and R2 tokens.
 
 2. **Database Initialization**: Push the database schema to your PostgreSQL instance.
+
    ```bash
    npx drizzle-kit push
    ```

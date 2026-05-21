@@ -5,14 +5,17 @@
 ## Test Framework
 
 **Runner:**
+
 - **Web/Server:** Lightweight node runtime executing TypeScript directly via **tsx** compiler. No large test frameworks (like Jest, Vitest, or Mocha) are currently utilized.
 - **Mobile:** Core **flutter_test** package for native Flutter test runner.
 
 **Assertion Library:**
+
 - **Web/Server:** Standard built-in Node.js **assert** module, employing strict assertion calls (e.g. `assert.throws`, `assert.doesNotThrow`).
 - **Mobile:** standard Dart/Flutter testing matchers (`expect`, `findsOneWidget`, `findsNothing`).
 
 **Run Commands:**
+
 ```bash
 # Run web/server assertions
 npx tsx tests/validation.test.ts
@@ -24,10 +27,12 @@ cd mobile && flutter test
 ## Test File Organization
 
 **Location:**
+
 - **Web/Server:** Custom test scripts are centralized in the `tests/` directory at the project root. Application code is kept clean of test files.
 - **Mobile:** Tests are physically separated in the `mobile/test/` directory, mirroring the structure of `mobile/lib/`.
 
 **Structure:**
+
 ```
 virat-crm/
 ├── tests/
@@ -43,16 +48,24 @@ virat-crm/
 Tests are structured as modular simulation functions (e.g. `testPincodeValidation`, `testRBAC`) called by an orchestrating wrapper `runAll()`. Success is verified via exit codes: code `0` for success and `1` for failures.
 
 **Pattern Example (`tests/validation.test.ts`):**
+
 ```typescript
 import assert from "assert";
 
 function testSomething() {
   console.log("Running Something Tests...");
-  
+
   // Arrange & Act & Assert
-  assert.doesNotThrow(() => checkBehavior("valid"), "Should not throw on valid");
-  assert.throws(() => checkBehavior("invalid"), /Error pattern/, "Should throw on invalid");
-  
+  assert.doesNotThrow(
+    () => checkBehavior("valid"),
+    "Should not throw on valid",
+  );
+  assert.throws(
+    () => checkBehavior("invalid"),
+    /Error pattern/,
+    "Should throw on invalid",
+  );
+
   console.log("✔ Something Tests Passed!");
 }
 ```
@@ -75,11 +88,13 @@ function testSomething() {
 ## Test Types
 
 ### 1. Schema Validation (Unit Tests)
+
 - **Scope:** Verifies Zod parsing filters against regular expressions.
 - **Focus:** Ensures edge cases for data entries are caught before hitting the database (e.g. Indian pincodes starting with `0` are rejected).
 - **Execution:** Runs in milliseconds via `tsx`.
 
 ### 2. Permissions Simulation (Integration Tests)
+
 - **Scope:** Simulates active user context actions to evaluate permission barriers.
 - **Focus:** Ensures that:
   - Admins can update any status.
@@ -88,5 +103,5 @@ function testSomething() {
 
 ---
 
-*Testing analysis: 2026-05-17*
-*Update when test patterns change*
+_Testing analysis: 2026-05-17_
+_Update when test patterns change_

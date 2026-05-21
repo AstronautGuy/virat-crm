@@ -3,7 +3,10 @@ import { createTable, users } from "./users";
 import { branches } from "./branches";
 import { relations } from "drizzle-orm";
 
-export const customerStatusEnum = pgEnum("virat-crm_customer_status", ["Draft", "Approved"]);
+export const customerStatusEnum = pgEnum("virat-crm_customer_status", [
+  "Draft",
+  "Approved",
+]);
 
 export const customers = createTable("customer", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -15,11 +18,19 @@ export const customers = createTable("customer", {
   district: varchar("district", { length: 256 }).notNull(),
   state: varchar("state", { length: 256 }).notNull(),
   address: varchar("address", { length: 1024 }).notNull(),
-  branchId: integer("branch_id").notNull().references(() => branches.id),
+  branchId: integer("branch_id")
+    .notNull()
+    .references(() => branches.id),
   status: customerStatusEnum("status").default("Draft").notNull(),
-  createdBy: uuid("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(() => new Date()),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+    () => new Date(),
+  ),
 });
 
 export const customersRelations = relations(customers, ({ one }) => ({

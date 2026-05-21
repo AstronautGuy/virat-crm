@@ -14,7 +14,7 @@ async function seedHierarchy() {
 
   // 1. Find the main admin (Devansh Rajan)
   const mainAdmin = await db.query.users.findFirst({
-    where: eq(users.email, "devanshrajan2@gmail.com")
+    where: eq(users.email, "devanshrajan2@gmail.com"),
   });
 
   if (!mainAdmin) {
@@ -27,19 +27,23 @@ async function seedHierarchy() {
   const regionalManagers = [];
 
   for (const region of regions) {
-    const [rm] = await db.insert(users).values({
-      kindeId: `kp_rm_${region.toLowerCase()}`,
-      email: `rm.${region.toLowerCase()}@viraterp.com`,
-      firstName: `${region} Regional`,
-      lastName: "Manager",
-      role: "Manager",
-      managerId: mainAdmin.id,
-      isActive: true,
-    }).onConflictDoUpdate({
-      target: users.kindeId,
-      set: { managerId: mainAdmin.id }
-    }).returning();
-    
+    const [rm] = await db
+      .insert(users)
+      .values({
+        kindeId: `kp_rm_${region.toLowerCase()}`,
+        email: `rm.${region.toLowerCase()}@viraterp.com`,
+        firstName: `${region} Regional`,
+        lastName: "Manager",
+        role: "Manager",
+        managerId: mainAdmin.id,
+        isActive: true,
+      })
+      .onConflictDoUpdate({
+        target: users.kindeId,
+        set: { managerId: mainAdmin.id },
+      })
+      .returning();
+
     regionalManagers.push(rm);
     console.log(`✅ Created ${region} Regional Manager`);
   }
@@ -48,35 +52,42 @@ async function seedHierarchy() {
   for (const rm of regionalManagers) {
     const areas = ["A1", "A2"];
     for (const area of areas) {
-      const [am] = await db.insert(users).values({
-        kindeId: `kp_am_${rm!.firstName!.split(' ')[0]!.toLowerCase()}_${area.toLowerCase()}`,
-        email: `am.${rm!.firstName!.split(' ')[0]!.toLowerCase()}.${area.toLowerCase()}@viraterp.com`,
-        firstName: `${rm!.firstName!.split(' ')[0]} ${area}`,
-        lastName: "Area Manager",
-        role: "Manager",
-        managerId: rm!.id,
-        isActive: true,
-      }).onConflictDoUpdate({
-        target: users.kindeId,
-        set: { managerId: rm!.id }
-      }).returning();
-      
+      const [am] = await db
+        .insert(users)
+        .values({
+          kindeId: `kp_am_${rm!.firstName!.split(" ")[0]!.toLowerCase()}_${area.toLowerCase()}`,
+          email: `am.${rm!.firstName!.split(" ")[0]!.toLowerCase()}.${area.toLowerCase()}@viraterp.com`,
+          firstName: `${rm!.firstName!.split(" ")[0]} ${area}`,
+          lastName: "Area Manager",
+          role: "Manager",
+          managerId: rm!.id,
+          isActive: true,
+        })
+        .onConflictDoUpdate({
+          target: users.kindeId,
+          set: { managerId: rm!.id },
+        })
+        .returning();
+
       console.log(`   ✅ Created Area Manager for ${rm!.firstName}`);
 
       // 4. Create Sales Executives (reporting to Area Managers)
       for (let i = 1; i <= 3; i++) {
-        await db.insert(users).values({
-          kindeId: `kp_se_${am!.id}_${i}`,
-          email: `exec.${am!.id}.${i}@viraterp.com`,
-          firstName: `Sales Exec`,
-          lastName: `${am!.firstName} #${i}`,
-          role: "Employee",
-          managerId: am!.id,
-          isActive: true,
-        }).onConflictDoUpdate({
-          target: users.kindeId,
-          set: { managerId: am!.id }
-        });
+        await db
+          .insert(users)
+          .values({
+            kindeId: `kp_se_${am!.id}_${i}`,
+            email: `exec.${am!.id}.${i}@viraterp.com`,
+            firstName: `Sales Exec`,
+            lastName: `${am!.firstName} #${i}`,
+            role: "Employee",
+            managerId: am!.id,
+            isActive: true,
+          })
+          .onConflictDoUpdate({
+            target: users.kindeId,
+            set: { managerId: am!.id },
+          });
       }
       console.log(`      ✅ Created 3 Sales Executives for ${am!.firstName}`);
     }

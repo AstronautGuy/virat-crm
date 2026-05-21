@@ -1,5 +1,16 @@
 import { db } from "./index";
-import { branches, users, products, sales, saleItems, replacements, inventory, roles, rolePermissions, systemSettings } from "./schema";
+import {
+  branches,
+  users,
+  products,
+  sales,
+  saleItems,
+  replacements,
+  inventory,
+  roles,
+  rolePermissions,
+  systemSettings,
+} from "./schema";
 import { sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -10,7 +21,9 @@ async function main() {
   await db.execute(sql`TRUNCATE TABLE "virat-crm_system_settings" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_role_permission" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_stock_transfer" CASCADE;`);
-  await db.execute(sql`TRUNCATE TABLE "virat-crm_inventory_transaction" CASCADE;`);
+  await db.execute(
+    sql`TRUNCATE TABLE "virat-crm_inventory_transaction" CASCADE;`,
+  );
   await db.execute(sql`TRUNCATE TABLE "virat-crm_inventory" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_replacement" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_sale_item" CASCADE;`);
@@ -45,54 +58,52 @@ async function main() {
       { name: "Developer", isSystem: true, description: "System Developer" },
       { name: "Admin", isSystem: true, description: "System Administrator" },
       { name: "Manager", isSystem: true, description: "Branch Manager" },
-      { name: "Employee", isSystem: true, description: "Field Employee" }
+      { name: "Employee", isSystem: true, description: "Field Employee" },
     ])
     .returning();
   console.log("Roles seeded:", insertedRoles.length);
 
   // Seed Role Permissions
-  await db
-    .insert(rolePermissions)
-    .values([
-      // Developer permissions (Omnipotent bypass role)
-      { role: "Developer", featureKey: "dashboard", isEnabled: true },
-      { role: "Developer", featureKey: "crm", isEnabled: true },
-      { role: "Developer", featureKey: "sales", isEnabled: true },
-      { role: "Developer", featureKey: "inventory", isEnabled: true },
-      { role: "Developer", featureKey: "workforce", isEnabled: true },
-      { role: "Developer", featureKey: "documents", isEnabled: true },
-      { role: "Developer", featureKey: "replacements", isEnabled: true },
-      { role: "Developer", featureKey: "performance", isEnabled: true },
+  await db.insert(rolePermissions).values([
+    // Developer permissions (Omnipotent bypass role)
+    { role: "Developer", featureKey: "dashboard", isEnabled: true },
+    { role: "Developer", featureKey: "crm", isEnabled: true },
+    { role: "Developer", featureKey: "sales", isEnabled: true },
+    { role: "Developer", featureKey: "inventory", isEnabled: true },
+    { role: "Developer", featureKey: "workforce", isEnabled: true },
+    { role: "Developer", featureKey: "documents", isEnabled: true },
+    { role: "Developer", featureKey: "replacements", isEnabled: true },
+    { role: "Developer", featureKey: "performance", isEnabled: true },
 
-      // Admin permissions
-      { role: "Admin", featureKey: "dashboard", isEnabled: true },
-      { role: "Admin", featureKey: "crm", isEnabled: true },
-      { role: "Admin", featureKey: "sales", isEnabled: true },
-      { role: "Admin", featureKey: "inventory", isEnabled: true },
-      { role: "Admin", featureKey: "workforce", isEnabled: true },
-      { role: "Admin", featureKey: "documents", isEnabled: true },
-      { role: "Admin", featureKey: "replacements", isEnabled: true },
-      { role: "Admin", featureKey: "performance", isEnabled: true },
+    // Admin permissions
+    { role: "Admin", featureKey: "dashboard", isEnabled: true },
+    { role: "Admin", featureKey: "crm", isEnabled: true },
+    { role: "Admin", featureKey: "sales", isEnabled: true },
+    { role: "Admin", featureKey: "inventory", isEnabled: true },
+    { role: "Admin", featureKey: "workforce", isEnabled: true },
+    { role: "Admin", featureKey: "documents", isEnabled: true },
+    { role: "Admin", featureKey: "replacements", isEnabled: true },
+    { role: "Admin", featureKey: "performance", isEnabled: true },
 
-      // Manager permissions
-      { role: "Manager", featureKey: "dashboard", isEnabled: true },
-      { role: "Manager", featureKey: "crm", isEnabled: true },
-      { role: "Manager", featureKey: "sales", isEnabled: true },
-      { role: "Manager", featureKey: "inventory", isEnabled: true },
-      { role: "Manager", featureKey: "workforce", isEnabled: true },
-      { role: "Manager", featureKey: "documents", isEnabled: true },
-      { role: "Manager", featureKey: "replacements", isEnabled: true },
-      { role: "Manager", featureKey: "performance", isEnabled: true },
+    // Manager permissions
+    { role: "Manager", featureKey: "dashboard", isEnabled: true },
+    { role: "Manager", featureKey: "crm", isEnabled: true },
+    { role: "Manager", featureKey: "sales", isEnabled: true },
+    { role: "Manager", featureKey: "inventory", isEnabled: true },
+    { role: "Manager", featureKey: "workforce", isEnabled: true },
+    { role: "Manager", featureKey: "documents", isEnabled: true },
+    { role: "Manager", featureKey: "replacements", isEnabled: true },
+    { role: "Manager", featureKey: "performance", isEnabled: true },
 
-      // Employee permissions
-      { role: "Employee", featureKey: "dashboard", isEnabled: true },
-      { role: "Employee", featureKey: "crm", isEnabled: true },
-      { role: "Employee", featureKey: "sales", isEnabled: true },
-      { role: "Employee", featureKey: "inventory", isEnabled: true },
-      { role: "Employee", featureKey: "workforce", isEnabled: true },
-      { role: "Employee", featureKey: "documents", isEnabled: true },
-      { role: "Employee", featureKey: "replacements", isEnabled: true },
-    ]);
+    // Employee permissions
+    { role: "Employee", featureKey: "dashboard", isEnabled: true },
+    { role: "Employee", featureKey: "crm", isEnabled: true },
+    { role: "Employee", featureKey: "sales", isEnabled: true },
+    { role: "Employee", featureKey: "inventory", isEnabled: true },
+    { role: "Employee", featureKey: "workforce", isEnabled: true },
+    { role: "Employee", featureKey: "documents", isEnabled: true },
+    { role: "Employee", featureKey: "replacements", isEnabled: true },
+  ]);
   console.log("Role permissions seeded");
 
   // Seed Branches
@@ -267,13 +278,13 @@ async function main() {
         role: "Employee",
         branchId: hq.id,
         isActive: true,
-      }
+      },
     ])
     .returning();
 
   console.log("Users seeded:", insertedUsers.length);
-  const employee = insertedUsers.find(u => u.employeeCode === "EMP001");
-  const manager = insertedUsers.find(u => u.employeeCode === "MGR001");
+  const employee = insertedUsers.find((u) => u.employeeCode === "EMP001");
+  const manager = insertedUsers.find((u) => u.employeeCode === "MGR001");
 
   // Seed Products
   const insertedProducts = await db
@@ -284,7 +295,7 @@ async function main() {
       { name: "Virat Quick-Dry", sku: "VQD-003", price: "400.00" },
     ])
     .returning();
-  
+
   console.log("Products seeded:", insertedProducts.length);
   const p1 = insertedProducts[0]!;
   const p2 = insertedProducts[1]!;
@@ -325,7 +336,7 @@ async function main() {
         invoiceAmount: "14000.00",
         receivedAmount: "5000.00",
         balanceAmount: "9000.00",
-      }
+      },
     ])
     .returning();
 
@@ -364,7 +375,7 @@ async function main() {
       userId: employee!.id,
       reason: "Quality check failed",
       status: "Approved",
-    }
+    },
   ]);
   // Seed System Settings
   await db.insert(systemSettings).values({

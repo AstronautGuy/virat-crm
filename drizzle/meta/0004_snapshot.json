@@ -132,12 +132,8 @@
           "name": "virat-crm_breadcrumbs_user_id_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_breadcrumbs",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -247,12 +243,8 @@
           "name": "virat-crm_customer_branch_id_virat-crm_branch_id_fk",
           "tableFrom": "virat-crm_customer",
           "tableTo": "virat-crm_branch",
-          "columnsFrom": [
-            "branch_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["branch_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -260,12 +252,8 @@
           "name": "virat-crm_customer_created_by_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_customer",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -275,9 +263,7 @@
         "virat-crm_customer_mobile_unique": {
           "name": "virat-crm_customer_mobile_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "mobile"
-          ]
+          "columns": ["mobile"]
         }
       },
       "policies": {},
@@ -345,12 +331,8 @@
           "name": "virat-crm_daily_report_user_id_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_daily_report",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -358,12 +340,8 @@
           "name": "virat-crm_daily_report_branch_id_virat-crm_branch_id_fk",
           "tableFrom": "virat-crm_daily_report",
           "tableTo": "virat-crm_branch",
-          "columnsFrom": [
-            "branch_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["branch_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -371,12 +349,8 @@
           "name": "virat-crm_daily_report_customer_id_virat-crm_customer_id_fk",
           "tableFrom": "virat-crm_daily_report",
           "tableTo": "virat-crm_customer",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -455,12 +429,8 @@
           "name": "virat-crm_file_uploaded_by_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_file",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "uploaded_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["uploaded_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -535,12 +505,8 @@
           "name": "virat-crm_inventory_product_id_virat-crm_product_id_fk",
           "tableFrom": "virat-crm_inventory",
           "tableTo": "virat-crm_product",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["product_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -548,12 +514,8 @@
           "name": "virat-crm_inventory_branch_id_virat-crm_branch_id_fk",
           "tableFrom": "virat-crm_inventory",
           "tableTo": "virat-crm_branch",
-          "columnsFrom": [
-            "branch_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["branch_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -630,12 +592,8 @@
           "name": "virat-crm_inventory_transaction_product_id_virat-crm_product_id_fk",
           "tableFrom": "virat-crm_inventory_transaction",
           "tableTo": "virat-crm_product",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["product_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -643,12 +601,8 @@
           "name": "virat-crm_inventory_transaction_branch_id_virat-crm_branch_id_fk",
           "tableFrom": "virat-crm_inventory_transaction",
           "tableTo": "virat-crm_branch",
-          "columnsFrom": [
-            "branch_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["branch_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -656,12 +610,8 @@
           "name": "virat-crm_inventory_transaction_user_id_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_inventory_transaction",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -787,12 +737,8 @@
           "name": "virat-crm_leave_user_id_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_leave",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -906,12 +852,8 @@
           "name": "virat-crm_location_logs_user_id_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_location_logs",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -971,12 +913,8 @@
           "name": "virat-crm_notification_user_id_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_notification",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1114,9 +1052,7 @@
         "virat-crm_product_sku_unique": {
           "name": "virat-crm_product_sku_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "sku"
-          ]
+          "columns": ["sku"]
         }
       },
       "policies": {},
@@ -1177,12 +1113,8 @@
           "name": "virat-crm_push_subscription_user_id_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_push_subscription",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1192,9 +1124,7 @@
         "virat-crm_push_subscription_endpoint_unique": {
           "name": "virat-crm_push_subscription_endpoint_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "endpoint"
-          ]
+          "columns": ["endpoint"]
         }
       },
       "policies": {},
@@ -1262,12 +1192,8 @@
           "name": "virat-crm_replacement_original_sale_id_virat-crm_sale_id_fk",
           "tableFrom": "virat-crm_replacement",
           "tableTo": "virat-crm_sale",
-          "columnsFrom": [
-            "original_sale_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["original_sale_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1275,12 +1201,8 @@
           "name": "virat-crm_replacement_branch_id_virat-crm_branch_id_fk",
           "tableFrom": "virat-crm_replacement",
           "tableTo": "virat-crm_branch",
-          "columnsFrom": [
-            "branch_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["branch_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1288,12 +1210,8 @@
           "name": "virat-crm_replacement_user_id_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_replacement",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1499,12 +1417,8 @@
           "name": "virat-crm_sale_item_sale_id_virat-crm_sale_id_fk",
           "tableFrom": "virat-crm_sale_item",
           "tableTo": "virat-crm_sale",
-          "columnsFrom": [
-            "sale_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["sale_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1512,12 +1426,8 @@
           "name": "virat-crm_sale_item_product_id_virat-crm_product_id_fk",
           "tableFrom": "virat-crm_sale_item",
           "tableTo": "virat-crm_product",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["product_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1779,12 +1689,8 @@
           "name": "virat-crm_sale_branch_id_virat-crm_branch_id_fk",
           "tableFrom": "virat-crm_sale",
           "tableTo": "virat-crm_branch",
-          "columnsFrom": [
-            "branch_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["branch_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1792,12 +1698,8 @@
           "name": "virat-crm_sale_user_id_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_sale",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1805,12 +1707,8 @@
           "name": "virat-crm_sale_manager_id_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_sale",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "manager_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["manager_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1818,12 +1716,8 @@
           "name": "virat-crm_sale_customer_id_virat-crm_customer_id_fk",
           "tableFrom": "virat-crm_sale",
           "tableTo": "virat-crm_customer",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1833,16 +1727,12 @@
         "virat-crm_sale_order_number_unique": {
           "name": "virat-crm_sale_order_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "order_number"
-          ]
+          "columns": ["order_number"]
         },
         "virat-crm_sale_transaction_number_unique": {
           "name": "virat-crm_sale_transaction_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "transaction_number"
-          ]
+          "columns": ["transaction_number"]
         }
       },
       "policies": {},
@@ -2067,12 +1957,8 @@
           "name": "virat-crm_stock_transfer_from_branch_id_virat-crm_branch_id_fk",
           "tableFrom": "virat-crm_stock_transfer",
           "tableTo": "virat-crm_branch",
-          "columnsFrom": [
-            "from_branch_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["from_branch_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2080,12 +1966,8 @@
           "name": "virat-crm_stock_transfer_to_branch_id_virat-crm_branch_id_fk",
           "tableFrom": "virat-crm_stock_transfer",
           "tableTo": "virat-crm_branch",
-          "columnsFrom": [
-            "to_branch_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["to_branch_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2093,12 +1975,8 @@
           "name": "virat-crm_stock_transfer_requested_by_id_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_stock_transfer",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "requested_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["requested_by_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2106,12 +1984,8 @@
           "name": "virat-crm_stock_transfer_approved_by_id_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_stock_transfer",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "approved_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["approved_by_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2119,12 +1993,8 @@
           "name": "virat-crm_stock_transfer_received_by_id_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_stock_transfer",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "received_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["received_by_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2223,12 +2093,8 @@
           "name": "virat-crm_user_branch_id_virat-crm_branch_id_fk",
           "tableFrom": "virat-crm_user",
           "tableTo": "virat-crm_branch",
-          "columnsFrom": [
-            "branch_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["branch_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2236,12 +2102,8 @@
           "name": "virat-crm_user_manager_id_virat-crm_user_id_fk",
           "tableFrom": "virat-crm_user",
           "tableTo": "virat-crm_user",
-          "columnsFrom": [
-            "manager_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["manager_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2251,23 +2113,17 @@
         "virat-crm_user_kinde_id_unique": {
           "name": "virat-crm_user_kinde_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "kinde_id"
-          ]
+          "columns": ["kinde_id"]
         },
         "virat-crm_user_email_unique": {
           "name": "virat-crm_user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "virat-crm_user_employee_code_unique": {
           "name": "virat-crm_user_employee_code_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "employee_code"
-          ]
+          "columns": ["employee_code"]
         }
       },
       "policies": {},
@@ -2279,45 +2135,27 @@
     "public.virat-crm_customer_status": {
       "name": "virat-crm_customer_status",
       "schema": "public",
-      "values": [
-        "Draft",
-        "Approved"
-      ]
+      "values": ["Draft", "Approved"]
     },
     "public.virat-crm_file_entity_type": {
       "name": "virat-crm_file_entity_type",
       "schema": "public",
-      "values": [
-        "sale",
-        "replacement"
-      ]
+      "values": ["sale", "replacement"]
     },
     "public.virat-crm_leave_status": {
       "name": "virat-crm_leave_status",
       "schema": "public",
-      "values": [
-        "Pending",
-        "Approved",
-        "Rejected"
-      ]
+      "values": ["Pending", "Approved", "Rejected"]
     },
     "public.virat-crm_leave_type": {
       "name": "virat-crm_leave_type",
       "schema": "public",
-      "values": [
-        "Sick",
-        "Vacation",
-        "Unpaid"
-      ]
+      "values": ["Sick", "Vacation", "Unpaid"]
     },
     "public.virat-crm_role": {
       "name": "virat-crm_role",
       "schema": "public",
-      "values": [
-        "Admin",
-        "Manager",
-        "Employee"
-      ]
+      "values": ["Admin", "Manager", "Employee"]
     }
   },
   "schemas": {},

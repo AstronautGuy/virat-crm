@@ -20,7 +20,6 @@ import { heartbeatRouter } from "./routers/heartbeat";
 import { rolesRouter } from "./routers/roles";
 import { developerRouter } from "./routers/developer";
 
-
 /**
  * This is the primary router for your server.
  *

@@ -4,7 +4,10 @@ import { relations } from "drizzle-orm";
 import { sales } from "./sales";
 import { replacements } from "./replacements";
 
-export const fileEntityTypeEnum = pgEnum("file_entity_type", ["sale", "replacement"]);
+export const fileEntityTypeEnum = pgEnum("file_entity_type", [
+  "sale",
+  "replacement",
+]);
 
 export const files = createTable("file", {
   id: uuid("id").primaryKey().defaultRandom(),

@@ -9,19 +9,24 @@ async function setPassword() {
   const plainPassword = process.argv[3];
 
   if (!employeeCode || !plainPassword) {
-    console.log("Usage: npx tsx src/server/db/schema/set-password.ts <employeeCode> <password>");
+    console.log(
+      "Usage: npx tsx src/server/db/schema/set-password.ts <employeeCode> <password>",
+    );
     process.exit(1);
   }
 
   const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
-  const [updated] = await db.update(users)
+  const [updated] = await db
+    .update(users)
     .set({ password: hashedPassword })
     .where(eq(users.employeeCode, employeeCode))
     .returning();
 
   if (updated) {
-    console.log(`Password set for user: ${updated.firstName} ${updated.lastName} (${updated.employeeCode})`);
+    console.log(
+      `Password set for user: ${updated.firstName} ${updated.lastName} (${updated.employeeCode})`,
+    );
   } else {
     console.log(`User with employee code ${employeeCode} not found.`);
   }
@@ -29,7 +34,7 @@ async function setPassword() {
   process.exit(0);
 }
 
-setPassword().catch(err => {
+setPassword().catch((err) => {
   console.error(err);
   process.exit(1);
 });

@@ -1,4 +1,5 @@
 <!-- generated-by: gsd-doc-writer -->
+
 ## Test Framework and Setup
 
 The project currently uses ad-hoc TypeScript scripts using Node's built-in `assert` module for validation and unit testing. No formal testing framework (such as Jest or Vitest) is installed. Tests are written in the `tests/` directory.
@@ -10,6 +11,7 @@ To run the tests, you must have `tsx` installed (which is included in `devDepend
 There are no pre-configured `test` scripts in `package.json` for running the test suite automatically. You can execute individual test files manually using `tsx`.
 
 Run the validation tests:
+
 ```bash
 npx tsx tests/validation.test.ts
 ```

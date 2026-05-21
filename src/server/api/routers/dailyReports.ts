@@ -11,29 +11,38 @@ import { TRPCError } from "@trpc/server";
 
 export const dailyReportsRouter = createTRPCRouter({
   submitReport: featureProtectedProcedure("reports")
-    .input(z.object({
-      content: z.string().min(10, "Report content too short"),
-      reportDate: z.date().optional(),
-      customerId: z.string().uuid().optional(),
-    }))
+    .input(
+      z.object({
+        content: z.string().min(10, "Report content too short"),
+        reportDate: z.date().optional(),
+        customerId: z.string().uuid().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
       if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
 
-      return await db.insert(dailyReports).values({
-        userId: dbUser.id,
-        branchId: dbUser.branchId!,
-        reportDate: input.reportDate ?? new Date(),
-        content: input.content,
-        customerId: input.customerId,
-      }).returning();
+      return await db
+        .insert(dailyReports)
+        .values({
+          userId: dbUser.id,
+          branchId: dbUser.branchId!,
+          reportDate: input.reportDate ?? new Date(),
+          content: input.content,
+          customerId: input.customerId,
+        })
+        .returning();
     }),
 
   listMyReports: featureProtectedProcedure("reports")
-    .input(z.object({
-      limit: z.number().min(1).max(100).default(50),
-      offset: z.number().min(0).default(0),
-    }).optional())
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
+        })
+        .optional(),
+    )
     .query(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
       if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -48,24 +57,27 @@ export const dailyReportsRouter = createTRPCRouter({
             columns: {
               firstName: true,
               lastName: true,
-            }
+            },
           },
           customer: {
             columns: {
               name: true,
-            }
-          }
-        }
-
+            },
+          },
+        },
       });
     }),
 
   listBranchReports: featureManagerProcedure("reports")
-    .input(z.object({
-      date: z.date().optional(),
-      limit: z.number().min(1).max(100).default(50),
-      offset: z.number().min(0).default(0),
-    }).optional())
+    .input(
+      z
+        .object({
+          date: z.date().optional(),
+          limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
+        })
+        .optional(),
+    )
     .query(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
       if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -77,8 +89,10 @@ export const dailyReportsRouter = createTRPCRouter({
         startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date(input.date);
         endOfDay.setHours(23, 59, 59, 999);
-        
-        filters.push(sql`${dailyReports.reportDate} >= ${startOfDay} AND ${dailyReports.reportDate} <= ${endOfDay}`);
+
+        filters.push(
+          sql`${dailyReports.reportDate} >= ${startOfDay} AND ${dailyReports.reportDate} <= ${endOfDay}`,
+        );
       }
 
       return await db.query.dailyReports.findMany({
@@ -91,14 +105,14 @@ export const dailyReportsRouter = createTRPCRouter({
             columns: {
               firstName: true,
               lastName: true,
-            }
+            },
           },
           customer: {
             columns: {
               name: true,
-            }
-          }
-        }
+            },
+          },
+        },
       });
     }),
 });

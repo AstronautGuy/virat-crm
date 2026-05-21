@@ -36,10 +36,12 @@ Secure, mobile-first operations management that ensures authenticated access and
 - [ ] Advanced performance optimization (caching & Edge compute)
 
 ### Out of Scope
+
 - Automated Email/SMS marketing (Deferred to M8).
 - Global credit limit enforcement (Order-wise tracking preferred).
 
 ### Shipped Milestones
+
 - **v1: Foundations**: Auth, DB, Geofencing, Storage, PWA.
 - **v2: Intelligence**: Analytics, Push, Offline Sync, Hardening.
 - **v3: Field Intelligence**: Location Tracking, Org Charts, Automated Reports.
@@ -49,6 +51,7 @@ Secure, mobile-first operations management that ensures authenticated access and
 - **v7: Advanced Intelligence**: Predictive modeling, Isar sync database queue, sovereign locks & licensing controls.
 
 ### Next Milestone: M8 (Advanced Multi-Tenant Isolation & Live Alerts)
+
 - Goal: Harden database isolation boundaries, implement live alerts, and prepare for multi-branch enterprise expansion.
 
 ## Constraints
@@ -66,18 +69,19 @@ Secure, mobile-first operations management that ensures authenticated access and
 
 ## Key Decisions
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Kinde Auth | Secure, modern RBAC replacement for local `ecode` login | Completed (Phase 1) |
-| Server-Side Haversine | Prevent GPS spoofing and secure the punch-in flow | Completed (Phase 3) |
-| Cloudflare R2 | S3-compatible replacement for managed Base44 uploads | Completed (Phase 5) |
-| Serwist PWA | Modern Service Worker management for Next.js 15 | Completed (Phase 6) |
-| Web Push (VAPID) | Native notifications for real-time workflow alerts | Completed (Phase 8) |
-| IndexedDB Queue | Robust offline resilience for field agents | Completed (Phase 9) |
+| Decision              | Rationale                                               | Outcome             |
+| --------------------- | ------------------------------------------------------- | ------------------- |
+| Kinde Auth            | Secure, modern RBAC replacement for local `ecode` login | Completed (Phase 1) |
+| Server-Side Haversine | Prevent GPS spoofing and secure the punch-in flow       | Completed (Phase 3) |
+| Cloudflare R2         | S3-compatible replacement for managed Base44 uploads    | Completed (Phase 5) |
+| Serwist PWA           | Modern Service Worker management for Next.js 15         | Completed (Phase 6) |
+| Web Push (VAPID)      | Native notifications for real-time workflow alerts      | Completed (Phase 8) |
+| IndexedDB Queue       | Robust offline resilience for field agents              | Completed (Phase 9) |
 
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
 
 ---
-*Last updated: 2026-05-19 after Milestone 7 Completion*
+
+_Last updated: 2026-05-19 after Milestone 7 Completion_

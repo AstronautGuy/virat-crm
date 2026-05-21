@@ -26,7 +26,9 @@ const serwist = new Serwist({
 serwist.addEventListeners();
 
 self.addEventListener("push", (event: PushEvent) => {
-  const data = event.data?.json() as { title?: string; body?: string; url?: string } | undefined;
+  const data = event.data?.json() as
+    | { title?: string; body?: string; url?: string }
+    | undefined;
   if (!data) return;
 
   const title = data.title ?? "New Notification";
@@ -45,6 +47,6 @@ self.addEventListener("push", (event: PushEvent) => {
 self.addEventListener("notificationclick", (event: NotificationEvent) => {
   event.notification.close();
   event.waitUntil(
-    self.clients.openWindow((event.notification.data as { url: string }).url)
+    self.clients.openWindow((event.notification.data as { url: string }).url),
   );
 });

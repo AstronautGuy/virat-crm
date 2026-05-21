@@ -10,4 +10,4 @@
 
 ## Verification
 
-*   Run project build check: `pnpm check`
+- Run project build check: `pnpm check`

@@ -1,24 +1,47 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
-import { branches, locationLogs, leaves, performanceSnapshots, sales, users } from "@/server/db/schema";
-import { and, gte, lte, sum, count, eq, sql, inArray, desc, type SQL } from "drizzle-orm";
+import {
+  branches,
+  locationLogs,
+  leaves,
+  performanceSnapshots,
+  sales,
+  users,
+} from "@/server/db/schema";
+import {
+  and,
+  gte,
+  lte,
+  sum,
+  count,
+  eq,
+  sql,
+  inArray,
+  desc,
+  type SQL,
+} from "drizzle-orm";
 import { getDateRange } from "@/server/lib/date";
 
 export const analyticsRouter = createTRPCRouter({
   getSalesSummary: featureProtectedProcedure("dashboard")
-    .input(z.object({ 
-      preset: z.enum(["today", "7d", "30d", "all"]),
-      branchId: z.number().optional()
-    }))
+    .input(
+      z.object({
+        preset: z.enum(["today", "7d", "30d", "all"]),
+        branchId: z.number().optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       // RBAC: Non-admins are locked to their own branch
-      const effectiveBranchId = ctx.dbUser.role === "Admin" ? input.branchId : ctx.dbUser.branchId;
+      const effectiveBranchId =
+        ctx.dbUser.role === "Admin" ? input.branchId : ctx.dbUser.branchId;
 
       if (input.preset === "all") {
         const filters: SQL[] = [eq(performanceSnapshots.entityType, "branch")];
         if (effectiveBranchId) {
-          filters.push(eq(performanceSnapshots.entityId, effectiveBranchId.toString()));
+          filters.push(
+            eq(performanceSnapshots.entityId, effectiveBranchId.toString()),
+          );
         }
 
         const snapshots = await ctx.db
@@ -43,7 +66,7 @@ export const analyticsRouter = createTRPCRouter({
       const filters: SQL[] = [
         gte(sales.createdAt, start),
         lte(sales.createdAt, end),
-        eq(sales.status, "Approved")
+        eq(sales.status, "Approved"),
       ];
 
       if (effectiveBranchId) {
@@ -75,7 +98,10 @@ export const analyticsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       // Branch comparison is strictly for Admins or Regional Managers
       if (ctx.dbUser.role !== "Admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only Admins can view branch comparisons" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only Admins can view branch comparisons",
+        });
       }
 
       if (input.preset === "all") {
@@ -90,9 +116,11 @@ export const analyticsRouter = createTRPCRouter({
           .groupBy(performanceSnapshots.entityId);
 
         const branchList = await ctx.db.query.branches.findMany();
-        const branchMap = new Map(branchList.map(b => [b.id.toString(), b.name]));
+        const branchMap = new Map(
+          branchList.map((b) => [b.id.toString(), b.name]),
+        );
 
-        return result.map(r => ({
+        return result.map((r) => ({
           name: branchMap.get(r.branchId!) ?? "Unknown",
           revenue: parseFloat(r.revenue ?? "0"),
           count: parseInt(r.count ?? "0"),
@@ -113,12 +141,12 @@ export const analyticsRouter = createTRPCRouter({
           and(
             gte(sales.createdAt, start),
             lte(sales.createdAt, end),
-            eq(sales.status, "Approved")
-          )
+            eq(sales.status, "Approved"),
+          ),
         )
         .groupBy(branches.name);
 
-      return result.map(r => ({
+      return result.map((r) => ({
         name: r.branchName,
         revenue: parseFloat(r.revenue ?? "0"),
         count: r.count,
@@ -128,18 +156,19 @@ export const analyticsRouter = createTRPCRouter({
   getWorkforceSummary: featureProtectedProcedure("dashboard")
     .input(z.object({ branchId: z.number().optional() }))
     .query(async ({ ctx, input }) => {
-      const effectiveBranchId = ctx.dbUser.role === "Admin" ? input.branchId : ctx.dbUser.branchId;
+      const effectiveBranchId =
+        ctx.dbUser.role === "Admin" ? input.branchId : ctx.dbUser.branchId;
 
       const today = new Date();
-      const dateStr = today.toISOString().split('T')[0];
+      const dateStr = today.toISOString().split("T")[0];
 
       const filters: SQL[] = [eq(locationLogs.date, dateStr!)];
       if (effectiveBranchId) {
         const branchUsers = await ctx.db.query.users.findMany({
           where: eq(users.branchId, effectiveBranchId),
-          columns: { id: true }
+          columns: { id: true },
         });
-        const branchUserIds = branchUsers.map(u => u.id);
+        const branchUserIds = branchUsers.map((u) => u.id);
         if (branchUserIds.length > 0) {
           filters.push(inArray(locationLogs.userId, branchUserIds));
         } else {
@@ -157,9 +186,9 @@ export const analyticsRouter = createTRPCRouter({
       if (effectiveBranchId) {
         const branchUsers = await ctx.db.query.users.findMany({
           where: eq(users.branchId, effectiveBranchId),
-          columns: { id: true }
+          columns: { id: true },
         });
-        const branchUserIds = branchUsers.map(u => u.id);
+        const branchUserIds = branchUsers.map((u) => u.id);
         if (branchUserIds.length > 0) {
           leaveFilters.push(inArray(leaves.userId, branchUserIds));
         }
@@ -191,8 +220,8 @@ export const analyticsRouter = createTRPCRouter({
         .where(
           and(
             gte(locationLogs.recordedAt, start),
-            lte(locationLogs.recordedAt, end)
-          )
+            lte(locationLogs.recordedAt, end),
+          ),
         )
         .groupBy(users.firstName);
 
@@ -215,18 +244,16 @@ export const analyticsRouter = createTRPCRouter({
         })
         .from(sales)
         .innerJoin(branches, eq(sales.branchId, branches.id))
-        .where(
-          and(
-            gte(sales.createdAt, start),
-            lte(sales.createdAt, end)
-          )
-        );
+        .where(and(gte(sales.createdAt, start), lte(sales.createdAt, end)));
 
       // Simple CSV generation
       const header = "Order #,Customer,Amount,Status,Date,Branch\n";
-      const rows = data.map(s => 
-        `${s.orderNumber},"${s.customerName ?? ""}",${s.invoiceAmount},${s.status},${s.date.toISOString()},${s.branch}`
-      ).join("\n");
+      const rows = data
+        .map(
+          (s) =>
+            `${s.orderNumber},"${s.customerName ?? ""}",${s.invoiceAmount},${s.status},${s.date.toISOString()},${s.branch}`,
+        )
+        .join("\n");
 
       return header + rows;
     }),
@@ -251,15 +278,18 @@ export const analyticsRouter = createTRPCRouter({
         .where(
           and(
             gte(locationLogs.recordedAt, start),
-            lte(locationLogs.recordedAt, end)
-          )
+            lte(locationLogs.recordedAt, end),
+          ),
         )
         .orderBy(desc(locationLogs.recordedAt));
 
       const header = "Date,Time Slab,User,Latitude,Longitude,Logged At\n";
-      const rows = data.map(l => 
-        `${l.date},${l.slab},"${l.userName} ${l.userLastName ?? ""}",${l.lat},${l.lng},${l.recordedAt.toISOString()}`
-      ).join("\n");
+      const rows = data
+        .map(
+          (l) =>
+            `${l.date},${l.slab},"${l.userName} ${l.userLastName ?? ""}",${l.lat},${l.lng},${l.recordedAt.toISOString()}`,
+        )
+        .join("\n");
 
       return header + rows;
     }),

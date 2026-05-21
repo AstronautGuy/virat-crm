@@ -13,7 +13,7 @@ export const storageRouter = createTRPCRouter({
       z.object({
         fileName: z.string(),
         fileType: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const key = `uploads/${Date.now()}-${input.fileName}`;
@@ -40,7 +40,7 @@ export const storageRouter = createTRPCRouter({
         originalName: z.string(),
         mimeType: z.string(),
         size: z.number(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -139,17 +139,19 @@ export const storageRouter = createTRPCRouter({
         fileName: file.originalName,
       };
     }),
-    
+
   getEntityFiles: protectedProcedure
-    .input(z.object({ 
-      entityType: z.enum(["sale", "replacement"]),
-      entityId: z.number() 
-    }))
+    .input(
+      z.object({
+        entityType: z.enum(["sale", "replacement"]),
+        entityId: z.number(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       return ctx.db.query.files.findMany({
         where: and(
           eq(files.entityType, input.entityType),
-          eq(files.entityId, input.entityId)
+          eq(files.entityId, input.entityId),
         ),
         orderBy: (files, { desc }) => [desc(files.createdAt)],
       });

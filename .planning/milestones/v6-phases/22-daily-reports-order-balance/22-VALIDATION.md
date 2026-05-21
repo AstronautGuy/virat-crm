@@ -15,13 +15,13 @@ created: 2026-05-10
 
 ## Test Infrastructure
 
-| Property | Value |
-|----------|-------|
-| **Framework** | Vitest |
-| **Config file** | vitest.config.ts |
-| **Quick run command** | `npm test` |
-| **Full suite command** | `npm test` |
-| **Estimated runtime** | ~10 seconds |
+| Property               | Value            |
+| ---------------------- | ---------------- |
+| **Framework**          | Vitest           |
+| **Config file**        | vitest.config.ts |
+| **Quick run command**  | `npm test`       |
+| **Full suite command** | `npm test`       |
+| **Estimated runtime**  | ~10 seconds      |
 
 ---
 
@@ -36,14 +36,14 @@ created: 2026-05-10
 
 ## Per-Task Verification Map
 
-| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
-|---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 22-01-01 | 01 | 1 | TASK-22.2 | — | N/A | schema | `npx drizzle-kit push` | ❌ W0 | ⬜ pending |
-| 22-01-02 | 01 | 2 | TASK-22.1 | — | N/A | schema | `npx drizzle-kit push` | ✅ | ⬜ pending |
-| 22-01-03 | 01 | 3 | TASK-22.3 | — | N/A | integration | `npm test` | ❌ W0 | ⬜ pending |
-| 22-01-04 | 01 | 4 | TASK-22.4 | — | N/A | integration | `npm test` | ✅ | ⬜ pending |
+| Task ID  | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type   | Automated Command      | File Exists | Status     |
+| -------- | ---- | ---- | ----------- | ---------- | --------------- | ----------- | ---------------------- | ----------- | ---------- |
+| 22-01-01 | 01   | 1    | TASK-22.2   | —          | N/A             | schema      | `npx drizzle-kit push` | ❌ W0       | ⬜ pending |
+| 22-01-02 | 01   | 2    | TASK-22.1   | —          | N/A             | schema      | `npx drizzle-kit push` | ✅          | ⬜ pending |
+| 22-01-03 | 01   | 3    | TASK-22.3   | —          | N/A             | integration | `npm test`             | ❌ W0       | ⬜ pending |
+| 22-01-04 | 01   | 4    | TASK-22.4   | —          | N/A             | integration | `npm test`             | ✅          | ⬜ pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+_Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
 
 ---
 
@@ -56,10 +56,10 @@ created: 2026-05-10
 
 ## Manual-Only Verifications
 
-| Behavior | Requirement | Why Manual | Test Instructions |
-|----------|-------------|------------|-------------------|
-| Sidebar visibility | UI-GATE | Layout change | Check DesktopSidebar and MobileNav for "Daily Reports" link. |
-| Customer Tagging UX | TASK-22.3 | Interactive | In the Daily Report form, search for a customer and select them. |
+| Behavior            | Requirement | Why Manual    | Test Instructions                                                |
+| ------------------- | ----------- | ------------- | ---------------------------------------------------------------- |
+| Sidebar visibility  | UI-GATE     | Layout change | Check DesktopSidebar and MobileNav for "Daily Reports" link.     |
+| Customer Tagging UX | TASK-22.3   | Interactive   | In the Daily Report form, search for a customer and select them. |
 
 ---
 

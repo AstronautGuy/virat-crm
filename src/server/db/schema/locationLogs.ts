@@ -1,4 +1,14 @@
-import { pgTableCreator, serial, numeric, timestamp, uuid, index, uniqueIndex, varchar, jsonb } from "drizzle-orm/pg-core";
+import {
+  pgTableCreator,
+  serial,
+  numeric,
+  timestamp,
+  uuid,
+  index,
+  uniqueIndex,
+  varchar,
+  jsonb,
+} from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { users } from "./users";
 
@@ -15,16 +25,22 @@ export const locationLogs = createTable(
     slab: varchar("slab", { length: 20 }).notNull(), // '10:00-14:00'
     latitude: numeric("latitude", { precision: 10, scale: 8 }).notNull(),
     longitude: numeric("longitude", { precision: 11, scale: 8 }).notNull(),
-    frequencyMap: jsonb("frequency_map").notNull().$type<Record<string, number>>(), // "lat,lng": count
+    frequencyMap: jsonb("frequency_map")
+      .notNull()
+      .$type<Record<string, number>>(), // "lat,lng": count
     recordedAt: timestamp("recorded_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (table) => ({
     // Unique index to allow upsert by user, date, and slab
-    userDateSlabUniqueIdx: uniqueIndex("user_date_slab_uidx").on(table.userId, table.date, table.slab),
+    userDateSlabUniqueIdx: uniqueIndex("user_date_slab_uidx").on(
+      table.userId,
+      table.date,
+      table.slab,
+    ),
     recordedAtIndex: index("recorded_at_idx").on(table.recordedAt),
-  })
+  }),
 );
 
 export const locationLogsRelations = relations(locationLogs, ({ one }) => ({

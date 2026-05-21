@@ -12,7 +12,10 @@ interface SalesExportData {
   userName: string;
 }
 
-export async function generateSalesXLSX(data: SalesExportData[], filename: string) {
+export async function generateSalesXLSX(
+  data: SalesExportData[],
+  filename: string,
+) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Sales Report");
 
@@ -40,9 +43,18 @@ export async function generateSalesXLSX(data: SalesExportData[], filename: strin
   data.forEach((item) => {
     sheet.addRow({
       ...item,
-      date: item.date instanceof Date ? item.date.toLocaleString() : String(item.date),
-      invoiceAmount: typeof item.invoiceAmount === "string" ? parseFloat(item.invoiceAmount) : item.invoiceAmount,
-      balanceAmount: typeof item.balanceAmount === "string" ? parseFloat(item.balanceAmount) : item.balanceAmount,
+      date:
+        item.date instanceof Date
+          ? item.date.toLocaleString()
+          : String(item.date),
+      invoiceAmount:
+        typeof item.invoiceAmount === "string"
+          ? parseFloat(item.invoiceAmount)
+          : item.invoiceAmount,
+      balanceAmount:
+        typeof item.balanceAmount === "string"
+          ? parseFloat(item.balanceAmount)
+          : item.balanceAmount,
     });
   });
 
@@ -52,7 +64,9 @@ export async function generateSalesXLSX(data: SalesExportData[], filename: strin
 
   // Generate and Save
   const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
   saveAs(blob, `${filename}.xlsx`);
 }
 
@@ -62,7 +76,10 @@ interface AttendanceExportData {
   recordedAt: Date | string;
 }
 
-export async function generateAttendanceXLSX(data: AttendanceExportData[], filename: string) {
+export async function generateAttendanceXLSX(
+  data: AttendanceExportData[],
+  filename: string,
+) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Attendance Report");
 
@@ -82,11 +99,16 @@ export async function generateAttendanceXLSX(data: AttendanceExportData[], filen
   data.forEach((item) => {
     sheet.addRow({
       ...item,
-      recordedAt: item.recordedAt instanceof Date ? item.recordedAt.toLocaleString() : String(item.recordedAt),
+      recordedAt:
+        item.recordedAt instanceof Date
+          ? item.recordedAt.toLocaleString()
+          : String(item.recordedAt),
     });
   });
 
   const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
   saveAs(blob, `${filename}.xlsx`);
 }

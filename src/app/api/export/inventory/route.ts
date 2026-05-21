@@ -8,10 +8,14 @@ import ExcelJS from "exceljs";
 export async function GET() {
   try {
     const session = await getSession();
-    if (!session?.userId) return new NextResponse("Unauthorized", { status: 401 });
+    if (!session?.userId)
+      return new NextResponse("Unauthorized", { status: 401 });
 
-    const user = await db.query.users.findFirst({ where: eq(users.id, session.userId) });
-    if (user?.role !== "Admin") return new NextResponse("Forbidden", { status: 403 });
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.userId),
+    });
+    if (user?.role !== "Admin")
+      return new NextResponse("Forbidden", { status: 403 });
 
     // Query inventory directly with product + branch relations
     const inventoryRows = await db.query.inventory.findMany({
@@ -26,7 +30,7 @@ export async function GET() {
     workbook.created = new Date();
 
     const sheet = workbook.addWorksheet("Inventory Status", {
-      views: [{ state: "frozen", ySplit: 1 }]
+      views: [{ state: "frozen", ySplit: 1 }],
     });
 
     sheet.columns = [
@@ -41,7 +45,11 @@ export async function GET() {
 
     // Style the header row
     sheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
-    sheet.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } }; // Slate 900
+    sheet.getRow(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0F172A" },
+    }; // Slate 900
     sheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
     inventoryRows.forEach((inv) => {
@@ -52,7 +60,9 @@ export async function GET() {
         price: Number(inv.product?.price ?? 0),
         branch: inv.branch?.name ?? "Unknown",
         quantity: inv.quantity,
-        updatedAt: inv.updatedAt ? new Date(inv.updatedAt).toLocaleDateString() : "N/A",
+        updatedAt: inv.updatedAt
+          ? new Date(inv.updatedAt).toLocaleDateString()
+          : "N/A",
       });
     });
 
@@ -61,7 +71,8 @@ export async function GET() {
 
     return new NextResponse(buffer, {
       headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="inventory-export-${new Date().toISOString().split("T")[0]}.xlsx"`,
       },
     });

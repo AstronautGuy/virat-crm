@@ -32,7 +32,7 @@ export function useSyncManager() {
         } else if (op.type === "createReplacement") {
           await createReplacement.mutateAsync(op.data as any); // eslint-disable-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
         }
-        
+
         // Success - remove from local queue
         if (op.id) await removeFromOfflineQueue(op.id);
       } catch (error) {

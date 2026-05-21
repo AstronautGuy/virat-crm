@@ -23,10 +23,14 @@ interface FileGalleryProps {
   initialFiles?: StorageFile[];
 }
 
-export function FileGallery({ entityType, entityId, initialFiles }: FileGalleryProps) {
+export function FileGallery({
+  entityType,
+  entityId,
+  initialFiles,
+}: FileGalleryProps) {
   const { data: files, isLoading } = api.storage.getEntityFiles.useQuery(
     { entityType, entityId },
-    { initialData: initialFiles }
+    { initialData: initialFiles },
   );
 
   const getUrlMutation = api.storage.getFileUrl.useMutation();
@@ -36,7 +40,7 @@ export function FileGallery({ entityType, entityId, initialFiles }: FileGalleryP
     try {
       setDownloading(fileId);
       const { url } = await getUrlMutation.mutateAsync({ fileId });
-      
+
       // Open in new tab or trigger download
       const link = document.createElement("a");
       link.href = url;
@@ -56,33 +60,38 @@ export function FileGallery({ entityType, entityId, initialFiles }: FileGalleryP
   if (isLoading && !initialFiles) {
     return (
       <div className="flex items-center justify-center p-4">
-        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+        <Loader2 className="text-primary h-5 w-5 animate-spin" />
       </div>
     );
   }
 
   if (!files || files.length === 0) {
     return (
-      <p className="text-xs text-muted-foreground italic px-1">No documents attached</p>
+      <p className="text-muted-foreground px-1 text-xs italic">
+        No documents attached
+      </p>
     );
   }
 
   return (
     <div className="grid gap-2">
       {files.map((file) => (
-        <div 
-          key={file.id} 
-          className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border/50 group hover:bg-muted/50 transition-colors"
+        <div
+          key={file.id}
+          className="bg-muted/30 border-border/50 group hover:bg-muted/50 flex items-center justify-between rounded-lg border p-2 transition-colors"
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="p-1.5 bg-background rounded border shadow-sm">
-              <File className="w-3.5 h-3.5 text-primary" />
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="bg-background rounded border p-1.5 shadow-sm">
+              <File className="text-primary h-3.5 w-3.5" />
             </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-[11px] font-medium truncate" title={file.originalName}>
+            <div className="flex min-w-0 flex-col">
+              <span
+                className="truncate text-[11px] font-medium"
+                title={file.originalName}
+              >
                 {file.originalName}
               </span>
-              <span className="text-[9px] text-muted-foreground uppercase tracking-tight">
+              <span className="text-muted-foreground text-[9px] tracking-tight uppercase">
                 {(file.size / 1024 / 1024).toFixed(2)} MB
               </span>
             </div>
@@ -90,7 +99,7 @@ export function FileGallery({ entityType, entityId, initialFiles }: FileGalleryP
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-primary"
+            className="text-muted-foreground hover:text-primary h-7 w-7"
             onClick={() => handleDownload(file.id, file.originalName)}
             disabled={downloading === file.id}
           >

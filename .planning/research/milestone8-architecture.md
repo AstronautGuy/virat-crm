@@ -9,21 +9,27 @@ This document details the architectural decisions and domain patterns for **Mile
 To achieve total database-level tenant security, we avoid manual filtering inside every business logic block. Instead, we implement a centralized procedure boundary inside [trpc.ts](file:///c:/Users/TheAstronautGuy/WebstormProjects/virat-crm/src/server/api/trpc.ts):
 
 ### Context & Middleware Isolation
+
 1. **Branch Middleware**: For standard user procedures, inject a middleware check:
    ```typescript
-   export const branchIsolatedProcedure = protectedProcedure.use(async ({ ctx, next }) => {
-     if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Developer") {
-       if (!ctx.dbUser.branchId) {
-         throw new TRPCError({ code: "FORBIDDEN", message: "User has no branch assignment." });
+   export const branchIsolatedProcedure = protectedProcedure.use(
+     async ({ ctx, next }) => {
+       if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Developer") {
+         if (!ctx.dbUser.branchId) {
+           throw new TRPCError({
+             code: "FORBIDDEN",
+             message: "User has no branch assignment.",
+           });
+         }
        }
-     }
-     return next({
-       ctx: {
-         // Expose branchId specifically to procedures
-         userBranchId: ctx.dbUser.branchId,
-       },
-     });
-   });
+       return next({
+         ctx: {
+           // Expose branchId specifically to procedures
+           userBranchId: ctx.dbUser.branchId,
+         },
+       });
+     },
+   );
    ```
 2. **Procedure Injection**: Within all sales, products, and customer queries, automatically apply a `where` filter:
    ```typescript
@@ -37,11 +43,11 @@ To achieve total database-level tenant security, we avoid manual filtering insid
 
 Based on access patterns in the CRM, breadcrumbs, and sales, we will apply several compound indices to ensure queries execute in sub-millisecond ranges:
 
-| Table | Index Columns | Purpose |
-| :--- | :--- | :--- |
-| `inventory` | `(branch_id, product_id)` | Extremely fast stock level lookup and transfer status verification. |
-| `sales` | `(branch_id, created_at)` | Fast localized historical sales data retrieval. |
-| `breadcrumbs` | `(user_id, created_at)` | Fast periodic live location breadcrumb queries (last 15 minutes). |
+| Table         | Index Columns             | Purpose                                                             |
+| :------------ | :------------------------ | :------------------------------------------------------------------ |
+| `inventory`   | `(branch_id, product_id)` | Extremely fast stock level lookup and transfer status verification. |
+| `sales`       | `(branch_id, created_at)` | Fast localized historical sales data retrieval.                     |
+| `breadcrumbs` | `(user_id, created_at)`   | Fast periodic live location breadcrumb queries (last 15 minutes).   |
 
 ---
 

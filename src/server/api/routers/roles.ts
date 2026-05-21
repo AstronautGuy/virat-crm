@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, adminProcedure } from "@/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  adminProcedure,
+} from "@/server/api/trpc";
 import { roles } from "@/server/db/schema/roles";
 import { users } from "@/server/db/schema/users";
 import { eq } from "drizzle-orm";
@@ -13,10 +17,12 @@ export const rolesRouter = createTRPCRouter({
   }),
 
   create: adminProcedure
-    .input(z.object({
-      name: z.string().min(2).max(64),
-      description: z.string().max(256).optional(),
-    }))
+    .input(
+      z.object({
+        name: z.string().min(2).max(64),
+        description: z.string().max(256).optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       // Check if role already exists
       const existingRole = await ctx.db.query.roles.findFirst({
@@ -30,11 +36,14 @@ export const rolesRouter = createTRPCRouter({
         });
       }
 
-      return await ctx.db.insert(roles).values({
-        name: input.name,
-        description: input.description,
-        isSystem: false,
-      }).returning();
+      return await ctx.db
+        .insert(roles)
+        .values({
+          name: input.name,
+          description: input.description,
+          isSystem: false,
+        })
+        .returning();
     }),
 
   delete: adminProcedure
@@ -73,4 +82,3 @@ export const rolesRouter = createTRPCRouter({
       return { success: true };
     }),
 });
-

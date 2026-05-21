@@ -6,7 +6,7 @@ updated: 2026-05-14
 symptoms:
   expected: "Pages should render with form, calendar, and tabs components; inventory should have sidebar; tRPC should receive branch ID"
   actual: "Build errors for missing components; UI layout issues; API validation failure"
-  errors: 
+  errors:
     - "Module not found: Can't resolve '@/components/ui/form'"
     - "Module not found: Can't resolve '@/components/ui/calendar'"
     - "tRPC failed on inventory.getBranchStock: Branch ID is required"
@@ -17,20 +17,24 @@ symptoms:
 # Debug Session: Form, Calendar, and Tabs Missing
 
 ## Current Focus
+
 - hypothesis: Shadcn components (form, calendar, tabs) were never installed or were installed in the wrong directory.
 - next_action: Verify existence of components in `src/components/ui` and install if missing.
 - reasoning_checkpoint: Missing modules are the primary cause of build failures.
 
 ## Evidence
+
 - timestamp: 2026-05-14T06:20:00Z
   observation: Build logs show explicit module not found errors for form and calendar.
   source: User provided logs
 
 ## Eliminated
+
 (None yet)
 
 ## Resolution
-- root_cause: 
-- fix: 
-- verification: 
+
+- root_cause:
+- fix:
+- verification:
 - files_changed: []

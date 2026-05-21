@@ -12,7 +12,11 @@ async function main() {
 
   try {
     // 1. Create the customer status enum
-    await db.execute(sql.raw(`CREATE TYPE "virat-crm_customer_status" AS ENUM ('Draft', 'Approved')`));
+    await db.execute(
+      sql.raw(
+        `CREATE TYPE "virat-crm_customer_status" AS ENUM ('Draft', 'Approved')`,
+      ),
+    );
     console.log("Customer status enum created.");
   } catch (e) {
     console.log("Customer status enum might already exist.");
@@ -20,7 +24,8 @@ async function main() {
 
   try {
     // 2. Create the customer table
-    await db.execute(sql.raw(`
+    await db.execute(
+      sql.raw(`
       CREATE TABLE IF NOT EXISTS "virat-crm_customer" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "name" varchar(256) NOT NULL,
@@ -37,7 +42,8 @@ async function main() {
         "created_at" timestamp with time zone DEFAULT now() NOT NULL,
         "updated_at" timestamp with time zone DEFAULT now()
       )
-    `));
+    `),
+    );
     console.log("Customer table created.");
   } catch (e) {
     console.error("Error creating customer table:", e);
@@ -45,7 +51,11 @@ async function main() {
 
   try {
     // 3. Update sales table with customer_id
-    await db.execute(sql.raw(`ALTER TABLE "virat-crm_sale" ADD COLUMN IF NOT EXISTS "customer_id" uuid REFERENCES "virat-crm_customer"("id")`));
+    await db.execute(
+      sql.raw(
+        `ALTER TABLE "virat-crm_sale" ADD COLUMN IF NOT EXISTS "customer_id" uuid REFERENCES "virat-crm_customer"("id")`,
+      ),
+    );
     console.log("Sales table updated with customer_id.");
   } catch (e) {
     console.error("Error updating sales table:", e);

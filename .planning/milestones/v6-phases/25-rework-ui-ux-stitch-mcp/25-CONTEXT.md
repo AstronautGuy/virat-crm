@@ -15,27 +15,33 @@ This phase delivers a premium, robust UI/UX overhaul for the Virat CRM, locked t
 ## Implementation Decisions
 
 ### Typography & Branding
+
 - **Font Family**: Standardize on **Inter**.
 - **Rationale**: High legibility for data-dense ERP interfaces.
 
 ### Theme Strategy: FIXED LIGHT MODE
+
 - **Primary Background**: `#f8fafc` (Slate 50) for the app container.
 - **Surface**: `#ffffff` (White) for cards and modals.
 - **Border Strategy**: Crisp 1px borders (`#e2e8f0`) to maintain structure without heavy shadows.
 - **Rationale**: Maximum visibility for field operations and reduced visual complexity.
 
 ### Design System (Stitch MCP)
+
 - **Primary Color**: Modern Blue (#2563eb).
 - **Rounding**: Consistent `rounded-xl` (12px).
 
 ### Interaction & UX
+
 - **Transitions**: Subtle Framer Motion "fade-in".
 - **Micro-feedback**: Smooth hover states and scale-down effects.
 
 </decisions>
 
 <canonical_refs>
+
 ## Canonical References
+
 - `src/styles/globals.css`
 - `src/app/layout.tsx`
 
@@ -55,5 +61,5 @@ This phase delivers a premium, robust UI/UX overhaul for the Virat CRM, locked t
 
 ---
 
-*Phase: 25-rework-ui-ux-stitch-mcp*
-*Context gathered: 2026-05-14*
+_Phase: 25-rework-ui-ux-stitch-mcp_
+_Context gathered: 2026-05-14_

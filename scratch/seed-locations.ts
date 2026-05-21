@@ -14,7 +14,7 @@ async function seedLocations() {
   console.log("📍 Seeding fake locations for all employees...");
 
   const allUsers = await db.query.users.findMany();
-  
+
   if (allUsers.length === 0) {
     console.error("❌ No users found to seed locations for.");
     return;
@@ -22,13 +22,13 @@ async function seedLocations() {
 
   // Base coordinates (Delhi, India)
   const baseLat = 28.6139;
-  const baseLng = 77.2090;
+  const baseLng = 77.209;
 
   for (const user of allUsers) {
     // Generate a random location within ~10km
     const latOffset = (Math.random() - 0.5) * 0.1;
     const lngOffset = (Math.random() - 0.5) * 0.1;
-    
+
     await db.insert(locationLogs).values({
       userId: user.id,
       latitude: (baseLat + latOffset).toString(),
@@ -36,7 +36,7 @@ async function seedLocations() {
       accuracy: (Math.random() * 50 + 10).toString(), // 10-60m accuracy
       timestamp: new Date(),
     });
-    
+
     console.log(`✅ Logged location for ${user.firstName} ${user.lastName}`);
   }
 

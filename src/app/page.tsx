@@ -24,8 +24,9 @@ export default async function Home() {
   if (!user) {
     redirect("/login");
   }
-  
-  const isManager = !!user?.permissions?.isManager || !!user?.permissions?.isAdmin;
+
+  const isManager =
+    !!user?.permissions?.isManager || !!user?.permissions?.isAdmin;
 
   let salesSummary = { revenue: 0, count: 0, quantity: 0 };
   let workforceSummary = { activeToday: 0, pendingLeaves: 0 };
@@ -50,20 +51,36 @@ export default async function Home() {
   });
 
   const metrics = [
-    { label: "Daily Sales", value: currencyFormatter.format(salesSummary.revenue), trend: `${salesSummary.count} Sales`, hide: !isManager },
-    { label: "Active Staff", value: `${workforceSummary.activeToday}`, trend: "Today", hide: !isManager },
-    { label: "Pending Leaves", value: `${workforceSummary.pendingLeaves}`, trend: "Review", hide: !isManager },
-    { label: "Daily Volume", value: `${salesSummary.quantity}`, trend: "Units", hide: !isManager },
-  ].filter(m => !m.hide);
+    {
+      label: "Daily Sales",
+      value: currencyFormatter.format(salesSummary.revenue),
+      trend: `${salesSummary.count} Sales`,
+      hide: !isManager,
+    },
+    {
+      label: "Active Staff",
+      value: `${workforceSummary.activeToday}`,
+      trend: "Today",
+      hide: !isManager,
+    },
+    {
+      label: "Pending Leaves",
+      value: `${workforceSummary.pendingLeaves}`,
+      trend: "Review",
+      hide: !isManager,
+    },
+    {
+      label: "Daily Volume",
+      value: `${salesSummary.quantity}`,
+      trend: "Units",
+      hide: !isManager,
+    },
+  ].filter((m) => !m.hide);
 
   return (
     <HydrateClient>
       <DashboardLayout>
-        <DashboardView 
-          user={user} 
-          metrics={metrics} 
-          isManager={isManager} 
-        />
+        <DashboardView user={user} metrics={metrics} isManager={isManager} />
       </DashboardLayout>
     </HydrateClient>
   );

@@ -25,10 +25,14 @@ async function main() {
     where: eq(replacements.userId, employee.id),
   });
 
-  console.log(`Before deletion: Sales: ${salesBefore.length}, Replacements: ${replacementsBefore.length}`);
+  console.log(
+    `Before deletion: Sales: ${salesBefore.length}, Replacements: ${replacementsBefore.length}`,
+  );
 
   if (salesBefore.length === 0 || replacementsBefore.length === 0) {
-    console.error("Employee must have at least one sale and one replacement for cascade verification!");
+    console.error(
+      "Employee must have at least one sale and one replacement for cascade verification!",
+    );
     process.exit(1);
   }
 
@@ -45,13 +49,19 @@ async function main() {
     where: eq(replacements.userId, employee.id),
   });
 
-  console.log(`After deletion: Sales: ${salesAfter.length}, Replacements: ${replacementsAfter.length}`);
+  console.log(
+    `After deletion: Sales: ${salesAfter.length}, Replacements: ${replacementsAfter.length}`,
+  );
 
   if (salesAfter.length === 0 && replacementsAfter.length === 0) {
-    console.log("SUCCESS: User and all cascaded sales and replacements deleted perfectly!");
+    console.log(
+      "SUCCESS: User and all cascaded sales and replacements deleted perfectly!",
+    );
     process.exit(0);
   } else {
-    console.error("FAILURE: Cascade deletion did not remove all child records!");
+    console.error(
+      "FAILURE: Cascade deletion did not remove all child records!",
+    );
     process.exit(1);
   }
 }

@@ -3,12 +3,11 @@ import { users } from "@/server/db/schema/users";
 import { eq, sql } from "drizzle-orm";
 
 export const hierarchyRouter = createTRPCRouter({
-  getManagers: featureProtectedProcedure("admin")
-    .query(async ({ ctx }) => {
-      return ctx.db.query.users.findMany({
-        where: eq(users.role, "Manager"),
-      });
-    }),
+  getManagers: featureProtectedProcedure("admin").query(async ({ ctx }) => {
+    return ctx.db.query.users.findMany({
+      where: eq(users.role, "Manager"),
+    });
+  }),
 
   // Fetch immediate team members (direct reports)
   getMyTeam: featureProtectedProcedure("org-chart").query(async ({ ctx }) => {
@@ -30,25 +29,26 @@ export const hierarchyRouter = createTRPCRouter({
   }),
 
   // Fetch full N-level hierarchy tree (CTE)
-  getFullHierarchy: featureProtectedProcedure("org-chart").query(async ({ ctx }) => {
-    // If Admin, they see everyone. If Manager, they see their tree.
-    if (ctx.dbUser.role === "Admin") {
-      // Just return all users for Admin
-      return ctx.db.query.users.findMany({
-        columns: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          role: true,
-          employeeCode: true,
-          managerId: true,
-        },
-      });
-    }
+  getFullHierarchy: featureProtectedProcedure("org-chart").query(
+    async ({ ctx }) => {
+      // If Admin, they see everyone. If Manager, they see their tree.
+      if (ctx.dbUser.role === "Admin") {
+        // Just return all users for Admin
+        return ctx.db.query.users.findMany({
+          columns: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+            employeeCode: true,
+            managerId: true,
+          },
+        });
+      }
 
-    // CTE to get all descendants for current user
-    const descendantsQuery = sql`
+      // CTE to get all descendants for current user
+      const descendantsQuery = sql`
       WITH RECURSIVE subordinates AS (
         SELECT id, first_name, last_name, email, role, employee_code, manager_id
         FROM "virat-crm_user"
@@ -63,17 +63,22 @@ export const hierarchyRouter = createTRPCRouter({
       SELECT * FROM subordinates;
     `;
 
-    const rows = await ctx.db.execute(descendantsQuery);
-    
-    // Map rows to camelCase to match drizzle schema
-    return rows.map((row: Record<string, unknown>) => ({
-      id: String(row.id),
-      firstName: String(row.first_name),
-      lastName: String(row.last_name),
-      email: String(row.email),
-      role: String(row.role),
-      employeeCode: row.employee_code ? String(row.employee_code as string | number) : null,
-      managerId: row.manager_id ? String(row.manager_id as string | number) : null,
-    }));
-  }),
+      const rows = await ctx.db.execute(descendantsQuery);
+
+      // Map rows to camelCase to match drizzle schema
+      return rows.map((row: Record<string, unknown>) => ({
+        id: String(row.id),
+        firstName: String(row.first_name),
+        lastName: String(row.last_name),
+        email: String(row.email),
+        role: String(row.role),
+        employeeCode: row.employee_code
+          ? String(row.employee_code as string | number)
+          : null,
+        managerId: row.manager_id
+          ? String(row.manager_id as string | number)
+          : null,
+      }));
+    },
+  ),
 });

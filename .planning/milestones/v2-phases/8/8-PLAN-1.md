@@ -1,9 +1,11 @@
 # Phase 8 Plan: Web Push Notifications & Real-time Alerts
 
 ## Overview
+
 Implement end-to-end push notifications for the CRM.
 
 ## Wave 1: Push Infrastructure (Backend)
+
 - `[ ]` **Task 1.1: Push Subscriptions Schema**
   - `<action>`: Create `src/server/db/schema/pushSubscriptions.ts`. Columns: `id`, `userId`, `endpoint`, `p256dh`, `auth`, `userAgent`.
   - `<acceptance_criteria>`: Migration generated and pushed.
@@ -15,6 +17,7 @@ Implement end-to-end push notifications for the CRM.
   - `<acceptance_criteria>`: Client can send subscription objects to the backend.
 
 ## Wave 2: Service Worker & Permissions (Frontend)
+
 - `[ ]` **Task 2.1: SW Push Event Listener**
   - `<read_first>`: `src/app/sw.ts`
   - `<action>`: Add `self.addEventListener("push", ...)` to handle incoming data and call `showNotification`.
@@ -25,6 +28,7 @@ Implement end-to-end push notifications for the CRM.
   - `<acceptance_criteria>`: User can subscribe/unsubscribe via a UI toggle.
 
 ## Wave 3: Real-time Triggers (Workflow)
+
 - `[ ]` **Task 3.1: Push Notification Utility**
   - `<action>`: Create `src/server/lib/push.ts` using `web-push`. Implement `sendNotificationToUser`.
   - `<acceptance_criteria>`: Utility correctly sends payload to all active subscriptions of a user.
@@ -34,6 +38,7 @@ Implement end-to-end push notifications for the CRM.
   - `<acceptance_criteria>`: Agent receives a push notification when their sale is approved.
 
 ## Verification Criteria
+
 - [ ] Push subscription stored successfully.
 - [ ] Browser shows "Allow Notifications" prompt.
 - [ ] "Test Push" from backend successfully displays on PWA (Android/iOS/Desktop).

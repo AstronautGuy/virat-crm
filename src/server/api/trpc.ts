@@ -16,11 +16,12 @@ import { eq, and } from "drizzle-orm";
  * This section defines the "contexts" that are available in the backend API.
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const session = (await getSession()) ?? (await getSessionFromHeaders(opts.headers));
+  const session =
+    (await getSession()) ?? (await getSessionFromHeaders(opts.headers));
   const userId = session?.userId;
 
   // Fetch DB user for role information
-  const dbUser = userId 
+  const dbUser = userId
     ? await db.query.users.findFirst({
         where: eq(users.id, userId),
       })
@@ -49,19 +50,22 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
 /**
  * 2. INITIALIZATION
  */
-const t = initTRPC.context<typeof createTRPCContext>().meta<OpenApiMeta>().create({
-  transformer: superjson,
-  errorFormatter({ shape, error }) {
-    return {
-      ...shape,
-      data: {
-        ...shape.data,
-        zodError:
-          error.cause instanceof ZodError ? error.cause.flatten() : null,
-      },
-    };
-  },
-});
+const t = initTRPC
+  .context<typeof createTRPCContext>()
+  .meta<OpenApiMeta>()
+  .create({
+    transformer: superjson,
+    errorFormatter({ shape, error }) {
+      return {
+        ...shape,
+        data: {
+          ...shape.data,
+          zodError:
+            error.cause instanceof ZodError ? error.cause.flatten() : null,
+        },
+      };
+    },
+  });
 
 /**
  * Create a server-side caller.
@@ -151,7 +155,10 @@ export const featureProtectedProcedure = (featureKey: string) => {
     t.middleware(async ({ ctx, next }) => {
       // Safety check for TS and runtime
       if (!ctx.dbUser) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "User profile not found in database." });
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User profile not found in database.",
+        });
       }
 
       // Sovereign Developer bypasses ALL feature gates and permission rules
@@ -185,12 +192,14 @@ export const featureProtectedProcedure = (featureKey: string) => {
       const permission = await ctx.db.query.rolePermissions.findFirst({
         where: and(
           eq(rolePermissions.role, ctx.dbUser.role),
-          eq(rolePermissions.featureKey, featureKey)
+          eq(rolePermissions.featureKey, featureKey),
         ),
       });
 
       if (!permission?.isEnabled) {
-        console.warn(`[SECURITY] Access denied for user ${ctx.dbUser.id} (${ctx.dbUser.role}) to feature '${featureKey}'`);
+        console.warn(
+          `[SECURITY] Access denied for user ${ctx.dbUser.id} (${ctx.dbUser.role}) to feature '${featureKey}'`,
+        );
         throw new TRPCError({
           code: "FORBIDDEN",
           message: `The feature '${featureKey}' is disabled for your role.`,
@@ -203,7 +212,7 @@ export const featureProtectedProcedure = (featureKey: string) => {
           dbUser: ctx.dbUser,
         },
       });
-    })
+    }),
   );
 };
 
@@ -235,8 +244,14 @@ const isManager = t.middleware(({ ctx, next }) => {
   if (ctx.dbUser?.role === "Developer") {
     return next({ ctx });
   }
-  if (!ctx.dbUser || (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Manager")) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "Manager or Admin role required." });
+  if (
+    !ctx.dbUser ||
+    (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Manager")
+  ) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Manager or Admin role required.",
+    });
   }
   return next({
     ctx: {
@@ -252,7 +267,7 @@ export const managerProcedure = protectedProcedure.use(isManager);
 /**
  * Combined Feature + Manager Procedure
  */
-export const featureManagerProcedure = (featureKey: string) => 
+export const featureManagerProcedure = (featureKey: string) =>
   featureProtectedProcedure(featureKey).use(isManagerMiddleware);
 
 /**
@@ -262,11 +277,14 @@ export const featureManagerProcedure = (featureKey: string) =>
  */
 export function enforceBranchIsolation(
   ctx: { dbUser?: { role: string; branchId: number | null } | null },
-  targetBranchId?: number
+  targetBranchId?: number,
 ): number | undefined {
   const user = ctx.dbUser;
   if (!user) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "User profile not found." });
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "User profile not found.",
+    });
   }
 
   // Developer and Admin bypass checks
@@ -276,7 +294,10 @@ export function enforceBranchIsolation(
 
   // Enforce branch assignment for standard users / managers
   if (!user.branchId) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "User has no branch assignment." });
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "User has no branch assignment.",
+    });
   }
 
   // If standard user attempts to target another branch, throw Forbidden

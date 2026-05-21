@@ -7,7 +7,11 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as { employeeCode?: string; password?: string; branchId?: number };
+  const body = (await request.json()) as {
+    employeeCode?: string;
+    password?: string;
+    branchId?: number;
+  };
   const { employeeCode, password, branchId } = body;
 
   if (!employeeCode || !password) {
@@ -25,7 +29,10 @@ export async function POST(request: Request) {
   // Check password
   if (!user.password) {
     // If user has no password set (migration case), they should probably set one first.
-    return NextResponse.json({ error: "Password not set. Please contact admin." }, { status: 401 });
+    return NextResponse.json(
+      { error: "Password not set. Please contact admin." },
+      { status: 401 },
+    );
   }
 
   const isPasswordCorrect = await bcrypt.compare(password, user.password);
@@ -42,7 +49,7 @@ export async function POST(request: Request) {
       });
       return NextResponse.json({
         requireBranch: true,
-        branches: activeBranches.map(b => ({ id: b.id, name: b.name })),
+        branches: activeBranches.map((b) => ({ id: b.id, name: b.name })),
       });
     }
 

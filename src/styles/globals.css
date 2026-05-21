@@ -6,7 +6,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif,
+  --font-sans:
+    var(--font-inter), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
@@ -81,12 +82,15 @@
   --sidebar-accent-foreground: oklch(0.2 0.02 240);
   --sidebar-border: oklch(0.96 0.01 240);
   --sidebar-ring: oklch(0.6 0.18 255);
-  
+
   /* Soft Modernism Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.04), 0 4px 6px -4px rgb(0 0 0 / 0.04);
-  --shadow-premium: 0 20px 25px -5px rgb(0 0 0 / 0.03), 0 8px 10px -6px rgb(0 0 0 / 0.03);
+  --shadow-md:
+    0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 0.04), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+  --shadow-premium:
+    0 20px 25px -5px rgb(0 0 0 / 0.03), 0 8px 10px -6px rgb(0 0 0 / 0.03);
 }
 
 @layer base {
@@ -94,7 +98,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply antialiased bg-background text-foreground selection:bg-primary/10 selection:text-primary;
+    @apply bg-background text-foreground selection:bg-primary/10 selection:text-primary antialiased;
     /* PWA Safe Area Support */
     padding-bottom: env(safe-area-inset-bottom);
   }
@@ -106,29 +110,49 @@
     color-scheme: light;
   }
 
-  button, 
-  a, 
-  input, 
+  button,
+  a,
+  input,
   select {
     @apply min-h-11 min-w-11 transition-all duration-200;
   }
 
   .premium-card {
-    @apply bg-white border border-border shadow-[0_1px_3px_0_rgb(0,0,0,0.02),0_1px_2px_-1px_rgb(0,0,0,0.02)] rounded-xl overflow-hidden hover:shadow-md transition-shadow duration-300;
+    @apply border-border overflow-hidden rounded-xl border bg-white shadow-[0_1px_3px_0_rgb(0,0,0,0.02),0_1px_2px_-1px_rgb(0,0,0,0.02)] transition-shadow duration-300 hover:shadow-md;
   }
 
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 @keyframes wiggle {
-  0%, 100% { transform: rotate(0deg); }
-  15% { transform: rotate(12deg); }
-  30% { transform: rotate(-10deg); }
-  45% { transform: rotate(8deg); }
-  60% { transform: rotate(-6deg); }
-  75% { transform: rotate(4deg); }
-  90% { transform: rotate(-2deg); }
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  15% {
+    transform: rotate(12deg);
+  }
+  30% {
+    transform: rotate(-10deg);
+  }
+  45% {
+    transform: rotate(8deg);
+  }
+  60% {
+    transform: rotate(-6deg);
+  }
+  75% {
+    transform: rotate(4deg);
+  }
+  90% {
+    transform: rotate(-2deg);
+  }
 }
 
 @utility animate-wiggle {

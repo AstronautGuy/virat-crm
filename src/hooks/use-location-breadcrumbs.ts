@@ -38,8 +38,12 @@ export function useLocationBreadcrumbs() {
                 accuracy: pos.coords.accuracy,
               });
             },
-            (err) => console.error("Breadcrumb error (low accuracy fallback):", err.message),
-            { enableHighAccuracy: false, timeout: 10000 }
+            (err) =>
+              console.error(
+                "Breadcrumb error (low accuracy fallback):",
+                err.message,
+              ),
+            { enableHighAccuracy: false, timeout: 10000 },
           );
         } else {
           console.error("Breadcrumb error:", error.message);
@@ -49,14 +53,14 @@ export function useLocationBreadcrumbs() {
         enableHighAccuracy: true,
         timeout: 30000,
         maximumAge: 1000 * 60 * 5, // Accept cached location up to 5 mins old
-      }
+      },
     );
   }, [user, logBreadcrumb]);
 
   useEffect(() => {
     // Don't start tracking until we know the user's role
     if (!user) return;
-    
+
     // If Admin, don't track
     if (user.role === "Admin") {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -65,7 +69,7 @@ export function useLocationBreadcrumbs() {
 
     // Start tracking
     captureLocation();
-    
+
     timerRef.current = setInterval(captureLocation, TRACKING_INTERVAL);
 
     return () => {

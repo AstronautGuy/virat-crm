@@ -1,6 +1,7 @@
 # Phase 30 UAT: Hardening & Strict Security
 
 ## Overview
+
 Status: [IN_PROGRESS]
 Phase: 30
 Last Updated: 2026-05-15
@@ -8,6 +9,7 @@ Last Updated: 2026-05-15
 ## Test Cases
 
 ### 1. Global GPS Lockout (Mobile)
+
 - **Goal**: Verify the app is unusable if GPS is disabled.
 - **Pre-condition**: App is running on device/emulator.
 - **Action**: Disable GPS/Location services.
@@ -15,6 +17,7 @@ Last Updated: 2026-05-15
 - **Result**: [ ]
 
 ### 2. Admin Feature Toggling (Sales)
+
 - **Goal**: Verify Admin can disable the "Sales" module.
 - **Pre-condition**: Logged in as Admin.
 - **Action**: In Admin > Feature Access, disable "Sales" for the current user's role.
@@ -22,6 +25,7 @@ Last Updated: 2026-05-15
 - **Result**: [ ]
 
 ### 3. CRM Protection (Backend)
+
 - **Goal**: Verify CRM API is protected even if UI is bypassed.
 - **Pre-condition**: CRM is disabled for the role.
 - **Action**: Attempt to call `crm.getCustomerById` via tRPC client/console.
@@ -29,6 +33,7 @@ Last Updated: 2026-05-15
 - **Result**: [ ]
 
 ### 4. 24/7 Heartbeat Frequency
+
 - **Goal**: Verify heartbeat pulses are sent every 2 minutes.
 - **Pre-condition**: App in background.
 - **Action**: Monitor `breadcrumbs` table or server logs.
@@ -36,6 +41,7 @@ Last Updated: 2026-05-15
 - **Result**: [ ]
 
 ### 5. Attendance Reporting
+
 - **Goal**: Verify CSV export of location logs.
 - **Pre-condition**: Some location logs exist in DB.
 - **Action**: Call `analytics.getAttendanceExport`.
@@ -43,4 +49,5 @@ Last Updated: 2026-05-15
 - **Result**: [ ]
 
 ## Feedback Loops
+
 - [ ] No issues found.

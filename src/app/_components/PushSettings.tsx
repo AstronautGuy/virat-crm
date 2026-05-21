@@ -18,12 +18,15 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export function PushSettings() {
-  const [subscription, setSubscription] = useState<PushSubscription | null>(null);
+  const [subscription, setSubscription] = useState<PushSubscription | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const saveSubscription = api.notifications.savePushSubscription.useMutation();
-  const deleteSubscription = api.notifications.deletePushSubscription.useMutation();
+  const deleteSubscription =
+    api.notifications.deletePushSubscription.useMutation();
 
   useEffect(() => {
     async function checkSubscription() {
@@ -47,7 +50,9 @@ export function PushSettings() {
       if (subscription) {
         // Unsubscribe
         await subscription.unsubscribe();
-        await deleteSubscription.mutateAsync({ endpoint: subscription.endpoint });
+        await deleteSubscription.mutateAsync({
+          endpoint: subscription.endpoint,
+        });
         setSubscription(null);
       } else {
         // Subscribe
@@ -59,7 +64,9 @@ export function PushSettings() {
         const registration = await navigator.serviceWorker.ready;
         const sub = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(env.NEXT_PUBLIC_VAPID_PUBLIC_KEY),
+          applicationServerKey: urlBase64ToUint8Array(
+            env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+          ),
         });
 
         const subJson = sub.toJSON();
@@ -80,7 +87,9 @@ export function PushSettings() {
       }
     } catch (err) {
       console.error("Push subscription error:", err);
-      setError(err instanceof Error ? err.message : "Failed to update subscription");
+      setError(
+        err instanceof Error ? err.message : "Failed to update subscription",
+      );
     } finally {
       setLoading(false);
     }
@@ -99,7 +108,9 @@ export function PushSettings() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
-          <p className="text-xs text-gray-500">Get real-time alerts for approvals and updates.</p>
+          <p className="text-xs text-gray-500">
+            Get real-time alerts for approvals and updates.
+          </p>
         </div>
         <Button
           variant={subscription ? "outline" : "default"}
@@ -112,12 +123,12 @@ export function PushSettings() {
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : subscription ? (
             <>
-              <BellOff className="h-4 w-4 mr-2" />
+              <BellOff className="mr-2 h-4 w-4" />
               Disable
             </>
           ) : (
             <>
-              <Bell className="h-4 w-4 mr-2" />
+              <Bell className="mr-2 h-4 w-4" />
               Enable
             </>
           )}

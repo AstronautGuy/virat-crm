@@ -6,7 +6,9 @@ import { gte } from "drizzle-orm";
 
 async function main() {
   console.log("--- Time diagnostics ---");
-  const dbTimeRes = await db.execute(sql`SELECT now(), current_setting('TIMEZONE')`);
+  const dbTimeRes = await db.execute(
+    sql`SELECT now(), current_setting('TIMEZONE')`,
+  );
   console.log("Database now() and TIMEZONE setting:", dbTimeRes);
 
   const jsNow = new Date();
@@ -17,13 +19,18 @@ async function main() {
   console.log("15 minutes ago JS Date ISO:", fifteenMinutesAgo.toISOString());
 
   // Let's run the actual query that getLiveTeam runs
-  const query = db.select().from(breadcrumbs).where(gte(breadcrumbs.createdAt, fifteenMinutesAgo));
+  const query = db
+    .select()
+    .from(breadcrumbs)
+    .where(gte(breadcrumbs.createdAt, fifteenMinutesAgo));
   console.log("Drizzle SQL Query generated:", query.toSQL());
 
   const results = await query;
   console.log(`Query returned ${results.length} breadcrumbs.`);
   for (const row of results) {
-    console.log(`- Id: ${row.id}, UserId: ${row.userId}, CreatedAt (Raw/JS): ${row.createdAt instanceof Date ? row.createdAt.toISOString() : row.createdAt}`);
+    console.log(
+      `- Id: ${row.id}, UserId: ${row.userId}, CreatedAt (Raw/JS): ${row.createdAt instanceof Date ? row.createdAt.toISOString() : row.createdAt}`,
+    );
   }
 
   process.exit(0);

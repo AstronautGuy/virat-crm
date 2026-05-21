@@ -24,7 +24,11 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Calendar as CalendarIcon, User } from "lucide-react";
 import { toast } from "sonner";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -41,7 +45,7 @@ interface ReportFormProps {
 
 export function ReportForm({ onSuccess }: ReportFormProps) {
   const { data: customers } = api.crm.getBranchCustomers.useQuery();
-  
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -68,14 +72,16 @@ export function ReportForm({ onSuccess }: ReportFormProps) {
   }
 
   return (
-    <Card className="w-full shadow-sm border-slate-200">
+    <Card className="w-full border-slate-200 shadow-sm">
       <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-semibold text-slate-800">Submit Daily Report</CardTitle>
+        <CardTitle className="text-xl font-semibold text-slate-800">
+          Submit Daily Report
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="reportDate"
@@ -88,8 +94,8 @@ export function ReportForm({ onSuccess }: ReportFormProps) {
                           <Button
                             variant={"outline"}
                             className={cn(
-                              "w-full pl-3 text-left font-normal border-slate-200 hover:bg-slate-50",
-                              !field.value && "text-muted-foreground"
+                              "w-full border-slate-200 pl-3 text-left font-normal hover:bg-slate-50",
+                              !field.value && "text-muted-foreground",
                             )}
                           >
                             {field.value ? (
@@ -110,7 +116,6 @@ export function ReportForm({ onSuccess }: ReportFormProps) {
                             date > new Date() || date < new Date("1900-01-01")
                           }
                           autoFocus
-
                         />
                       </PopoverContent>
                     </Popover>
@@ -136,7 +141,7 @@ export function ReportForm({ onSuccess }: ReportFormProps) {
                         {customers?.map((customer) => (
                           <SelectItem key={customer.id} value={customer.id}>
                             <div className="flex items-center gap-2">
-                              <User className="w-3 h-3 text-slate-400" />
+                              <User className="h-3 w-3 text-slate-400" />
                               {customer.name} ({customer.mobile})
                             </div>
                           </SelectItem>
@@ -156,10 +161,10 @@ export function ReportForm({ onSuccess }: ReportFormProps) {
                 <FormItem>
                   <FormLabel>Report Content</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Write your daily activity, customer visits, or any updates here..." 
-                      className="min-h-[200px] resize-none border-slate-200 focus:ring-blue-500 rounded-xl"
-                      {...field} 
+                    <Textarea
+                      placeholder="Write your daily activity, customer visits, or any updates here..."
+                      className="min-h-[200px] resize-none rounded-xl border-slate-200 focus:ring-blue-500"
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -167,9 +172,9 @@ export function ReportForm({ onSuccess }: ReportFormProps) {
               )}
             />
 
-            <Button 
-              type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-6 h-auto text-base font-medium shadow-md shadow-blue-100 transition-all active:scale-[0.98]" 
+            <Button
+              type="submit"
+              className="h-auto w-full rounded-xl bg-blue-600 py-6 text-base font-medium text-white shadow-md shadow-blue-100 transition-all hover:bg-blue-700 active:scale-[0.98]"
               disabled={submitMutation.isPending}
             >
               {submitMutation.isPending ? (

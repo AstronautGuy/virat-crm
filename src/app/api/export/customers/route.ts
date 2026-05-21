@@ -8,10 +8,14 @@ import ExcelJS from "exceljs";
 export async function GET() {
   try {
     const session = await getSession();
-    if (!session?.userId) return new NextResponse("Unauthorized", { status: 401 });
+    if (!session?.userId)
+      return new NextResponse("Unauthorized", { status: 401 });
 
-    const user = await db.query.users.findFirst({ where: eq(users.id, session.userId) });
-    if (user?.role !== "Admin") return new NextResponse("Forbidden", { status: 403 });
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.userId),
+    });
+    if (user?.role !== "Admin")
+      return new NextResponse("Forbidden", { status: 403 });
 
     const customersData = await db.query.customers.findMany({
       with: {
@@ -26,7 +30,7 @@ export async function GET() {
     workbook.created = new Date();
 
     const sheet = workbook.addWorksheet("Customers", {
-      views: [{ state: "frozen", ySplit: 1 }]
+      views: [{ state: "frozen", ySplit: 1 }],
     });
 
     sheet.columns = [
@@ -47,7 +51,11 @@ export async function GET() {
 
     // Style the header row
     sheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
-    sheet.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
+    sheet.getRow(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0F172A" },
+    };
     sheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
     customersData.forEach((c) => {
@@ -57,7 +65,9 @@ export async function GET() {
         mobile: c.mobile,
         status: c.status,
         branch: c.branch?.name ?? "N/A",
-        createdBy: c.creator ? `${c.creator.firstName} ${c.creator.lastName}` : "N/A",
+        createdBy: c.creator
+          ? `${c.creator.firstName} ${c.creator.lastName}`
+          : "N/A",
         village: c.village,
         district: c.district,
         state: c.state,
@@ -72,7 +82,8 @@ export async function GET() {
 
     return new NextResponse(buffer, {
       headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="customers-export-${new Date().toISOString().split("T")[0]}.xlsx"`,
       },
     });
@@ -81,4 +92,3 @@ export async function GET() {
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
-

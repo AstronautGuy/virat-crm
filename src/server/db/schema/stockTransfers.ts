@@ -1,4 +1,12 @@
-import { pgTableCreator, serial, integer, varchar, timestamp, uuid, jsonb } from "drizzle-orm/pg-core";
+import {
+  pgTableCreator,
+  serial,
+  integer,
+  varchar,
+  timestamp,
+  uuid,
+  jsonb,
+} from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { branches } from "./branches";
 import { users } from "./users";
@@ -14,16 +22,26 @@ export const stockTransfers = createTable("stock_transfer", {
     .references(() => branches.id)
     .notNull(),
   status: varchar("status", { length: 50 }).notNull().default("Pending"), // Pending, Shipped, Received, Cancelled
-  requestedById: uuid("requested_by_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
-  approvedById: uuid("approved_by_id").references(() => users.id, { onDelete: "set null" }),
-  receivedById: uuid("received_by_id").references(() => users.id, { onDelete: "set null" }),
-  
+  requestedById: uuid("requested_by_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  approvedById: uuid("approved_by_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  receivedById: uuid("received_by_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+
   // JSON array of { productId, quantity }
   items: jsonb("items").notNull(),
-  
+
   notes: varchar("notes", { length: 500 }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(() => new Date()),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+    () => new Date(),
+  ),
 });
 
 export const stockTransfersRelations = relations(stockTransfers, ({ one }) => ({

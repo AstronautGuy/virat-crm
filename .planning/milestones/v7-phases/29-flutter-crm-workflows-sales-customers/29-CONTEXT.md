@@ -1,6 +1,7 @@
 # Phase 29 Context: Flutter CRM Workflows (Sales & Customers)
 
 ## Strategic Decisions
+
 - **Form Layout**: **Single Page Vertical Scroll**. Use large, high-visibility inputs for all fields to minimize navigation overhead.
 - **Role-Based Feature Control**: **STRICT**. Every feature (Sales, Customers, Attendance, Sync) must be toggleable by the Admin via the `rolePermissions` table. The mobile app will fetch these permissions upon login and dynamically hide/disable buttons/screens accordingly.
 - **Address Intelligence**: No GPS "guessing" for the address. Manual Pincode entry with API-based auto-fill (City/State/Area) only.
@@ -8,7 +9,8 @@
 - **Customer Integration**: Simple "Draft" customer creation will be allowed within the New Sale flow if a customer is missing (if the user role has permission).
 
 ## Technical Requirements
-- **Feature Gating**: 
+
+- **Feature Gating**:
   - Add `permissions` (Map<String, Boolean>) to the `authRouter.login` response.
   - Implement a `FeatureGate` wrapper in Flutter.
 - **Synchronization**:
@@ -17,6 +19,7 @@
   - Standardized "Big Button" style for all dropdowns and multi-selects.
 
 ## Success Criteria
+
 - [ ] Users can only see features allowed for their Role (verified via Admin Dashboard).
 - [ ] New Sale form successfully posts to `/crm/sales` (or queues if offline).
 - [ ] Offline sales automatically sync when the app detects internet.

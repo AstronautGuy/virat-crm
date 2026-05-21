@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 webpush.setVapidDetails(
   "mailto:support@viratcrm.com",
   env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-  env.VAPID_PRIVATE_KEY
+  env.VAPID_PRIVATE_KEY,
 );
 
 interface NotificationPayload {
@@ -17,7 +17,10 @@ interface NotificationPayload {
   url?: string;
 }
 
-export async function sendNotificationToUser(userId: string, payload: NotificationPayload) {
+export async function sendNotificationToUser(
+  userId: string,
+  payload: NotificationPayload,
+) {
   const subscriptions = await db.query.pushSubscriptions.findMany({
     where: eq(pushSubscriptions.userId, userId),
   });
@@ -32,19 +35,20 @@ export async function sendNotificationToUser(userId: string, payload: Notificati
             auth: sub.auth,
           },
         },
-        JSON.stringify(payload)
+        JSON.stringify(payload),
       );
     } catch (error: unknown) {
       // If the subscription is no longer valid, remove it
       const statusCode = (error as { statusCode?: number })?.statusCode;
 
       if (statusCode === 410 || statusCode === 404) {
-        await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, sub.id));
+        await db
+          .delete(pushSubscriptions)
+          .where(eq(pushSubscriptions.id, sub.id));
       } else {
         console.error("Error sending push notification:", error);
       }
     }
-
   });
 
   await Promise.allSettled(sendPromises);

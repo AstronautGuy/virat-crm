@@ -84,7 +84,9 @@ export function FileUploader({
       }
     } catch (err) {
       console.error(err);
-      setError("Failed to upload file. Please check your connection and try again.");
+      setError(
+        "Failed to upload file. Please check your connection and try again.",
+      );
     } finally {
       setUploading(false);
       setProgress(0);
@@ -97,9 +99,11 @@ export function FileUploader({
       <div
         onClick={() => !uploading && fileInputRef.current?.click()}
         className={cn(
-          "relative border-2 border-dashed rounded-xl p-8 transition-all cursor-pointer flex flex-col items-center justify-center gap-3",
-          uploading ? "bg-muted/50 border-muted opacity-80 cursor-not-allowed" : "bg-card border-border hover:border-primary/50 hover:bg-accent/50",
-          error ? "border-destructive/50 bg-destructive/5" : ""
+          "relative flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-8 transition-all",
+          uploading
+            ? "bg-muted/50 border-muted cursor-not-allowed opacity-80"
+            : "bg-card border-border hover:border-primary/50 hover:bg-accent/50",
+          error ? "border-destructive/50 bg-destructive/5" : "",
         )}
       >
         <input
@@ -112,28 +116,30 @@ export function FileUploader({
 
         {uploading ? (
           <>
-            <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            <Loader2 className="text-primary h-10 w-10 animate-spin" />
             <div className="text-center">
               <p className="text-sm font-medium">Uploading...</p>
-              <p className="text-xs text-muted-foreground">{progress}% complete</p>
+              <p className="text-muted-foreground text-xs">
+                {progress}% complete
+              </p>
             </div>
-            <div className="w-full max-w-xs h-1.5 bg-muted rounded-full mt-2 overflow-hidden">
-              <div 
-                className="h-full bg-primary transition-all duration-300" 
+            <div className="bg-muted mt-2 h-1.5 w-full max-w-xs overflow-hidden rounded-full">
+              <div
+                className="bg-primary h-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
           </>
         ) : (
           <>
-            <div className="p-3 bg-primary/10 rounded-full">
-              <Upload className="w-6 h-6 text-primary" />
+            <div className="bg-primary/10 rounded-full p-3">
+              <Upload className="text-primary h-6 w-6" />
             </div>
             <div className="text-center">
               <p className="text-sm font-medium">
                 Click to upload {maxFiles > 1 ? "files" : "a file"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-muted-foreground mt-1 text-xs">
                 Images or PDFs up to 10MB
               </p>
             </div>
@@ -142,9 +148,9 @@ export function FileUploader({
       </div>
 
       {error && (
-        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
-          <X className="w-4 h-4 text-destructive mt-0.5" />
-          <p className="text-xs text-destructive">{error}</p>
+        <div className="bg-destructive/10 border-destructive/20 flex items-start gap-3 rounded-lg border p-3">
+          <X className="text-destructive mt-0.5 h-4 w-4" />
+          <p className="text-destructive text-xs">{error}</p>
         </div>
       )}
     </div>

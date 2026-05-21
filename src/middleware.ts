@@ -2,14 +2,21 @@ import { type NextRequest, NextResponse } from "next/server";
 import { decrypt } from "@/server/lib/auth";
 
 // Add paths that should be accessible without authentication
-const publicPaths = ["/login", "/signup", "/api/auth/login", "/api/auth/logout", "/api/trpc", "/api/rest"];
+const publicPaths = [
+  "/login",
+  "/signup",
+  "/api/auth/login",
+  "/api/auth/logout",
+  "/api/trpc",
+  "/api/rest",
+];
 
 export async function middleware(request: NextRequest) {
   const { nextUrl } = request;
   const path = nextUrl.pathname;
 
   // Check if it's a public path
-  const isPublicPath = publicPaths.some(p => path.startsWith(p));
+  const isPublicPath = publicPaths.some((p) => path.startsWith(p));
   if (isPublicPath) {
     return NextResponse.next();
   }
@@ -24,7 +31,7 @@ export async function middleware(request: NextRequest) {
   try {
     // Verify session
     await decrypt(session);
-    
+
     // If we're at the root or a dashboard path, we can optionally refresh the token here
     // For now, just let it pass if valid
     return NextResponse.next();

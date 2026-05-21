@@ -11,14 +11,19 @@ async function main() {
 
   // Manually create the enum and table if push is failing interactively
   try {
-    await db.execute(sql.raw(`CREATE TYPE "virat-crm_file_entity_type" AS ENUM ('sale', 'replacement')`));
+    await db.execute(
+      sql.raw(
+        `CREATE TYPE "virat-crm_file_entity_type" AS ENUM ('sale', 'replacement')`,
+      ),
+    );
     console.log("Enum created.");
   } catch (e) {
     console.log("Enum might already exist.");
   }
 
   try {
-    await db.execute(sql.raw(`
+    await db.execute(
+      sql.raw(`
       CREATE TABLE IF NOT EXISTS "virat-crm_file" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "entity_type" "virat-crm_file_entity_type" NOT NULL,
@@ -30,7 +35,8 @@ async function main() {
         "uploaded_by" uuid NOT NULL REFERENCES "virat-crm_user"("id"),
         "created_at" timestamp DEFAULT now() NOT NULL
       )
-    `));
+    `),
+    );
     console.log("Table created.");
   } catch (e) {
     console.error("Error creating table:", e);

@@ -13,40 +13,57 @@ import { TRPCError } from "@trpc/server";
 
 export const crmRouter = createTRPCRouter({
   getBranchCustomers: featureProtectedProcedure("crm")
-    .meta({ openapi: { method: "GET", path: "/crm/customers", summary: "Get branch customers", tags: ["CRM"] } })
-    .input(z.object({
-      search: z.string().optional(),
-    }).optional())
+    .meta({
+      openapi: {
+        method: "GET",
+        path: "/crm/customers",
+        summary: "Get branch customers",
+        tags: ["CRM"],
+      },
+    })
+    .input(
+      z
+        .object({
+          search: z.string().optional(),
+        })
+        .optional(),
+    )
     .output(
       z.array(
-        z.object({
-          id: z.string().uuid(),
-          name: z.string(),
-          mobile: z.string(),
-          village: z.string(),
-          district: z.string(),
-          state: z.string(),
-          status: z.enum(["Draft", "Approved"]),
-          totalPending: z.number(),
-          dob: z.any(),
-          pincode: z.string(),
-          address: z.string(),
-          branchId: z.number(),
-          createdBy: z.string().uuid(),
-          createdAt: z.any(),
-          updatedAt: z.any(),
-          creator: z.object({
-            firstName: z.string().nullable().optional(),
-            lastName: z.string().nullable().optional(),
-          }).passthrough().optional().nullable(),
-        }).passthrough()
-      )
+        z
+          .object({
+            id: z.string().uuid(),
+            name: z.string(),
+            mobile: z.string(),
+            village: z.string(),
+            district: z.string(),
+            state: z.string(),
+            status: z.enum(["Draft", "Approved"]),
+            totalPending: z.number(),
+            dob: z.any(),
+            pincode: z.string(),
+            address: z.string(),
+            branchId: z.number(),
+            createdBy: z.string().uuid(),
+            createdAt: z.any(),
+            updatedAt: z.any(),
+            creator: z
+              .object({
+                firstName: z.string().nullable().optional(),
+                lastName: z.string().nullable().optional(),
+              })
+              .passthrough()
+              .optional()
+              .nullable(),
+          })
+          .passthrough(),
+      ),
     )
     .query(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
-      
+
       const filters: SQL[] = [];
-      
+
       // Branch isolation: Employees and Managers only see their branch
       if (dbUser.role !== "Admin" && dbUser.role !== "Developer") {
         const assignedBranchId = enforceBranchIsolation(ctx);
@@ -57,8 +74,8 @@ export const crmRouter = createTRPCRouter({
         filters.push(
           or(
             sql`LOWER(${customers.name}) LIKE ${`%${input.search.toLowerCase()}%`}`,
-            sql`${customers.mobile} LIKE ${`%${input.search}%`}`
-          )!
+            sql`${customers.mobile} LIKE ${`%${input.search}%`}`,
+          )!,
         );
       }
 
@@ -69,26 +86,29 @@ export const crmRouter = createTRPCRouter({
             columns: {
               firstName: true,
               lastName: true,
-            }
-          }
+            },
+          },
         },
         orderBy: [desc(customers.createdAt)],
       });
 
       // Calculate Total Pending for each customer
       // Optimization: In a real heavy app, this would be a join with group by
-      const customersWithFinancials = await Promise.all(results.map(async (customer) => {
-        const salesData = await db.select({
-          totalPending: sql<string>`SUM(${sales.balanceAmount})`
-        })
-        .from(sales)
-        .where(eq(sales.customerId, customer.id));
+      const customersWithFinancials = await Promise.all(
+        results.map(async (customer) => {
+          const salesData = await db
+            .select({
+              totalPending: sql<string>`SUM(${sales.balanceAmount})`,
+            })
+            .from(sales)
+            .where(eq(sales.customerId, customer.id));
 
-        return {
-          ...customer,
-          totalPending: Number(salesData[0]?.totalPending ?? 0),
-        };
-      }));
+          return {
+            ...customer,
+            totalPending: Number(salesData[0]?.totalPending ?? 0),
+          };
+        }),
+      );
 
       return customersWithFinancials;
     }),
@@ -97,13 +117,13 @@ export const crmRouter = createTRPCRouter({
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
-      
+
       const customer = await db.query.customers.findFirst({
         where: eq(customers.id, input.id),
         with: {
           branch: true,
           creator: true,
-        }
+        },
       });
 
       if (!customer) throw new TRPCError({ code: "NOT_FOUND" });
@@ -117,7 +137,10 @@ export const crmRouter = createTRPCRouter({
         orderBy: [desc(sales.createdAt)],
       });
 
-      const totalPending = orders.reduce((acc, curr) => acc + Number(curr.balanceAmount), 0);
+      const totalPending = orders.reduce(
+        (acc, curr) => acc + Number(curr.balanceAmount),
+        0,
+      );
 
       return {
         ...customer,
@@ -127,70 +150,105 @@ export const crmRouter = createTRPCRouter({
     }),
 
   createCustomer: featureManagerProcedure("crm")
-    .meta({ openapi: { method: "POST", path: "/crm/customers", summary: "Create approved customer (Manager Only)", tags: ["CRM"] } })
-    .input(z.object({
-      name: z.string().min(2),
-      mobile: z.string().min(10),
-      dob: z.date().optional(),
-      pincode: z.string().length(6),
-      village: z.string(),
-      district: z.string(),
-      state: z.string(),
-      address: z.string(),
-      branchId: z.number().optional(),
-    }))
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/crm/customers",
+        summary: "Create approved customer (Manager Only)",
+        tags: ["CRM"],
+      },
+    })
+    .input(
+      z.object({
+        name: z.string().min(2),
+        mobile: z.string().min(10),
+        dob: z.date().optional(),
+        pincode: z.string().length(6),
+        village: z.string(),
+        district: z.string(),
+        state: z.string(),
+        address: z.string(),
+        branchId: z.number().optional(),
+      }),
+    )
     .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
       if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
-      
-      const targetBranchId = enforceBranchIsolation(ctx, input.branchId ?? undefined);
+
+      const targetBranchId = enforceBranchIsolation(
+        ctx,
+        input.branchId ?? undefined,
+      );
       if (targetBranchId === undefined) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Branch selection is required for this action." });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Branch selection is required for this action.",
+        });
       }
 
       const { branchId, ...rest } = input;
-      
-      return await db.insert(customers).values({
-        ...rest,
-        branchId: targetBranchId,
-        status: "Approved", // Managers/Admins create approved customers
-        createdBy: dbUser.id,
-      }).returning();
+
+      return await db
+        .insert(customers)
+        .values({
+          ...rest,
+          branchId: targetBranchId,
+          status: "Approved", // Managers/Admins create approved customers
+          createdBy: dbUser.id,
+        })
+        .returning();
     }),
 
-
   proposeCustomer: featureProtectedProcedure("crm")
-    .meta({ openapi: { method: "POST", path: "/crm/propose", summary: "Propose draft customer", tags: ["CRM"] } })
-    .input(z.object({
-      name: z.string().min(2),
-      mobile: z.string().min(10),
-      dob: z.date().optional(),
-      pincode: z.string().length(6),
-      village: z.string(),
-      district: z.string(),
-      state: z.string(),
-      address: z.string(),
-      branchId: z.number().optional(),
-    }))
+    .meta({
+      openapi: {
+        method: "POST",
+        path: "/crm/propose",
+        summary: "Propose draft customer",
+        tags: ["CRM"],
+      },
+    })
+    .input(
+      z.object({
+        name: z.string().min(2),
+        mobile: z.string().min(10),
+        dob: z.date().optional(),
+        pincode: z.string().length(6),
+        village: z.string(),
+        district: z.string(),
+        state: z.string(),
+        address: z.string(),
+        branchId: z.number().optional(),
+      }),
+    )
     .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const { db, dbUser } = ctx;
       if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
-      
-      const targetBranchId = enforceBranchIsolation(ctx, input.branchId ?? undefined);
+
+      const targetBranchId = enforceBranchIsolation(
+        ctx,
+        input.branchId ?? undefined,
+      );
       if (targetBranchId === undefined) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Branch selection is required for this action." });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Branch selection is required for this action.",
+        });
       }
 
       const { branchId, ...rest } = input;
-      
-      return await db.insert(customers).values({
-        ...rest,
-        branchId: targetBranchId,
-        status: "Draft", // Employees create draft customers
-        createdBy: dbUser.id,
-      }).returning();
+
+      return await db
+        .insert(customers)
+        .values({
+          ...rest,
+          branchId: targetBranchId,
+          status: "Draft", // Employees create draft customers
+          createdBy: dbUser.id,
+        })
+        .returning();
     }),
 
   approveCustomer: featureManagerProcedure("crm")
@@ -200,28 +258,35 @@ export const crmRouter = createTRPCRouter({
       const targetCustomer = await db.query.customers.findFirst({
         where: eq(customers.id, input.id),
       });
-      if (!targetCustomer) throw new TRPCError({ code: "NOT_FOUND", message: "Customer not found" });
+      if (!targetCustomer)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Customer not found",
+        });
 
       enforceBranchIsolation(ctx, targetCustomer.branchId);
 
-      return await db.update(customers)
+      return await db
+        .update(customers)
         .set({ status: "Approved" })
         .where(eq(customers.id, input.id))
         .returning();
     }),
 
   updateCustomer: featureManagerProcedure("crm")
-    .input(z.object({
-      id: z.string().uuid(),
-      name: z.string().min(2).optional(),
-      mobile: z.string().min(10).optional(),
-      dob: z.date().optional(),
-      pincode: z.string().length(6).optional(),
-      village: z.string().optional(),
-      district: z.string().optional(),
-      state: z.string().optional(),
-      address: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string().min(2).optional(),
+        mobile: z.string().min(10).optional(),
+        dob: z.date().optional(),
+        pincode: z.string().length(6).optional(),
+        village: z.string().optional(),
+        district: z.string().optional(),
+        state: z.string().optional(),
+        address: z.string().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
       const { id, ...data } = input;
@@ -229,11 +294,16 @@ export const crmRouter = createTRPCRouter({
       const targetCustomer = await db.query.customers.findFirst({
         where: eq(customers.id, id),
       });
-      if (!targetCustomer) throw new TRPCError({ code: "NOT_FOUND", message: "Customer not found" });
+      if (!targetCustomer)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Customer not found",
+        });
 
       enforceBranchIsolation(ctx, targetCustomer.branchId);
 
-      return await db.update(customers)
+      return await db
+        .update(customers)
         .set(data)
         .where(eq(customers.id, id))
         .returning();

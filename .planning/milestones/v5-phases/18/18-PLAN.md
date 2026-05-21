@@ -11,6 +11,7 @@ files_modified:
 This phase implements the database and logic for tracking stock across multiple branches and managing transfers.
 
 ## Wave 1: Schema Evolution (Branch Isolation)
+
 <task>
 <read_first>
 - src/server/db/schema/products.ts
@@ -32,6 +33,7 @@ This phase implements the database and logic for tracking stock across multiple 
 </task>
 
 ## Wave 2: Backend Logic (Branch-Specific Operations)
+
 <task>
 <read_first>
 - src/server/api/routers/sales.ts
@@ -54,6 +56,7 @@ This phase implements the database and logic for tracking stock across multiple 
 </task>
 
 ## Wave 3: Frontend Foundation (Inventory Dashboard)
+
 <task>
 <read_first>
 - src/app/inventory/page.tsx [NEW]
@@ -73,6 +76,7 @@ This phase implements the database and logic for tracking stock across multiple 
 </task>
 
 ## Wave 4: Workflow Implementation (Transfer Center)
+
 <task>
 <read_first>
 - src/app/inventory/transfers/page.tsx [NEW]
@@ -90,6 +94,7 @@ This phase implements the database and logic for tracking stock across multiple 
 </task>
 
 ## Verification
+
 - [ ] `pnpm exec tsc --noEmit` passes.
 - [ ] Manual verification of stock adjustment logging in the DB.
 - [ ] Simulated stock transfer between Branch A and Branch B confirms atomic updates.

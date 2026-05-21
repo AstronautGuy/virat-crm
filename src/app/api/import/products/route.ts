@@ -57,9 +57,12 @@ export async function POST(req: NextRequest) {
     });
 
     if (nameCol === -1 || skuCol === -1 || priceCol === -1) {
-      return NextResponse.json({ 
-        error: "Missing required columns. Required: Name, SKU, Price" 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Missing required columns. Required: Name, SKU, Price",
+        },
+        { status: 400 },
+      );
     }
 
     worksheet.eachRow((row, rowNumber) => {
@@ -76,7 +79,10 @@ export async function POST(req: NextRequest) {
         return;
       }
 
-      const price = typeof priceRaw === "number" ? priceRaw : parseFloat(row.getCell(priceCol).text);
+      const price =
+        typeof priceRaw === "number"
+          ? priceRaw
+          : parseFloat(row.getCell(priceCol).text);
       if (isNaN(price)) {
         results.failed++;
         errors.push({ row: rowNumber, error: "Invalid price format" });
@@ -96,15 +102,18 @@ export async function POST(req: NextRequest) {
       // Drizzle doesn't directly return which ones were created vs updated in a batch
       // but we can estimate based on row count if we were doing it one by one.
       // For now, we'll report total processed.
-      await db.insert(products).values(productsToUpsert).onConflictDoUpdate({
-        target: products.sku,
-        set: {
-          name: sql`excluded.name`,
-          price: sql`excluded.price`,
-          updatedAt: new Date(),
-        },
-      });
-      
+      await db
+        .insert(products)
+        .values(productsToUpsert)
+        .onConflictDoUpdate({
+          target: products.sku,
+          set: {
+            name: sql`excluded.name`,
+            price: sql`excluded.price`,
+            updatedAt: new Date(),
+          },
+        });
+
       // Since we don't know the split easily without a pre-check, we'll just return total processed
       // Or we can say "Processed" instead of created/updated
     }
@@ -114,9 +123,11 @@ export async function POST(req: NextRequest) {
       summary: results,
       errors,
     });
-
   } catch (error) {
     console.error("[IMPORT_PRODUCTS_ERROR]", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }

@@ -11,6 +11,7 @@ autonomous: true
 # Phase 3, Plan 1: 24/7 Location Logging & Slabbing
 
 ## Objective
+
 Implement continuous 24/7 location logging with server-side time-based slabbing. The backend must group pings into fixed time intervals (slabs) and compute the most frequent location per slab to minimize database entry volume.
 
 ## Tasks
@@ -67,10 +68,12 @@ Add or verify `MockLocationPinger` in `src/app/_components/dev/MockLocationPinge
 </task>
 
 ## Verification
+
 - Run the app, click "Start Pinging" in the mock pinger.
 - Observe that multiple pings within the same slab result in only one row in the `locationLogs` table, with an updating `frequencyMap`.
 
 ## Must Haves
+
 - Time slabs must be fixed daily intervals.
 - The most frequent location per slab must be computed accurately.
 - Coordinates must be rounded to at least 4 decimal places to counter GPS jitter.

@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, featureProtectedProcedure, publicProcedure } from "@/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  featureProtectedProcedure,
+  publicProcedure,
+} from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { users } from "@/server/db/schema/users";
 import { eq, or, sql } from "drizzle-orm";
@@ -7,20 +12,22 @@ import bcrypt from "bcryptjs";
 
 export const usersRouter = createTRPCRouter({
   signup: publicProcedure
-    .input(z.object({
-      firstName: z.string().min(2),
-      lastName: z.string().min(2),
-      email: z.string().email(),
-      employeeCode: z.string().min(3),
-      password: z.string().min(6),
-      branchId: z.number(),
-    }))
+    .input(
+      z.object({
+        firstName: z.string().min(2),
+        lastName: z.string().min(2),
+        email: z.string().email(),
+        employeeCode: z.string().min(3),
+        password: z.string().min(6),
+        branchId: z.number(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       // Check if user already exists
       const existingUser = await ctx.db.query.users.findFirst({
         where: or(
           eq(users.email, input.email),
-          eq(users.employeeCode, input.employeeCode)
+          eq(users.employeeCode, input.employeeCode),
         ),
       });
 
@@ -46,16 +53,19 @@ export const usersRouter = createTRPCRouter({
 
       const hashedPassword = await bcrypt.hash(input.password, 10);
 
-      const [newUser] = await ctx.db.insert(users).values({
-        firstName: input.firstName,
-        lastName: input.lastName,
-        email: input.email,
-        employeeCode: input.employeeCode,
-        password: hashedPassword,
-        role: "Employee", // Default role for self-signup
-        branchId: input.branchId,
-        isActive: true,
-      }).returning();
+      const [newUser] = await ctx.db
+        .insert(users)
+        .values({
+          firstName: input.firstName,
+          lastName: input.lastName,
+          email: input.email,
+          employeeCode: input.employeeCode,
+          password: hashedPassword,
+          role: "Employee", // Default role for self-signup
+          branchId: input.branchId,
+          isActive: true,
+        })
+        .returning();
 
       return {
         success: true,
@@ -70,7 +80,7 @@ export const usersRouter = createTRPCRouter({
   getMe: protectedProcedure.query(async ({ ctx }) => {
     // In our new system, ctx.dbUser is already fetched in the context
     // We can just return it with calculated permissions
-    
+
     return {
       ...ctx.dbUser,
       permissions: {
@@ -82,10 +92,12 @@ export const usersRouter = createTRPCRouter({
   }),
 
   updatePassword: protectedProcedure
-    .input(z.object({
-      currentPassword: z.string(),
-      newPassword: z.string().min(6),
-    }))
+    .input(
+      z.object({
+        currentPassword: z.string(),
+        newPassword: z.string().min(6),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.db.query.users.findFirst({
         where: eq(users.id, ctx.dbUser.id),
@@ -95,7 +107,10 @@ export const usersRouter = createTRPCRouter({
         throw new Error("User not found or password not set");
       }
 
-      const isValid = await bcrypt.compare(input.currentPassword, user.password);
+      const isValid = await bcrypt.compare(
+        input.currentPassword,
+        user.password,
+      );
       if (!isValid) {
         throw new Error("Invalid current password");
       }
@@ -110,23 +125,31 @@ export const usersRouter = createTRPCRouter({
     }),
 
   createUser: protectedProcedure
-    .input(z.object({
-      firstName: z.string(),
-      lastName: z.string(),
-      email: z.string().email(),
-      employeeCode: z.string(),
-      password: z.string().min(6),
-      role: z.string().min(2).max(64),
-      branchId: z.number(),
-      managerId: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        firstName: z.string(),
+        lastName: z.string(),
+        email: z.string().email(),
+        employeeCode: z.string(),
+        password: z.string().min(6),
+        role: z.string().min(2).max(64),
+        branchId: z.number(),
+        managerId: z.string().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Developer") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins or developers can create users" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only admins or developers can create users",
+        });
       }
 
       if (input.role === "Developer" && ctx.dbUser.role !== "Developer") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only developers can assign the Developer role" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only developers can assign the Developer role",
+        });
       }
 
       // Max active users license limit check
@@ -143,15 +166,22 @@ export const usersRouter = createTRPCRouter({
       }
 
       const hashedPassword = await bcrypt.hash(input.password, 10);
-      
-      return await ctx.db.insert(users).values({
-        ...input,
-        password: hashedPassword,
-      }).returning();
+
+      return await ctx.db
+        .insert(users)
+        .values({
+          ...input,
+          password: hashedPassword,
+        })
+        .returning();
     }),
 
   getAllUsers: protectedProcedure.query(async ({ ctx }) => {
-    if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Manager" && ctx.dbUser.role !== "Developer") {
+    if (
+      ctx.dbUser.role !== "Admin" &&
+      ctx.dbUser.role !== "Manager" &&
+      ctx.dbUser.role !== "Developer"
+    ) {
       throw new TRPCError({ code: "FORBIDDEN" });
     }
 
@@ -159,18 +189,23 @@ export const usersRouter = createTRPCRouter({
       with: {
         branch: true,
         manager: true,
-      }
+      },
     });
   }),
 
   toggleActiveStatus: protectedProcedure
-    .input(z.object({
-      userId: z.string(),
-      isActive: z.boolean(),
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        isActive: z.boolean(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Developer") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins or developers can change active status" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only admins or developers can change active status",
+        });
       }
 
       const targetUser = await ctx.db.query.users.findFirst({
@@ -182,7 +217,10 @@ export const usersRouter = createTRPCRouter({
       }
 
       if (targetUser.role === "Developer" && ctx.dbUser.role !== "Developer") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Developer accounts cannot be deactivated by other roles." });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Developer accounts cannot be deactivated by other roles.",
+        });
       }
 
       // Check max users cap if activating an inactive user
@@ -209,13 +247,18 @@ export const usersRouter = createTRPCRouter({
     }),
 
   resetUserPassword: protectedProcedure
-    .input(z.object({
-      userId: z.string(),
-      newPassword: z.string().min(6),
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        newPassword: z.string().min(6),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Developer") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins or developers can reset employee passwords" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only admins or developers can reset employee passwords",
+        });
       }
 
       const targetUser = await ctx.db.query.users.findFirst({
@@ -227,7 +270,10 @@ export const usersRouter = createTRPCRouter({
       }
 
       if (targetUser.role === "Developer" && ctx.dbUser.role !== "Developer") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Developer passwords cannot be reset by other roles." });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Developer passwords cannot be reset by other roles.",
+        });
       }
 
       const hashedPassword = await bcrypt.hash(input.newPassword, 10);
@@ -240,19 +286,24 @@ export const usersRouter = createTRPCRouter({
     }),
 
   updateUser: protectedProcedure
-    .input(z.object({
-      userId: z.string(),
-      firstName: z.string().min(2),
-      lastName: z.string().min(2),
-      email: z.string().email(),
-      employeeCode: z.string().min(3),
-      role: z.string().min(2).max(64),
-      branchId: z.number().nullable().optional(),
-      managerId: z.string().nullable().optional(),
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        firstName: z.string().min(2),
+        lastName: z.string().min(2),
+        email: z.string().email(),
+        employeeCode: z.string().min(3),
+        role: z.string().min(2).max(64),
+        branchId: z.number().nullable().optional(),
+        managerId: z.string().nullable().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Developer") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins or developers can edit user details" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only admins or developers can edit user details",
+        });
       }
 
       const targetUser = await ctx.db.query.users.findFirst({
@@ -264,11 +315,17 @@ export const usersRouter = createTRPCRouter({
       }
 
       if (targetUser.role === "Developer" && ctx.dbUser.role !== "Developer") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Developer details can only be modified by the Developer." });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Developer details can only be modified by the Developer.",
+        });
       }
 
       if (input.role === "Developer" && ctx.dbUser.role !== "Developer") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only developers can assign the Developer role" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only developers can assign the Developer role",
+        });
       }
 
       if (input.managerId && input.managerId === input.userId) {
@@ -282,14 +339,15 @@ export const usersRouter = createTRPCRouter({
       const existingUser = await ctx.db.query.users.findFirst({
         where: or(
           eq(users.email, input.email),
-          eq(users.employeeCode, input.employeeCode)
+          eq(users.employeeCode, input.employeeCode),
         ),
       });
 
       if (existingUser && existingUser.id !== input.userId) {
         throw new TRPCError({
           code: "CONFLICT",
-          message: "Another employee with this email or employee code already exists",
+          message:
+            "Another employee with this email or employee code already exists",
         });
       }
 
@@ -303,7 +361,6 @@ export const usersRouter = createTRPCRouter({
 
       return updatedUser;
     }),
-
 
   getOrgTree: featureProtectedProcedure("org-chart").query(async ({ ctx }) => {
     // Fetch all active users
@@ -327,7 +384,7 @@ export const usersRouter = createTRPCRouter({
     }
 
     const userMap = new Map<string, OrgNode>();
-    allUsers.forEach(u => {
+    allUsers.forEach((u) => {
       userMap.set(u.id, {
         id: u.id,
         firstName: u.firstName,
@@ -336,14 +393,14 @@ export const usersRouter = createTRPCRouter({
         role: u.role,
         employeeCode: u.employeeCode,
         managerId: u.managerId,
-        children: []
+        children: [],
       });
     });
 
     const roots: OrgNode[] = [];
 
     // Build the tree
-    allUsers.forEach(u => {
+    allUsers.forEach((u) => {
       const node = userMap.get(u.id);
       if (node && u.managerId && userMap.has(u.managerId)) {
         userMap.get(u.managerId)?.children.push(node);

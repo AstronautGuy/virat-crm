@@ -38,7 +38,7 @@ if (!(ZodType.prototype as any)._zod) {
     get() {
       const typeName = this._def.typeName;
       let type = typeName ? typeName.replace(/^Zod/, "").toLowerCase() : "any";
-      
+
       if (typeName === "ZodEffects") {
         type = this._def.effect?.type === "transform" ? "transform" : "pipe";
       }
@@ -64,11 +64,14 @@ if (!(ZodType.prototype as any)._zod) {
         in: this._def.schema,
         out: this._def.schema,
         catchValue: this._def.catchValue,
-        defaultValue: typeof this._def.defaultValue === "function" ? this._def.defaultValue() : this._def.defaultValue,
+        defaultValue:
+          typeof this._def.defaultValue === "function"
+            ? this._def.defaultValue()
+            : this._def.defaultValue,
       };
 
       const bag: any = {};
-      
+
       if (this._def.checks) {
         const patterns: Set<RegExp> = new Set();
         for (const check of this._def.checks) {
@@ -142,7 +145,10 @@ const handler = async (req: NextRequest) => {
       });
       return Response.json(openApiDocument);
     } catch (e: any) {
-      return Response.json({ error: e.message, stack: e.stack }, { status: 500 });
+      return Response.json(
+        { error: e.message, stack: e.stack },
+        { status: 500 },
+      );
     }
   }
 
@@ -154,4 +160,10 @@ const handler = async (req: NextRequest) => {
   });
 };
 
-export { handler as GET, handler as POST, handler as PUT, handler as PATCH, handler as DELETE };
+export {
+  handler as GET,
+  handler as POST,
+  handler as PUT,
+  handler as PATCH,
+  handler as DELETE,
+};

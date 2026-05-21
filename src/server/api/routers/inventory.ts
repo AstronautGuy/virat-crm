@@ -1,30 +1,49 @@
 import { z } from "zod";
-import { createTRPCRouter, featureProtectedProcedure, protectedProcedure, enforceBranchIsolation } from "@/server/api/trpc";
+import {
+  createTRPCRouter,
+  featureProtectedProcedure,
+  protectedProcedure,
+  enforceBranchIsolation,
+} from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { inventory, inventoryTransactions, stockTransfers } from "@/server/db/schema";
+import {
+  inventory,
+  inventoryTransactions,
+  stockTransfers,
+} from "@/server/db/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 import { checkAndNotifyLowStock } from "@/server/lib/alerts";
 
 export const inventoryRouter = createTRPCRouter({
-  getBranches: protectedProcedure
-    .query(async ({ ctx }) => {
-      return ctx.db.query.branches.findMany();
-    }),
+  getBranches: protectedProcedure.query(async ({ ctx }) => {
+    return ctx.db.query.branches.findMany();
+  }),
 
   getBranchStock: featureProtectedProcedure("inventory")
-    .meta({ openapi: { method: "GET", path: "/inventory/stock", summary: "Get branch stock levels", tags: ["Inventory"] } })
+    .meta({
+      openapi: {
+        method: "GET",
+        path: "/inventory/stock",
+        summary: "Get branch stock levels",
+        tags: ["Inventory"],
+      },
+    })
     .input(z.object({ branchId: z.number().optional() }))
-    .output(z.array(z.object({
-      productId: z.number(),
-      branchId: z.number(),
-      quantity: z.number(),
-      product: z.object({
-        id: z.number(),
-        name: z.string(),
-        sku: z.string(),
-        price: z.string(),
-      }),
-    })))
+    .output(
+      z.array(
+        z.object({
+          productId: z.number(),
+          branchId: z.number(),
+          quantity: z.number(),
+          product: z.object({
+            id: z.number(),
+            name: z.string(),
+            sku: z.string(),
+            price: z.string(),
+          }),
+        }),
+      ),
+    )
     .query(async ({ ctx, input }) => {
       const branchId = enforceBranchIsolation(ctx, input.branchId ?? undefined);
 
@@ -49,14 +68,25 @@ export const inventoryRouter = createTRPCRouter({
     }),
 
   getProducts: protectedProcedure
-    .meta({ openapi: { method: "GET", path: "/inventory/products", summary: "Get list of all products", tags: ["Inventory"] } })
+    .meta({
+      openapi: {
+        method: "GET",
+        path: "/inventory/products",
+        summary: "Get list of all products",
+        tags: ["Inventory"],
+      },
+    })
     .input(z.void())
-    .output(z.array(z.object({
-      id: z.number(),
-      name: z.string(),
-      sku: z.string(),
-      price: z.string(),
-    })))
+    .output(
+      z.array(
+        z.object({
+          id: z.number(),
+          name: z.string(),
+          sku: z.string(),
+          price: z.string(),
+        }),
+      ),
+    )
     .query(async ({ ctx }) => {
       const items = await ctx.db.query.products.findMany();
       return items.map((item) => ({
@@ -67,7 +97,6 @@ export const inventoryRouter = createTRPCRouter({
       }));
     }),
 
-
   adjustStock: featureProtectedProcedure("inventory")
     .input(
       z.object({
@@ -75,7 +104,7 @@ export const inventoryRouter = createTRPCRouter({
         branchId: z.number(),
         quantity: z.number(),
         reason: z.string(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       enforceBranchIsolation(ctx, input.branchId);
@@ -115,9 +144,11 @@ export const inventoryRouter = createTRPCRouter({
       z.object({
         fromBranchId: z.number(),
         toBranchId: z.number(),
-        items: z.array(z.object({ productId: z.number(), quantity: z.number() })),
+        items: z.array(
+          z.object({ productId: z.number(), quantity: z.number() }),
+        ),
         notes: z.string().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       enforceBranchIsolation(ctx, input.fromBranchId);
@@ -142,7 +173,7 @@ export const inventoryRouter = createTRPCRouter({
       z.object({
         transferId: z.number(),
         status: z.enum(["Shipped", "Received", "Cancelled"]),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       return await ctx.db.transaction(async (tx) => {
@@ -155,36 +186,63 @@ export const inventoryRouter = createTRPCRouter({
         // Authorization: User must belong to either origin (to ship/cancel) or destination (to receive)
         const isOriginUser = ctx.dbUser.branchId === transfer.fromBranchId;
         const isDestUser = ctx.dbUser.branchId === transfer.toBranchId;
-        const isAdmin = ctx.dbUser.role === "Admin" || ctx.dbUser.role === "Developer";
+        const isAdmin =
+          ctx.dbUser.role === "Admin" || ctx.dbUser.role === "Developer";
 
         if (!isAdmin && !isOriginUser && !isDestUser) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to update this transfer" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Not authorized to update this transfer",
+          });
         }
 
         // Logic for Received
         if (input.status === "Received" && transfer.status === "Shipped") {
-          if (!isAdmin && !isDestUser) throw new TRPCError({ code: "FORBIDDEN", message: "Only destination branch can mark as Received" });
+          if (!isAdmin && !isDestUser)
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Only destination branch can mark as Received",
+            });
 
-          const items = transfer.items as { productId: number; quantity: number }[];
-          
+          const items = transfer.items as {
+            productId: number;
+            quantity: number;
+          }[];
+
           for (const item of items) {
             // Atomic decrements and increments
             // Decrement from Origin
-            const decr = await tx.update(inventory)
+            const decr = await tx
+              .update(inventory)
               .set({ quantity: sql`${inventory.quantity} - ${item.quantity}` })
-              .where(and(eq(inventory.productId, item.productId), eq(inventory.branchId, transfer.fromBranchId)))
+              .where(
+                and(
+                  eq(inventory.productId, item.productId),
+                  eq(inventory.branchId, transfer.fromBranchId),
+                ),
+              )
               .returning();
 
             if (!decr[0] || decr[0].quantity < 0) {
-              throw new TRPCError({ code: "BAD_REQUEST", message: `Stock level fell below zero for product ${item.productId} at origin` });
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Stock level fell below zero for product ${item.productId} at origin`,
+              });
             }
 
             // Increment at Destination (Upsert)
-            await tx.insert(inventory)
-              .values({ productId: item.productId, branchId: transfer.toBranchId, quantity: item.quantity })
+            await tx
+              .insert(inventory)
+              .values({
+                productId: item.productId,
+                branchId: transfer.toBranchId,
+                quantity: item.quantity,
+              })
               .onConflictDoUpdate({
                 target: [inventory.productId, inventory.branchId],
-                set: { quantity: sql`${inventory.quantity} + ${item.quantity}` }
+                set: {
+                  quantity: sql`${inventory.quantity} + ${item.quantity}`,
+                },
               });
 
             // Log transactions
@@ -206,33 +264,56 @@ export const inventoryRouter = createTRPCRouter({
                 quantity: item.quantity,
                 referenceId: transfer.id.toString(),
                 reason: `Transfer from branch ${transfer.fromBranchId}`,
-              }
+              },
             ]);
 
             // Trigger Low Stock Alerts
-            await checkAndNotifyLowStock(tx, transfer.fromBranchId, item.productId);
-            await checkAndNotifyLowStock(tx, transfer.toBranchId, item.productId);
+            await checkAndNotifyLowStock(
+              tx,
+              transfer.fromBranchId,
+              item.productId,
+            );
+            await checkAndNotifyLowStock(
+              tx,
+              transfer.toBranchId,
+              item.productId,
+            );
           }
         }
 
-        const updateData: { status: "Shipped" | "Received" | "Cancelled"; approvedById?: string; receivedById?: string } = { status: input.status };
+        const updateData: {
+          status: "Shipped" | "Received" | "Cancelled";
+          approvedById?: string;
+          receivedById?: string;
+        } = { status: input.status };
         if (input.status === "Shipped") {
-          if (!isAdmin && !isOriginUser) throw new TRPCError({ code: "FORBIDDEN", message: "Only origin branch can ship" });
+          if (!isAdmin && !isOriginUser)
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Only origin branch can ship",
+            });
           updateData.approvedById = ctx.dbUser.id;
         }
-        if (input.status === "Received") updateData.receivedById = ctx.dbUser.id;
+        if (input.status === "Received")
+          updateData.receivedById = ctx.dbUser.id;
 
-        return await tx.update(stockTransfers).set(updateData).where(eq(stockTransfers.id, input.transferId)).returning();
+        return await tx
+          .update(stockTransfers)
+          .set(updateData)
+          .where(eq(stockTransfers.id, input.transferId))
+          .returning();
       });
     }),
 
-  getTransfers: featureProtectedProcedure("inventory")
-    .query(async ({ ctx }) => {
+  getTransfers: featureProtectedProcedure("inventory").query(
+    async ({ ctx }) => {
       const { dbUser } = ctx;
       const isAdmin = dbUser.role === "Admin" || dbUser.role === "Developer";
 
       return ctx.db.query.stockTransfers.findMany({
-        where: isAdmin ? undefined : sql`${stockTransfers.fromBranchId} = ${dbUser.branchId} OR ${stockTransfers.toBranchId} = ${dbUser.branchId}`,
+        where: isAdmin
+          ? undefined
+          : sql`${stockTransfers.fromBranchId} = ${dbUser.branchId} OR ${stockTransfers.toBranchId} = ${dbUser.branchId}`,
         with: {
           fromBranch: true,
           toBranch: true,
@@ -240,10 +321,11 @@ export const inventoryRouter = createTRPCRouter({
         },
         orderBy: [desc(stockTransfers.createdAt)],
       });
-    }),
+    },
+  ),
 
-  getLowStockItems: featureProtectedProcedure("inventory")
-    .query(async ({ ctx }) => {
+  getLowStockItems: featureProtectedProcedure("inventory").query(
+    async ({ ctx }) => {
       const { dbUser } = ctx;
       const isAdmin = dbUser.role === "Admin" || dbUser.role === "Developer";
 
@@ -252,12 +334,13 @@ export const inventoryRouter = createTRPCRouter({
           ? sql`${inventory.quantity} <= ${inventory.minThreshold}`
           : and(
               eq(inventory.branchId, dbUser.branchId ?? 0),
-              sql`${inventory.quantity} <= ${inventory.minThreshold}`
+              sql`${inventory.quantity} <= ${inventory.minThreshold}`,
             ),
         with: {
           product: true,
           branch: true,
         },
       });
-    }),
+    },
+  ),
 });

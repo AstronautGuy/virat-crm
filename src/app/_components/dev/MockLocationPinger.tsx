@@ -36,13 +36,15 @@ export function MockLocationPinger() {
   }, [isActive, baseLat, baseLng, pingMutation]);
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 rounded-lg bg-black/80 p-4 text-white shadow-xl backdrop-blur-md border border-white/10">
-      <h3 className="mb-2 font-semibold text-sm">Dev: Location Pinger</h3>
+    <div className="fixed right-4 bottom-4 z-50 rounded-lg border border-white/10 bg-black/80 p-4 text-white shadow-xl backdrop-blur-md">
+      <h3 className="mb-2 text-sm font-semibold">Dev: Location Pinger</h3>
       <div className="flex flex-col gap-2">
         <button
           onClick={() => setIsActive(!isActive)}
           className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
-            isActive ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
+            isActive
+              ? "bg-red-500 hover:bg-red-600"
+              : "bg-green-500 hover:bg-green-600"
           }`}
         >
           {isActive ? "Stop Pinging" : "Start Pinging"}

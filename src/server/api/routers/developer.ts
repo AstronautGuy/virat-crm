@@ -8,7 +8,10 @@ import { TRPCError } from "@trpc/server";
 // Local Developer-only middleware
 const developerProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.dbUser?.role !== "Developer") {
-    throw new TRPCError({ code: "FORBIDDEN", message: "Only the sovereign System Developer can access these controls." });
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Only the sovereign System Developer can access these controls.",
+    });
   }
   return next();
 });
@@ -19,12 +22,14 @@ export const developerRouter = createTRPCRouter({
   }),
 
   updateSettings: developerProcedure
-    .input(z.object({
-      maxUsers: z.number().min(1).max(10000),
-      isSystemLocked: z.boolean(),
-      isReadOnly: z.boolean(),
-      disabledFeaturesGlobal: z.array(z.string()),
-    }))
+    .input(
+      z.object({
+        maxUsers: z.number().min(1).max(10000),
+        isSystemLocked: z.boolean(),
+        isReadOnly: z.boolean(),
+        disabledFeaturesGlobal: z.array(z.string()),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const [updated] = await ctx.db
         .update(systemSettings)

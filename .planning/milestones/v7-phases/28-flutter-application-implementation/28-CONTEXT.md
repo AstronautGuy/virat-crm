@@ -1,6 +1,7 @@
 # Phase 28 Context: Flutter Application Implementation
 
 ## Strategic Decisions
+
 - **State Management**: **Riverpod** (Auto-selected). Chosen for its robust provider-based architecture and ease of handling background streams.
 - **Background Location**: Use **Geolocator** + **Workmanager** (Free tier). Architecture must be abstracted (Repository Pattern) to allow seamless switching to a paid background geolocation plugin in the future.
 - **Enforcement Policy**:
@@ -10,12 +11,14 @@
 - **Admin Alerts**: Last known location is NOT required in the notification message.
 
 ## Implementation Details
+
 - **Project Structure**: Standard Flutter project with clean architecture (data/domain/presentation).
 - **Network**: Use `dio` for REST API consumption with a custom interceptor for Bearer token injection.
 - **Local Storage**: `flutter_secure_storage` for credentials; `isar` or `sqflite` for graceful offline data queuing.
 - **UI**: High-contrast, large buttons (min 80px height). Consistent with Virat CRM brand colors.
 
 ## Success Criteria
+
 - [ ] Flutter app successfully authenticates via `/auth/login`.
 - [ ] Heartbeats sent every 5 minutes (Background/Foreground).
 - [ ] UI locks when GPS is disabled.

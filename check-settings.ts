@@ -7,12 +7,14 @@ async function main() {
   const settings = await db.select().from(systemSettings);
   console.log("\n--- System Settings ---");
   for (const s of settings) {
-    console.log(`ID: ${s.id} | Locked: ${s.isSystemLocked} | Read-Only: ${s.isReadOnly} | Disabled Features: ${s.disabledFeaturesGlobal}`);
+    console.log(
+      `ID: ${s.id} | Locked: ${s.isSystemLocked} | Read-Only: ${s.isReadOnly} | Disabled Features: ${s.disabledFeaturesGlobal}`,
+    );
   }
   process.exit(0);
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error(err);
   process.exit(1);
 });

@@ -15,13 +15,13 @@ created: 2026-04-27
 
 ## Test Infrastructure
 
-| Property | Value |
-|----------|-------|
-| **Framework** | None (T3 Stack default) / Manual Verification |
-| **Config file** | none — Wave 0 installs |
-| **Quick run command** | `npm run typecheck` |
-| **Full suite command** | `npm run build` |
-| **Estimated runtime** | ~15 seconds |
+| Property               | Value                                         |
+| ---------------------- | --------------------------------------------- |
+| **Framework**          | None (T3 Stack default) / Manual Verification |
+| **Config file**        | none — Wave 0 installs                        |
+| **Quick run command**  | `npm run typecheck`                           |
+| **Full suite command** | `npm run build`                               |
+| **Estimated runtime**  | ~15 seconds                                   |
 
 ---
 
@@ -36,11 +36,11 @@ created: 2026-04-27
 
 ## Per-Task Verification Map
 
-| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
-|---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 1-01-01 | 01 | 1 | AUTH-01 | — | N/A | manual | N/A | ✅ | ⬜ pending |
+| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status     |
+| ------- | ---- | ---- | ----------- | ---------- | --------------- | --------- | ----------------- | ----------- | ---------- |
+| 1-01-01 | 01   | 1    | AUTH-01     | —          | N/A             | manual    | N/A               | ✅          | ⬜ pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+_Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
 
 ---
 
@@ -52,11 +52,11 @@ created: 2026-04-27
 
 ## Manual-Only Verifications
 
-| Behavior | Requirement | Why Manual | Test Instructions |
-|----------|-------------|------------|-------------------|
-| Login Flow | AUTH-01 | External Auth | Open Kinde login page and sign in |
-| RBAC Blocks | AUTH-02 | Session required | Attempt to call `adminProcedure` as non-admin |
-| Layout Visibility | AUTH-01 | Session required | Verify Admin button is hidden for non-admins |
+| Behavior          | Requirement | Why Manual       | Test Instructions                             |
+| ----------------- | ----------- | ---------------- | --------------------------------------------- |
+| Login Flow        | AUTH-01     | External Auth    | Open Kinde login page and sign in             |
+| RBAC Blocks       | AUTH-02     | Session required | Attempt to call `adminProcedure` as non-admin |
+| Layout Visibility | AUTH-01     | Session required | Verify Admin button is hidden for non-admins  |
 
 ---
 

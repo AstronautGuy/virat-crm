@@ -15,14 +15,14 @@ created: 2026-04-29
 
 ## Design System
 
-| Property | Value |
-|----------|-------|
-| Tool | shadcn |
-| Preset | b5J65lUau |
-| Component library | radix |
-| Icon library | lucide-react |
-| Font | default sans |
-| Theme | **Light Theme ONLY (No dark mode)** |
+| Property          | Value                               |
+| ----------------- | ----------------------------------- |
+| Tool              | shadcn                              |
+| Preset            | b5J65lUau                           |
+| Component library | radix                               |
+| Icon library      | lucide-react                        |
+| Font              | default sans                        |
+| Theme             | **Light Theme ONLY (No dark mode)** |
 
 ---
 
@@ -30,15 +30,15 @@ created: 2026-04-29
 
 Declared values (must be multiples of 4):
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| xs | 4px | Icon gaps, inline padding |
-| sm | 8px | Compact element spacing |
-| md | 16px | Default element spacing |
-| lg | 24px | Section padding |
-| xl | 32px | Layout gaps |
-| 2xl | 48px | Major section breaks |
-| 3xl | 64px | Page-level spacing |
+| Token | Value | Usage                     |
+| ----- | ----- | ------------------------- |
+| xs    | 4px   | Icon gaps, inline padding |
+| sm    | 8px   | Compact element spacing   |
+| md    | 16px  | Default element spacing   |
+| lg    | 24px  | Section padding           |
+| xl    | 32px  | Layout gaps               |
+| 2xl   | 48px  | Major section breaks      |
+| 3xl   | 64px  | Page-level spacing        |
 
 Exceptions: none
 
@@ -46,23 +46,23 @@ Exceptions: none
 
 ## Typography
 
-| Role | Size | Weight | Line Height |
-|------|------|--------|-------------|
-| Body | 16px | 400 | 1.5 |
-| Label | 14px | 500 | 1.4 |
-| Heading | 24px | 600 | 1.2 |
-| Display | 32px | 700 | 1.2 |
+| Role    | Size | Weight | Line Height |
+| ------- | ---- | ------ | ----------- |
+| Body    | 16px | 400    | 1.5         |
+| Label   | 14px | 500    | 1.4         |
+| Heading | 24px | 600    | 1.2         |
+| Display | 32px | 700    | 1.2         |
 
 ---
 
 ## Color
 
-| Role | Value | Usage |
-|------|-------|-------|
-| Dominant (60%) | `hsl(var(--background))` | Background, surfaces (Light Theme strictly) |
-| Secondary (30%) | `hsl(var(--secondary))` | Cards, sidebar, nav |
-| Accent (10%) | `hsl(var(--primary))` | Primary buttons, active tabs, highlights |
-| Destructive | `hsl(var(--destructive))` | Reject, delete actions |
+| Role            | Value                     | Usage                                       |
+| --------------- | ------------------------- | ------------------------------------------- |
+| Dominant (60%)  | `hsl(var(--background))`  | Background, surfaces (Light Theme strictly) |
+| Secondary (30%) | `hsl(var(--secondary))`   | Cards, sidebar, nav                         |
+| Accent (10%)    | `hsl(var(--primary))`     | Primary buttons, active tabs, highlights    |
+| Destructive     | `hsl(var(--destructive))` | Reject, delete actions                      |
 
 Accent reserved for: Primary submit buttons, active navigation indicators, key status badges (e.g., "Approved").
 
@@ -70,20 +70,20 @@ Accent reserved for: Primary submit buttons, active navigation indicators, key s
 
 ## Copywriting Contract
 
-| Element | Copy |
-|---------|------|
-| Primary CTA | "Log Sale", "Submit Replacement", "Approve", "Reject" |
-| Empty state heading | "No [Items] Found" |
-| Empty state body | "There are no [items] to display. [Next step if applicable]" |
-| Error state | "Failed to load data. Please try again." |
+| Element                  | Copy                                                                                          |
+| ------------------------ | --------------------------------------------------------------------------------------------- |
+| Primary CTA              | "Log Sale", "Submit Replacement", "Approve", "Reject"                                         |
+| Empty state heading      | "No [Items] Found"                                                                            |
+| Empty state body         | "There are no [items] to display. [Next step if applicable]"                                  |
+| Error state              | "Failed to load data. Please try again."                                                      |
 | Destructive confirmation | Reject Request: "Are you sure you want to reject this request? This action cannot be undone." |
 
 ---
 
 ## Registry Safety
 
-| Registry | Blocks Used | Safety Gate |
-|----------|-------------|-------------|
+| Registry        | Blocks Used                                             | Safety Gate  |
+| --------------- | ------------------------------------------------------- | ------------ |
 | shadcn official | button, form, input, table, dialog, card, badge, select | not required |
 
 ---

@@ -16,7 +16,7 @@ async function main() {
   `);
 
   console.log("Tables found:");
-  tables.forEach(t => console.log(`- ${t.table_name}`));
+  tables.forEach((t) => console.log(`- ${t.table_name}`));
 
   await client.end();
 }

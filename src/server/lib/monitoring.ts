@@ -8,15 +8,17 @@ export async function notifyAdmins(title: string, body: string) {
     where: eq(users.role, "Admin"),
   });
 
-  await Promise.all(admins.map(async (admin) => {
-    // 1. Web Push Notification
-    await sendNotificationToUser(admin.id, { title, body });
-    
-    // 2. In-App Dashboard Notification
-    await db.insert(notifications).values({
-      userId: admin.id,
-      title,
-      message: body,
-    });
-  }));
+  await Promise.all(
+    admins.map(async (admin) => {
+      // 1. Web Push Notification
+      await sendNotificationToUser(admin.id, { title, body });
+
+      // 2. In-App Dashboard Notification
+      await db.insert(notifications).values({
+        userId: admin.id,
+        title,
+        message: body,
+      });
+    }),
+  );
 }

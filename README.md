@@ -6,47 +6,52 @@ Designed with a strict **mobile-first PWA** philosophy, Virat ERP ensures that e
 
 ## ✨ Key Features
 
-* **🛡️ Enterprise-Grade Security:** Fully integrated with **Kinde Auth** for robust Role-Based Access Control (RBAC). Roles (`admin`, `manager`, `employee`) are securely verified on the server via tRPC middleware.
-* **📍 Geofenced Attendance:** Client-side GPS tracking combined with secure server-side Haversine distance calculations to manage precise employee punch-ins.
-* **📂 Document Vault:** Secure, cloud-based file management utilizing Cloudflare R2 (S3-compatible) for staff documents, enforcing strict client and server-side limits.
-* **📱 Progressive Web App (PWA):** Native-like mobile feel with bottom navigation bars, touch-friendly hit targets, and dynamic imports for rapid load times.
-* **⚡ Type-Safe APIs:** End-to-end type safety from the database schema to the frontend UI components using tRPC and Drizzle ORM.
+- **🛡️ Enterprise-Grade Security:** Fully integrated with **Kinde Auth** for robust Role-Based Access Control (RBAC). Roles (`admin`, `manager`, `employee`) are securely verified on the server via tRPC middleware.
+- **📍 Geofenced Attendance:** Client-side GPS tracking combined with secure server-side Haversine distance calculations to manage precise employee punch-ins.
+- **📂 Document Vault:** Secure, cloud-based file management utilizing Cloudflare R2 (S3-compatible) for staff documents, enforcing strict client and server-side limits.
+- **📱 Progressive Web App (PWA):** Native-like mobile feel with bottom navigation bars, touch-friendly hit targets, and dynamic imports for rapid load times.
+- **⚡ Type-Safe APIs:** End-to-end type safety from the database schema to the frontend UI components using tRPC and Drizzle ORM.
 
 ## 🛠️ Tech Stack
 
-* **Framework:** Next.js 14+ (App Router)
-* **Language:** TypeScript
-* **Styling:** Tailwind CSS + shadcn/ui
-* **API Layer:** tRPC
-* **Database & ORM:** PostgreSQL + Drizzle ORM
-* **Authentication:** Kinde Auth
-* **Storage:** Cloudflare R2 
+- **Framework:** Next.js 14+ (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS + shadcn/ui
+- **API Layer:** tRPC
+- **Database & ORM:** PostgreSQL + Drizzle ORM
+- **Authentication:** Kinde Auth
+- **Storage:** Cloudflare R2
 
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 Before running the project locally, ensure you have the following installed and set up:
-* [Node.js](https://nodejs.org/en/) (v18.17.0 or higher)
-* [npm](https://www.npmjs.com/), [yarn](https://yarnpkg.com/), or [pnpm](https://pnpm.io/)
-* A PostgreSQL database instance
-* A [Kinde Auth](https://kinde.com/) account
-* A [Cloudflare R2](https://www.cloudflare.com/developer-platform/r2/) bucket
+
+- [Node.js](https://nodejs.org/en/) (v18.17.0 or higher)
+- [npm](https://www.npmjs.com/), [yarn](https://yarnpkg.com/), or [pnpm](https://pnpm.io/)
+- A PostgreSQL database instance
+- A [Kinde Auth](https://kinde.com/) account
+- A [Cloudflare R2](https://www.cloudflare.com/developer-platform/r2/) bucket
 
 ### Installation
 
 1. **Clone the repository:**
+
    ```bash
    git clone [https://github.com/AstronautGuy/virat-crm.git](https://github.com/AstronautGuy/virat-crm.git)
    cd virat-erp
    ```
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables:**
    Create a `.env.local` file in the root directory and add your specific service keys:
+
    ```env
    # Database
    DATABASE_URL="postgres://user:password@localhost:5432/virat_erp"
@@ -68,6 +73,7 @@ Before running the project locally, ensure you have the following installed and 
 
 4. **Initialize the Database Schema:**
    Push the Drizzle schema to your PostgreSQL database:
+
    ```bash
    npx drizzle-kit push
    ```
@@ -86,7 +92,7 @@ virat-erp/
 ├── components/           # Reusable UI components (shadcn/ui)
 ├── server/
 │   ├── api/              # tRPC routers and procedures
-│   ├── auth/             # Kinde RBAC middleware 
+│   ├── auth/             # Kinde RBAC middleware
 │   └── db/               # Drizzle ORM schema and instance
 ├── public/               # Static assets and PWA manifest
 └── styles/               # Global Tailwind CSS styles

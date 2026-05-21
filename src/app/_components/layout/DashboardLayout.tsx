@@ -38,7 +38,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     if (path.startsWith("/admin/reports")) return "Intelligence & Analytics";
     if (path.startsWith("/admin/org-chart")) return "Organization Structure";
     if (path.startsWith("/documents")) return "Document Repository";
-    if (path.startsWith("/admin/feature-access")) return "Feature Access Control";
+    if (path.startsWith("/admin/feature-access"))
+      return "Feature Access Control";
     if (path.startsWith("/admin/users")) return "User & Agent Management";
     if (path.startsWith("/admin/exports")) return "Bulk Data Export";
     if (path.startsWith("/admin/imports")) return "Bulk Data Import";
@@ -48,14 +49,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <div className="bg-background text-foreground flex min-h-screen">
       <DesktopSidebar />
       <div className="flex w-full flex-col pb-16 md:pb-0">
         {(pendingCount > 0 || isSyncing) && (
-          <div className={cn(
-            "flex items-center justify-center gap-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white transition-colors",
-            isSyncing ? "bg-blue-600" : "bg-orange-500"
-          )}>
+          <div
+            className={cn(
+              "flex items-center justify-center gap-2 py-1.5 text-[10px] font-bold tracking-widest text-white uppercase transition-colors",
+              isSyncing ? "bg-blue-600" : "bg-orange-500",
+            )}
+          >
             {isSyncing ? (
               <>
                 <RefreshCcw className="h-3 w-3 animate-spin" />
@@ -71,10 +74,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         )}
 
         {/* Premium Top Navigation Header */}
-        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-card/65 backdrop-blur-md px-6 md:px-8">
+        <header className="border-border bg-card/65 sticky top-0 z-40 flex h-16 items-center justify-between border-b px-6 backdrop-blur-md md:px-8">
           <div className="flex flex-col">
-            <span className="text-[9px] uppercase font-bold tracking-widest text-slate-400">Portal</span>
-            <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5 tracking-tight">
+            <span className="text-[9px] font-bold tracking-widest text-slate-400 uppercase">
+              Portal
+            </span>
+            <h2 className="mt-0.5 text-sm font-bold tracking-tight text-slate-800 dark:text-slate-100">
               {getPageTitle(pathname)}
             </h2>
           </div>
@@ -84,9 +89,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
+          <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>
       <MobileNav />

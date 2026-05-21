@@ -44,10 +44,13 @@ interface CustomerFormProps {
   isManager?: boolean;
 }
 
-export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps) {
+export function CustomerForm({
+  onSuccess,
+  isManager = false,
+}: CustomerFormProps) {
   const [isFetchingPincode, setIsFetchingPincode] = useState(false);
   const [villages, setVillages] = useState<string[]>([]);
-  
+
   const { data: branches } = api.inventory.getBranches.useQuery();
   const { data: me } = api.users.getMe.useQuery();
 
@@ -79,8 +82,13 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
       const fetchDetails = async () => {
         setIsFetchingPincode(true);
         try {
-          const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
-          const data = (await res.json()) as { Status: string; PostOffice: { Name: string; District: string; State: string }[] }[];
+          const res = await fetch(
+            `https://api.postalpincode.in/pincode/${pincode}`,
+          );
+          const data = (await res.json()) as {
+            Status: string;
+            PostOffice: { Name: string; District: string; State: string }[];
+          }[];
           if (Array.isArray(data) && data[0]?.Status === "Success") {
             const postOffices = data[0].PostOffice;
             const firstPostOffice = postOffices[0];
@@ -88,11 +96,11 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
               const district = firstPostOffice.District;
               const state = firstPostOffice.State;
               const villageList = postOffices.map((po) => po.Name);
-              
+
               form.setValue("district", district);
               form.setValue("state", state);
               setVillages(villageList);
-              
+
               if (villageList.length === 1 && villageList[0]) {
                 form.setValue("village", villageList[0]);
               }
@@ -132,7 +140,7 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
       dob: values.dob ? new Date(values.dob) : undefined,
       branchId: parseInt(values.branchId, 10),
     };
-    
+
     if (isManager) {
       createMutation.mutate(formattedValues);
     } else {
@@ -143,12 +151,14 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>{isManager ? "Add Approved Customer" : "Propose New Customer"}</CardTitle>
+        <CardTitle>
+          {isManager ? "Add Approved Customer" : "Propose New Customer"}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="name"
@@ -202,7 +212,7 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
               )}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="dob"
@@ -223,7 +233,9 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
                       Pincode
-                      {isFetchingPincode && <Loader2 className="h-3 w-3 animate-spin" />}
+                      {isFetchingPincode && (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      )}
                     </FormLabel>
                     <FormControl>
                       <Input placeholder="110001" maxLength={6} {...field} />
@@ -234,7 +246,7 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <FormField
                 control={form.control}
                 name="village"
@@ -242,7 +254,10 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
                   <FormItem>
                     <FormLabel>Village/Area</FormLabel>
                     {villages.length > 0 ? (
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select Village" />
@@ -250,7 +265,9 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
                         </FormControl>
                         <SelectContent>
                           {villages.map((v) => (
-                            <SelectItem key={v} value={v}>{v}</SelectItem>
+                            <SelectItem key={v} value={v}>
+                              {v}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -298,10 +315,10 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
                 <FormItem>
                   <FormLabel>Full Address</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="House No, Landmark, etc." 
+                    <Textarea
+                      placeholder="House No, Landmark, etc."
                       className="min-h-[100px]"
-                      {...field} 
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -309,9 +326,9 @@ export function CustomerForm({ onSuccess, isManager = false }: CustomerFormProps
               )}
             />
 
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               disabled={proposeMutation.isPending || createMutation.isPending}
             >
               {(proposeMutation.isPending || createMutation.isPending) && (

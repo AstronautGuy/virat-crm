@@ -12,7 +12,7 @@ export const leavesRouter = createTRPCRouter({
         endDate: z.string(),
         reason: z.string(),
         type: z.enum(["Sick", "Vacation", "Unpaid"]),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const [leave] = await ctx.db
@@ -67,7 +67,12 @@ export const leavesRouter = createTRPCRouter({
   }),
 
   updateLeaveStatus: featureProtectedProcedure("workforce")
-    .input(z.object({ leaveId: z.number(), status: z.enum(["Pending", "Approved", "Rejected"]) }))
+    .input(
+      z.object({
+        leaveId: z.number(),
+        status: z.enum(["Pending", "Approved", "Rejected"]),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const targetLeave = await ctx.db.query.leaves.findFirst({
         where: eq(leaves.id, input.leaveId),

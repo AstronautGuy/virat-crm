@@ -8,14 +8,14 @@ type TransactionClient = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export async function checkAndNotifyLowStock(
   tx: TransactionClient,
   branchId: number,
-  productId: number
+  productId: number,
 ) {
   try {
     // 1. Fetch inventory record with product and branch associations
     const stock = await tx.query.inventory.findFirst({
       where: and(
         eq(inventory.productId, productId),
-        eq(inventory.branchId, branchId)
+        eq(inventory.branchId, branchId),
       ),
       with: {
         product: true,
@@ -37,7 +37,7 @@ export async function checkAndNotifyLowStock(
         where: or(
           eq(users.role, "Admin"),
           eq(users.role, "Developer"),
-          and(eq(users.role, "Manager"), eq(users.branchId, branchId))
+          and(eq(users.role, "Manager"), eq(users.branchId, branchId)),
         ),
       });
 

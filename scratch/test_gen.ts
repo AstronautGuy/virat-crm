@@ -55,7 +55,10 @@ if (!(ZodType.prototype as any)._zod) {
         in: this._def.schema,
         out: this._def.schema,
         catchValue: this._def.catchValue,
-        defaultValue: typeof this._def.defaultValue === "function" ? this._def.defaultValue() : this._def.defaultValue,
+        defaultValue:
+          typeof this._def.defaultValue === "function"
+            ? this._def.defaultValue()
+            : this._def.defaultValue,
       };
 
       const bag: any = {};
@@ -129,7 +132,9 @@ try {
     baseUrl: "virat-crm.vercel.app",
   });
   console.log("Success! Generated OpenAPI document.");
-  console.log(JSON.stringify(openApiDocument, null, 2).substring(0, 1000) + "...");
+  console.log(
+    JSON.stringify(openApiDocument, null, 2).substring(0, 1000) + "...",
+  );
 } catch (error: any) {
   console.error("ERROR generating OpenAPI document:");
   console.error(error);

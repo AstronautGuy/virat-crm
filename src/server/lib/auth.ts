@@ -2,7 +2,8 @@ import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
-const secretKey = process.env.AUTH_SECRET ?? "a_very_secret_key_change_me_in_prod";
+const secretKey =
+  process.env.AUTH_SECRET ?? "a_very_secret_key_change_me_in_prod";
 const key = new TextEncoder().encode(secretKey);
 
 export interface SessionPayload extends JWTPayload {
@@ -31,7 +32,11 @@ export async function login(userId: string) {
   const session = await encrypt({ userId, expires });
 
   // Save the session in a cookie
-  (await cookies()).set("session", session, { expires, httpOnly: true, secure: process.env.NODE_ENV === "production" });
+  (await cookies()).set("session", session, {
+    expires,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+  });
 }
 
 export async function logout() {

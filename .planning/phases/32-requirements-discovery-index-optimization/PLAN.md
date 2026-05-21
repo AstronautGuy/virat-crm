@@ -9,5 +9,5 @@
 
 ## Verification
 
-*   Generate migrations: `pnpm db:generate`
-*   Typecheck: `pnpm typecheck`
+- Generate migrations: `pnpm db:generate`
+- Typecheck: `pnpm typecheck`

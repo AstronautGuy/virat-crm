@@ -1,10 +1,16 @@
-export type DateRangePreset = "today" | "7d" | "30d" | "quarter" | "year" | "all";
+export type DateRangePreset =
+  | "today"
+  | "7d"
+  | "30d"
+  | "quarter"
+  | "year"
+  | "all";
 
 export function getDateRange(preset: DateRangePreset) {
   const now = new Date();
   const end = new Date(now);
   end.setHours(23, 59, 59, 999);
-  
+
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
 
