@@ -51,7 +51,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-background text-foreground flex min-h-screen">
       <DesktopSidebar />
-      <div className="flex w-full flex-col pb-16 md:pb-0">
+      <div className="flex w-full flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom,12px))] md:pb-0">
         {(pendingCount > 0 || isSyncing) && (
           <div
             className={cn(

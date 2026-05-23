@@ -87,7 +87,7 @@ export function MobileNav() {
   ];
 
   return (
-    <div className="border-border bg-card/80 pb-safe fixed right-0 bottom-0 left-0 z-50 flex h-16 items-center justify-around border-t px-2 shadow-[0_-1px_3px_0_rgb(0,0,0,0.02)] backdrop-blur-xl md:hidden">
+    <div className="border-border bg-card/80 fixed right-0 bottom-0 left-0 z-50 flex h-[calc(4rem+env(safe-area-inset-bottom,12px))] pb-[env(safe-area-inset-bottom,12px)] items-center justify-around border-t px-2 shadow-[0_-1px_3px_0_rgb(0,0,0,0.02)] backdrop-blur-xl md:hidden no-print">
       {links
         .filter((l) => !l.hidden)
         .map((link) => {

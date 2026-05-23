@@ -159,10 +159,13 @@ export const analyticsRouter = createTRPCRouter({
       const effectiveBranchId =
         ctx.dbUser.role === "Admin" ? input.branchId : ctx.dbUser.branchId;
 
-      const today = new Date();
-      const dateStr = today.toISOString().split("T")[0];
+      const tzDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+      const year = tzDate.getFullYear();
+      const month = String(tzDate.getMonth() + 1).padStart(2, '0');
+      const day = String(tzDate.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
 
-      const filters: SQL[] = [eq(locationLogs.date, dateStr!)];
+      const filters: SQL[] = [eq(locationLogs.date, dateStr)];
       if (effectiveBranchId) {
         const branchUsers = await ctx.db.query.users.findMany({
           where: eq(users.branchId, effectiveBranchId),

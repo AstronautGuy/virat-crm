@@ -73,6 +73,9 @@ export async function generateSalesXLSX(
 interface AttendanceExportData {
   userName: string;
   date: string;
+  slab: string;
+  latitude: string | number;
+  longitude: string | number;
   recordedAt: Date | string;
 }
 
@@ -86,6 +89,9 @@ export async function generateAttendanceXLSX(
   sheet.columns = [
     { header: "Employee", key: "userName", width: 25 },
     { header: "Date", key: "date", width: 15 },
+    { header: "Time Slab", key: "slab", width: 15 },
+    { header: "Latitude", key: "latitude", width: 15 },
+    { header: "Longitude", key: "longitude", width: 15 },
     { header: "Recorded At", key: "recordedAt", width: 20 },
   ];
 
@@ -105,6 +111,7 @@ export async function generateAttendanceXLSX(
           : String(item.recordedAt),
     });
   });
+
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {

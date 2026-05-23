@@ -15,7 +15,7 @@ import {
 } from "drizzle-orm";
 
 function getCurrentSlab() {
-  const now = new Date();
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
   const hours = now.getHours();
 
   if (hours >= 0 && hours < 10) return "00:00-10:00";
@@ -26,9 +26,10 @@ function getCurrentSlab() {
 }
 
 function getFormattedDate(date: Date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const tzDate = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  const year = tzDate.getFullYear();
+  const month = String(tzDate.getMonth() + 1).padStart(2, '0');
+  const day = String(tzDate.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 

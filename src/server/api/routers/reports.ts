@@ -125,8 +125,12 @@ export const reportsRouter = createTRPCRouter({
       // 3. Fetch Attendance/Visits
       const attendanceData = await ctx.db
         .select({
+          id: locationLogs.id,
           userName: sql<string>`${users.firstName} || ' ' || ${users.lastName}`,
           date: locationLogs.date,
+          slab: locationLogs.slab,
+          latitude: locationLogs.latitude,
+          longitude: locationLogs.longitude,
           recordedAt: locationLogs.recordedAt,
         })
         .from(locationLogs)
