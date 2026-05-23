@@ -110,6 +110,14 @@ function ReportsPageContent() {
       { enabled: activeTab === "predictive" },
     );
 
+  const utils = api.useUtils();
+  const seedMutation = api.reports.seedFakeLocationLogs.useMutation({
+    onSuccess: async () => {
+      await utils.reports.getReportData.invalidate();
+      alert("Fake location logs seeded successfully!");
+    },
+  });
+
   const handleDownloadSales = async () => {
     if (!reportData?.sales) return;
     const filename = `Sales_Report_${scope}_${preset}_${new Date().toISOString().split("T")[0]}`;
@@ -729,6 +737,19 @@ function ReportsPageContent() {
                       <Printer className="h-4 w-4" />
                       <span>Print Report</span>
                     </button>
+                    <button
+                      onClick={() => {
+                        if (!targetId) {
+                          alert("Please select a specific Target Entity to seed logs.");
+                          return;
+                        }
+                        seedMutation.mutate({ targetId });
+                      }}
+                      disabled={seedMutation.isPending}
+                      className="flex items-center space-x-2 rounded-xl bg-orange-600 px-5 py-2 text-sm font-bold text-white transition-all hover:bg-orange-700 disabled:opacity-50 shadow-sm active:scale-95 no-print"
+                    >
+                      <span>{seedMutation.isPending ? "Seeding..." : "Seed Fake Data"}</span>
+                    </button>
                   </div>
                 </div>
 
@@ -815,74 +836,50 @@ function ReportsPageContent() {
                         </tbody>
                       </table>
                     ) : (
-                      <table className="w-full text-left">
-                        <thead className="bg-gray-50 text-xs font-bold tracking-wider text-gray-500 uppercase">
-                          <tr>
-                            <th className="px-6 py-4">Employee</th>
-                            <th className="px-6 py-4">Date</th>
-                            <th className="px-6 py-4">Time Slab</th>
-                            <th className="px-6 py-4">Latitude / Longitude</th>
-                            <th className="px-6 py-4">Check-In Time</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                          {isLoading ? (
-                            <tr>
-                              <td
-                                colSpan={5}
-                                className="px-6 py-12 text-center text-gray-400"
-                              >
-                                Loading location logs...
-                              </td>
-                            </tr>
-                          ) : reportData?.attendance.length === 0 ? (
-                            <tr>
-                              <td
-                                colSpan={5}
-                                className="px-6 py-12 text-center text-gray-400"
-                              >
-                                No location logs found for this selection.
-                              </td>
-                            </tr>
-                          ) : (
-                            reportData?.attendance.slice(0, 10).map((l) => (
-                              <tr
-                                key={l.id}
-                                className="transition-colors hover:bg-gray-50/50"
-                              >
-                                <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                                  {l.userName}
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-600">
-                                  {l.date}
-                                </td>
-                                <td className="px-6 py-4 text-sm">
-                                  <span className="rounded-full bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700">
-                                    {l.slab}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 font-mono text-xs text-gray-500">
-                                  {parseFloat(String(l.latitude)).toFixed(4)}, {parseFloat(String(l.longitude)).toFixed(4)}
-                                </td>
-                                <td className="px-6 py-4 text-xs text-gray-400">
-                                  {new Date(l.recordedAt).toLocaleString()}
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                          {reportData?.attendance && reportData.attendance.length > 10 && (
-                            <tr className="no-print">
-                              <td
-                                colSpan={5}
-                                className="px-6 py-4 text-center text-xs text-gray-400 italic"
-                              >
-                                Previewing first 10 records. Download full XLSX
-                                for complete data.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
+                      <div className="w-full flex flex-col gap-8">
+                        {isLoading ? (
+                          <div className="py-12 text-center text-gray-400">Loading location logs...</div>
+                        ) : !reportData?.attendance || reportData.attendance.length === 0 ? (
+                          <div className="py-12 text-center text-gray-400">No location logs found for this selection.</div>
+                        ) : (
+                          Object.entries(
+                            reportData.attendance.reduce((acc, log) => {
+                              const userAcc = acc[log.userName] ?? (acc[log.userName] = {});
+                              const dateAcc = userAcc[log.date] ?? (userAcc[log.date] = {});
+                              dateAcc[log.slab] = log.locationName ?? `${parseFloat(String(log.latitude)).toFixed(4)}, ${parseFloat(String(log.longitude)).toFixed(4)}`;
+                              return acc;
+                            }, {} as Record<string, Record<string, Record<string, string>>>)
+                          ).map(([employeeName, dates]) => (
+                            <div key={employeeName} className="border border-gray-200 rounded-xl overflow-hidden mb-8 break-inside-avoid">
+                              <div className="bg-gray-100 px-6 py-4 font-bold text-lg text-gray-900 border-b border-gray-200">
+                                Employee Name: {employeeName}
+                              </div>
+                              <table className="w-full text-left">
+                                <thead className="bg-gray-50 text-xs font-bold tracking-wider text-gray-500 uppercase">
+                                  <tr>
+                                    <th className="px-6 py-4 border-b border-gray-200">Date</th>
+                                    <th className="px-6 py-4 border-b border-gray-200">8-10 am</th>
+                                    <th className="px-6 py-4 border-b border-gray-200">10-2 pm</th>
+                                    <th className="px-6 py-4 border-b border-gray-200">2-6 pm</th>
+                                    <th className="px-6 py-4 border-b border-gray-200">6-9 pm</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                  {Object.entries(dates).map(([date, slabs]) => (
+                                    <tr key={date} className="transition-colors hover:bg-gray-50/50">
+                                      <td className="px-6 py-4 text-sm font-semibold text-gray-900 border-b border-gray-100">{date}</td>
+                                      <td className="px-6 py-4 text-sm text-gray-600 border-b border-gray-100">{slabs["00:00-10:00"] ?? "-"}</td>
+                                      <td className="px-6 py-4 text-sm text-gray-600 border-b border-gray-100">{slabs["10:00-14:00"] ?? "-"}</td>
+                                      <td className="px-6 py-4 text-sm text-gray-600 border-b border-gray-100">{slabs["14:00-18:00"] ?? "-"}</td>
+                                      <td className="px-6 py-4 text-sm text-gray-600 border-b border-gray-100">{slabs["18:00-21:00"] ?? "-"}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

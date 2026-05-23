@@ -1,0 +1,132 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { StyleSheet, View, Alert, Platform } from 'react-native';
+import { WebView } from 'react-native-webview';
+import * as Location from 'expo-location';
+import * as TaskManager from 'expo-task-manager';
+
+// Use Vercel URL for the production APK build
+const TARGET_URL = 'https://virat-crm.vercel.app';
+const LOCATION_TASK_NAME = 'BACKGROUND_LOCATION_TASK';
+
+// Define the background task
+TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
+  if (error) {
+    console.error('Background location task error:', error);
+    return;
+  }
+  if (data) {
+    const { locations } = data;
+    const loc = locations[0];
+    if (loc) {
+      try {
+        // Send location to the tRPC ping endpoint
+        // Native fetch shares cookies with the WebView automatically on most platforms
+        const response = await fetch(`${TARGET_URL}/api/trpc/location.logBreadcrumb`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            json: {
+              latitude: loc.coords.latitude,
+              longitude: loc.coords.longitude,
+              accuracy: loc.coords.accuracy,
+            }
+          }),
+        });
+        
+        if (!response.ok) {
+          console.warn('Failed to ping location in background:', response.status);
+        }
+      } catch (err) {
+        console.error('Network error in background location ping:', err);
+      }
+    }
+  }
+});
+
+export default function App() {
+  const webviewRef = useRef(null);
+  const [hasPermissions, setHasPermissions] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        // Request Foreground permissions first
+        const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
+        if (foregroundStatus !== 'granted') {
+          console.warn('Foreground location permission denied.');
+          return;
+        }
+
+        // Request Background permissions (may fail in Expo Go)
+        const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
+        if (backgroundStatus !== 'granted') {
+          console.warn('Background location permission denied.');
+          return;
+        }
+
+        setHasPermissions(true);
+
+        // Start background location tracking
+        await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+          accuracy: Location.Accuracy.Balanced,
+          timeInterval: 60000,
+          distanceInterval: 50,
+          showsBackgroundLocationIndicator: true,
+          foregroundService: {
+            notificationTitle: 'Virat CRM Tracking',
+            notificationBody: 'Your location is being tracked for attendance.',
+            notificationColor: '#ff0000',
+          },
+        });
+
+        // Ping immediately on load so we don't have to wait for movement
+        const currentLoc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        if (currentLoc) {
+          fetch(`${TARGET_URL}/api/trpc/location.logBreadcrumb`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              json: {
+                latitude: currentLoc.coords.latitude,
+                longitude: currentLoc.coords.longitude,
+                accuracy: currentLoc.coords.accuracy,
+              }
+            }),
+          }).catch(console.warn);
+        }
+      } catch (e) {
+        console.warn("Background location setup failed (expected if running in Expo Go):", e);
+      }
+    })();
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      <WebView
+        ref={webviewRef}
+        source={{ uri: TARGET_URL }}
+        style={styles.webview}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        geolocationEnabled={true} // Allow the web app's own navigator.geolocation to work
+        allowsInlineMediaPlayback={true}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    // Minimal safe area padding could be added here if needed
+  },
+  webview: {
+    flex: 1,
+    marginTop: Platform.OS === 'ios' ? 44 : 24, // Basic safe area adjustment
+  },
+});

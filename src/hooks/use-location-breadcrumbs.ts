@@ -3,13 +3,13 @@
 import { useEffect, useRef, useCallback } from "react";
 import { api } from "@/trpc/react";
 
-const TRACKING_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const TRACKING_INTERVAL = 10 * 1000; // 10 seconds
 
 export function useLocationBreadcrumbs() {
   const { data: user } = api.users.getMe.useQuery();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
   const logBreadcrumb = (api.location.logBreadcrumb as any).useMutation();
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const captureLocation = useCallback(() => {
     if (!navigator.geolocation) return;

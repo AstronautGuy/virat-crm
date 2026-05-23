@@ -131,6 +131,7 @@ export const reportsRouter = createTRPCRouter({
           slab: locationLogs.slab,
           latitude: locationLogs.latitude,
           longitude: locationLogs.longitude,
+          locationName: locationLogs.locationName,
           recordedAt: locationLogs.recordedAt,
         })
         .from(locationLogs)
@@ -397,5 +398,42 @@ export const reportsRouter = createTRPCRouter({
           nextMonthRevenue: forecast[0]?.revenue ?? 0,
         },
       };
+    }),
+
+  seedFakeLocationLogs: featureProtectedProcedure("reports")
+    .input(z.object({ targetId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.dbUser.role !== "Admin") throw new TRPCError({ code: "FORBIDDEN" });
+      const slabs = ["00:00-10:00", "10:00-14:00", "14:00-18:00", "18:00-21:00"];
+      const locations = ["Main Branch", "Client Office", "Warehouse A", "Field Visit"];
+      const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
+      for (let i = 0; i < slabs.length; i++) {
+        const slab = slabs[i]!;
+        const locName = locations[i]!;
+        /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
+        await ctx.db
+          .insert(locationLogs)
+          .values({
+            userId: input.targetId,
+            date: dateStr,
+            slab,
+            latitude: "28.6139", // New Delhi coordinates
+            longitude: "77.2090",
+            locationName: locName,
+            frequencyMap: { "28.6139,77.2090": 10 },
+            recordedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: [locationLogs.userId, locationLogs.date, locationLogs.slab],
+            set: { locationName: locName, latitude: "28.6139", longitude: "77.2090" },
+          });
+        /* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
+      }
+      return { success: true };
     }),
 });

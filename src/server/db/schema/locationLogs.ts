@@ -25,6 +25,7 @@ export const locationLogs = createTable(
     slab: varchar("slab", { length: 20 }).notNull(), // '10:00-14:00'
     latitude: numeric("latitude", { precision: 10, scale: 8 }).notNull(),
     longitude: numeric("longitude", { precision: 11, scale: 8 }).notNull(),
+    locationName: varchar("location_name", { length: 255 }),
     frequencyMap: jsonb("frequency_map")
       .notNull()
       .$type<Record<string, number>>(), // "lat,lng": count

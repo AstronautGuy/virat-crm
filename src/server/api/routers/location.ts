@@ -53,6 +53,18 @@ function haversineDistance(
   return R * c; // in meters
 }
 
+async function reverseGeocode(lat: number, lon: number): Promise<string> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+    const res = await fetch(url, { headers: { "User-Agent": "ViratCRM/1.0 (contact@viratcrm.com)" } });
+    if (!res.ok) return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+    const data = await res.json() as { display_name?: string };
+    return data.display_name ?? `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+  } catch {
+    return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+  }
+}
+
 export const locationRouter = createTRPCRouter({
   ping: featureProtectedProcedure("workforce")
     .meta({
@@ -164,7 +176,14 @@ export const locationRouter = createTRPCRouter({
         }
       }
 
-      const [finalLat, finalLng] = mostFrequentKey.split(",");
+      const [finalLatStr, finalLngStr] = mostFrequentKey.split(",");
+      const finalLat = finalLatStr!;
+      const finalLng = finalLngStr!;
+
+      let finalLocationName = existingSlab?.locationName;
+      if (existingSlab?.latitude !== finalLat || existingSlab?.longitude !== finalLng || !finalLocationName) {
+        finalLocationName = await reverseGeocode(parseFloat(finalLat), parseFloat(finalLng));
+      }
 
       if (existingSlab) {
         await ctx.db
@@ -173,6 +192,7 @@ export const locationRouter = createTRPCRouter({
             frequencyMap,
             latitude: finalLat,
             longitude: finalLng,
+            locationName: finalLocationName,
             recordedAt: new Date(),
           })
           .where(eq(locationLogs.id, existingSlab.id));
@@ -185,7 +205,8 @@ export const locationRouter = createTRPCRouter({
           frequencyMap,
           latitude: finalLat,
           longitude: finalLng,
-        } as any);
+          locationName: finalLocationName,
+        });
         /* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
       }
 
@@ -325,7 +346,14 @@ export const locationRouter = createTRPCRouter({
         }
       }
 
-      const [finalLat, finalLng] = mostFrequentKey.split(",");
+      const [finalLatStr, finalLngStr] = mostFrequentKey.split(",");
+      const finalLat = finalLatStr!;
+      const finalLng = finalLngStr!;
+
+      let finalLocationName = existingSlab?.locationName;
+      if (existingSlab?.latitude !== finalLat || existingSlab?.longitude !== finalLng || !finalLocationName) {
+        finalLocationName = await reverseGeocode(parseFloat(finalLat), parseFloat(finalLng));
+      }
 
       if (existingSlab) {
         await ctx.db
@@ -334,6 +362,7 @@ export const locationRouter = createTRPCRouter({
             frequencyMap,
             latitude: finalLat,
             longitude: finalLng,
+            locationName: finalLocationName,
             recordedAt: new Date(),
           })
           .where(eq(locationLogs.id, existingSlab.id));
@@ -346,7 +375,8 @@ export const locationRouter = createTRPCRouter({
           frequencyMap,
           latitude: finalLat,
           longitude: finalLng,
-        } as any);
+          locationName: finalLocationName,
+        });
         /* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
       }
 
