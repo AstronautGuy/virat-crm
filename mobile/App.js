@@ -3,10 +3,21 @@ import { StyleSheet, View, Alert, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
+import * as BackgroundFetch from 'expo-background-fetch';
+import * as Notifications from 'expo-notifications';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 // Use Vercel URL for the production APK build
 const TARGET_URL = 'https://virat-crm.vercel.app';
 const LOCATION_TASK_NAME = 'BACKGROUND_LOCATION_TASK';
+const NOTIFICATION_TASK_NAME = 'BACKGROUND_NOTIFICATION_TASK';
 
 // Define the background task
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
@@ -46,6 +57,39 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
   }
 });
 
+let lastUnreadCount = 0;
+
+TaskManager.defineTask(NOTIFICATION_TASK_NAME, async () => {
+  try {
+    const response = await fetch(`${TARGET_URL}/api/trpc/notifications.getUnreadCount`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      const unreadCount = data?.result?.data?.count || 0;
+      
+      if (unreadCount > 0 && unreadCount !== lastUnreadCount) {
+        lastUnreadCount = unreadCount;
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: "Virat CRM Alerts",
+            body: `You have ${unreadCount} unread low-stock alerts!`,
+            sound: true,
+          },
+          trigger: null,
+        });
+      }
+      return BackgroundFetch.BackgroundFetchResult.NewData;
+    }
+    return BackgroundFetch.BackgroundFetchResult.NoData;
+  } catch (err) {
+    console.error('Background notification fetch error:', err);
+    return BackgroundFetch.BackgroundFetchResult.Failed;
+  }
+});
+
 export default function App() {
   const webviewRef = useRef(null);
   const [hasPermissions, setHasPermissions] = useState(false);
@@ -67,7 +111,20 @@ export default function App() {
           return;
         }
 
+        // Request Notifications permissions
+        const { status: notifStatus } = await Notifications.requestPermissionsAsync();
+        if (notifStatus !== 'granted') {
+          console.warn('Notification permission denied.');
+        }
+
         setHasPermissions(true);
+
+        // Register background fetch for notifications
+        await BackgroundFetch.registerTaskAsync(NOTIFICATION_TASK_NAME, {
+          minimumInterval: 15 * 60, // 15 minutes
+          stopOnTerminate: false,
+          startOnBoot: true,
+        });
 
         // Start background location tracking
         await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {

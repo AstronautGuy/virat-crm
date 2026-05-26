@@ -158,13 +158,7 @@ export const locationRouter = createTRPCRouter({
       // Increment frequency for current location
       frequencyMap[coordsKey] = (frequencyMap[coordsKey] ?? 0) + 1;
 
-      // EOD Cleanup: Clear breadcrumbs older than 24 hours
-      if (!existingSlab) {
-        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        await ctx.db
-          .delete(breadcrumbs)
-          .where(lt(breadcrumbs.createdAt, twentyFourHoursAgo));
-      }
+      // Note: Breadcrumbs are now aggregated and cleaned up by the daily mileage cron job.
 
       // Find the most frequent location in the slab
       let maxCount = 0;
@@ -328,13 +322,7 @@ export const locationRouter = createTRPCRouter({
       // Increment frequency for current location
       frequencyMap[coordsKey] = (frequencyMap[coordsKey] ?? 0) + 1;
 
-      // EOD Cleanup: Clear breadcrumbs older than 24 hours
-      if (!existingSlab) {
-        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        await ctx.db
-          .delete(breadcrumbs)
-          .where(lt(breadcrumbs.createdAt, twentyFourHoursAgo));
-      }
+      // Note: Breadcrumbs are now aggregated and cleaned up by the daily mileage cron job.
 
       // Find the most frequent location in the slab
       let maxCount = 0;

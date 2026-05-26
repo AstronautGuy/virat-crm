@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { notifications, pushSubscriptions } from "@/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 export const notificationsRouter = createTRPCRouter({
   getMyNotifications: protectedProcedure
@@ -31,6 +31,30 @@ export const notificationsRouter = createTRPCRouter({
         where: eq(notifications.userId, ctx.dbUser.id),
         orderBy: (n, { desc }) => [desc(n.createdAt)],
       });
+    }),
+
+  getUnreadCount: protectedProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: "/notifications/unread-count",
+        summary: "Get count of unread notifications",
+        tags: ["Notifications"],
+      },
+    })
+    .input(z.void())
+    .output(z.object({ count: z.number() }))
+    .query(async ({ ctx }) => {
+      const [result] = await ctx.db
+        .select({ count: sql<number>`cast(count(*) as integer)` })
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.userId, ctx.dbUser.id),
+            eq(notifications.isRead, false),
+          ),
+        );
+      return { count: result?.count ?? 0 };
     }),
 
   markAsRead: protectedProcedure
