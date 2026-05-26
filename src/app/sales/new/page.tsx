@@ -49,7 +49,7 @@ import { FileUploader } from "@/app/_components/ui/FileUploader";
 export default function NewSale() {
   const router = useRouter();
 
-  const [branchId, setBranchId] = useState("1");
+  const [branchId, setBranchId] = useState("");
   const [success, setSuccess] = useState(false);
   const [newSaleId, setNewSaleId] = useState<number | null>(null);
   const [pincode, setPincode] = useState("");
