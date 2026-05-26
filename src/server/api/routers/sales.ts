@@ -219,6 +219,185 @@ export const salesRouter = createTRPCRouter({
       });
     }),
 
+  updateSale: featureProtectedProcedure("sales")
+    .meta({
+      openapi: {
+        method: "PUT",
+        path: "/sales/{id}",
+        summary: "Update an existing sale (Admin only)",
+        tags: ["Sales"],
+      },
+    })
+    .input(
+      z.object({
+        id: z.number(),
+        pincode: z.string().regex(/^[1-9][0-9]{5}$/, "Invalid Pincode").optional(),
+        addressLine1: z.string().optional(),
+        landmark: z.string().optional(),
+        area: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        customerName: z.string().optional(),
+        customerAddress: z.string().optional(),
+        invoiceAmount: z.string().optional(),
+        advancePaymentAmount: z.string().optional(),
+        receivedAmount: z.string().optional(),
+        items: z.array(
+          z.object({
+            productId: z.number(),
+            quantity: z.number().min(1),
+            isFree: z.boolean().default(false),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.dbUser.role !== "Admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only Admins can edit sales" });
+      }
+
+      return await ctx.db.transaction(async (tx) => {
+        const existingSale = await tx.query.sales.findFirst({
+          where: eq(sales.id, input.id),
+          with: { items: true },
+        });
+
+        if (!existingSale) throw new TRPCError({ code: "NOT_FOUND", message: "Sale not found" });
+
+        // If the sale was not rejected, we must revert the old items' inventory
+        if (existingSale.status !== "Rejected") {
+          for (const oldItem of existingSale.items) {
+            await tx
+              .insert(inventory)
+              .values({
+                productId: oldItem.productId,
+                branchId: existingSale.branchId,
+                quantity: oldItem.quantity,
+              })
+              .onConflictDoUpdate({
+                target: [inventory.productId, inventory.branchId],
+                set: { quantity: sql`${inventory.quantity} + ${oldItem.quantity}` },
+              });
+
+            await tx.insert(inventoryTransactions).values({
+              productId: oldItem.productId,
+              branchId: existingSale.branchId,
+              userId: ctx.dbUser.id,
+              type: "Adjustment",
+              quantity: oldItem.quantity,
+              reason: `Edit Sale ${existingSale.orderNumber} - Revert Old Item`,
+              referenceId: existingSale.id.toString(),
+            });
+          }
+        }
+
+        // Delete old items
+        await tx.delete(saleItems).where(eq(saleItems.saleId, existingSale.id));
+
+        // Decrement new items inventory
+        if (existingSale.status !== "Rejected") {
+          for (const item of input.items) {
+            const stockEntry = await tx.query.inventory.findFirst({
+              where: and(
+                eq(inventory.productId, item.productId),
+                eq(inventory.branchId, existingSale.branchId)
+              ),
+            });
+
+            if (!stockEntry || stockEntry.quantity < item.quantity) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Insufficient stock for product ID ${item.productId}`,
+              });
+            }
+
+            await tx
+              .update(inventory)
+              .set({ quantity: stockEntry.quantity - item.quantity })
+              .where(eq(inventory.id, stockEntry.id));
+
+            await tx.insert(inventoryTransactions).values({
+              productId: item.productId,
+              branchId: existingSale.branchId,
+              userId: ctx.dbUser.id,
+              type: "Sale",
+              quantity: -item.quantity,
+              reason: `Edit Sale ${existingSale.orderNumber} - Apply New Item`,
+              referenceId: existingSale.id.toString(),
+            });
+          }
+        }
+
+        // Calculate new quantities and amounts
+        let mainQty = 0;
+        let freeQty = 0;
+        for (const item of input.items) {
+          if (item.isFree) freeQty += item.quantity;
+          else mainQty += item.quantity;
+        }
+        const totalQty = mainQty + freeQty;
+
+        const invoiceAmt = parseFloat(input.invoiceAmount ?? "0");
+        const advanceAmt = parseFloat(input.advancePaymentAmount ?? "0");
+        const receivedAmt = parseFloat(input.receivedAmount ?? "0");
+        const balanceAmt = invoiceAmt - advanceAmt - receivedAmt;
+
+        // Fetch pincode delivery address if pincode changed
+        let deliveryAddress = existingSale.deliveryAddress;
+        if (input.pincode && input.pincode !== existingSale.pincode) {
+          try {
+            const res = await fetch(`https://api.postalpincode.in/pincode/${input.pincode}`);
+            const data = (await res.json()) as { Status: string; PostOffice: { Name: string; District: string; State: string }[] }[];
+            if (Array.isArray(data) && data[0]?.Status === "Success") {
+              const postOffice = data[0].PostOffice?.[0];
+              if (postOffice) deliveryAddress = `${postOffice.Name}, ${postOffice.District}, ${postOffice.State}`;
+            }
+          } catch (e) {}
+        }
+
+        const [updatedSale] = await tx
+          .update(sales)
+          .set({
+            pincode: input.pincode,
+            addressLine1: input.addressLine1,
+            landmark: input.landmark,
+            area: input.area,
+            city: input.city,
+            state: input.state,
+            deliveryAddress: deliveryAddress || undefined,
+            customerName: input.customerName,
+            customerAddress: input.customerAddress,
+            mainQty,
+            freeQty,
+            totalQty,
+            invoiceAmount: invoiceAmt.toString(),
+            advancePaymentAmount: advanceAmt.toString(),
+            receivedAmount: receivedAmt.toString(),
+            balanceAmount: balanceAmt.toString(),
+          })
+          .where(eq(sales.id, input.id))
+          .returning();
+
+        if (!updatedSale) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to update sale" });
+        }
+
+        // Insert new items
+        if (input.items.length > 0) {
+          await tx.insert(saleItems).values(
+            input.items.map((item) => ({
+              saleId: updatedSale.id,
+              productId: item.productId,
+              quantity: item.quantity,
+              isFree: item.isFree,
+            }))
+          );
+        }
+
+        return updatedSale;
+      });
+    }),
+
   getSales: featureProtectedProcedure("sales").query(async ({ ctx }) => {
     const currentUser = ctx.dbUser;
 
@@ -260,6 +439,28 @@ export const salesRouter = createTRPCRouter({
       orderBy: (sales, { desc }) => [desc(sales.createdAt)],
     });
   }),
+
+  getSale: featureProtectedProcedure("sales")
+    .input(z.object({ id: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const sale = await ctx.db.query.sales.findFirst({
+        where: eq(sales.id, input.id),
+        with: {
+          items: true,
+          user: true,
+        },
+      });
+
+      if (!sale) throw new TRPCError({ code: "NOT_FOUND" });
+
+      if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Developer") {
+        const assignedBranchId = enforceBranchIsolation(ctx);
+        if (sale.branchId !== assignedBranchId) throw new TRPCError({ code: "FORBIDDEN" });
+        if (ctx.dbUser.role === "Employee" && sale.userId !== ctx.dbUser.id) throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      return sale;
+    }),
 
   updateSaleStatus: featureProtectedProcedure("sales")
     .input(

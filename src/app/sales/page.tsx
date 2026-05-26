@@ -287,6 +287,16 @@ export default function SalesDashboard() {
                       </div>
                     </div>
 
+                    {user?.role === "Admin" && (
+                      <div className="flex pt-4">
+                        <Link href={`/sales/${selectedSale.id}/edit`} className="w-full">
+                          <Button variant="secondary" className="w-full" onClick={() => setSelectedSale(null)}>
+                            Edit Sale Details
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+
                     {selectedSale.status === "Pending" && canApprove && (
                       <div className="flex gap-3 pt-4 border-t">
                         <Button
