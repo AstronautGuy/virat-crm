@@ -11,9 +11,9 @@
   - [x] **Task 32.2**: Formulate the multi-tenant isolation boundary spec.
 
 - **Phase 33: Multi-Tenant Hardening (tRPC & REST Gateways)**
-  - [ ] **Task 33.1**: Build automated query filters on tRPC procedures for Sales, CRM, Products, and Inventory.
-  - [ ] **Task 33.2**: Enforce the exact branch restrictions under `/api/rest/*` REST routes for mobile.
-  - [ ] **Task 33.3**: Write backend integration tests for multi-tenant isolation.
+  - [x] **Task 33.1**: Build automated query filters on tRPC procedures for Sales, CRM, Products, and Inventory.
+  - [x] **Task 33.2**: Enforce the exact branch restrictions under `/api/rest/*` REST routes for mobile.
+  - [x] **Task 33.3**: Write backend integration tests for multi-tenant isolation.
 
 - **Phase 34: Real-Time Low Stock Alerts & Background Triggers**
   - [ ] **Task 34.1**: Create `minThreshold` columns and stock level checks inside sales, transfer, and bulk mutations.
