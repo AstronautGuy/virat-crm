@@ -118,7 +118,7 @@ export default function EditSale() {
       router.refresh();
     },
     onError: (error) => {
-      alert(`Error updating sale: ${error.message}`);
+      toast.error(error.message);
     },
   });
 
@@ -129,6 +129,14 @@ export default function EditSale() {
     const missingItems = items.some((item) => !item.productId || !item.quantity);
     if (missingItems) {
       toast.error("Please select a product and quantity for all items");
+      return;
+    }
+    if (pincode && !/^[1-9][0-9]{5}$/.test(pincode)) {
+      toast.error("Invalid Pincode format. Must be 6 digits.");
+      return;
+    }
+    if (invoiceAmount && parseFloat(invoiceAmount) < 0) {
+      toast.error("Invoice Amount cannot be negative");
       return;
     }
     

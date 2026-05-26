@@ -105,6 +105,7 @@ export const salesRouter = createTRPCRouter({
           try {
             const res = await fetch(
               `https://api.postalpincode.in/pincode/${input.pincode}`,
+              { signal: AbortSignal.timeout(3000) }
             );
             const data = (await res.json()) as {
               Status: string;
@@ -332,7 +333,7 @@ export const salesRouter = createTRPCRouter({
         let deliveryAddress = existingSale.deliveryAddress;
         if (input.pincode && input.pincode !== existingSale.pincode) {
           try {
-            const res = await fetch(`https://api.postalpincode.in/pincode/${input.pincode}`);
+            const res = await fetch(`https://api.postalpincode.in/pincode/${input.pincode}`, { signal: AbortSignal.timeout(3000) });
             const data = (await res.json()) as { Status: string; PostOffice: { Name: string; District: string; State: string }[] }[];
             if (Array.isArray(data) && data[0]?.Status === "Success") {
               const postOffice = data[0].PostOffice?.[0];
