@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { enforceBranchIsolation } from "@/server/api/trpc";
+import { enforceBranchIsolation } from "../../src/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 
 describe("Multi-Tenant Isolation", () => {

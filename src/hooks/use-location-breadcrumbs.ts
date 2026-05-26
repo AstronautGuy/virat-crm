@@ -8,7 +8,7 @@ const TRACKING_INTERVAL = 10 * 1000; // 10 seconds
 export function useLocationBreadcrumbs() {
   const { data: user } = api.users.getMe.useQuery();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-  const logBreadcrumb = (api.location.logBreadcrumb as any).useMutation();
+  const { mutate: logBreadcrumbMutate } = (api.location.logBreadcrumb as any).useMutation();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const captureLocation = useCallback(() => {
@@ -20,7 +20,7 @@ export function useLocationBreadcrumbs() {
         const { latitude, longitude, accuracy } = position.coords;
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-        logBreadcrumb.mutate({
+        logBreadcrumbMutate({
           latitude,
           longitude,
           accuracy,
@@ -32,7 +32,7 @@ export function useLocationBreadcrumbs() {
           navigator.geolocation.getCurrentPosition(
             (pos) => {
               // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-              logBreadcrumb.mutate({
+              logBreadcrumbMutate({
                 latitude: pos.coords.latitude,
                 longitude: pos.coords.longitude,
                 accuracy: pos.coords.accuracy,
@@ -55,7 +55,7 @@ export function useLocationBreadcrumbs() {
         maximumAge: 1000 * 60 * 5, // Accept cached location up to 5 mins old
       },
     );
-  }, [user, logBreadcrumb]);
+  }, [user, logBreadcrumbMutate]);
 
   useEffect(() => {
     // Don't start tracking until we know the user's role
