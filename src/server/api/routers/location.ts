@@ -2,6 +2,8 @@ import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
+import simplify from "@turf/simplify";
+import { lineString } from "@turf/helpers";
 import { breadcrumbs, users, locationLogs, branches, customerVisits, customers } from "@/server/db/schema";
 import {
   eq,
@@ -578,25 +580,28 @@ export const locationRouter = createTRPCRouter({
         orderBy: [asc(breadcrumbs.createdAt)],
       });
 
-      return path.map((p) => {
-        // Convert timestamp without timezone from local server time to actual UTC Date
-        const utcCreatedAt = new Date(
-          Date.UTC(
-            p.createdAt.getFullYear(),
-            p.createdAt.getMonth(),
-            p.createdAt.getDate(),
-            p.createdAt.getHours(),
-            p.createdAt.getMinutes(),
-            p.createdAt.getSeconds(),
-            p.createdAt.getMilliseconds(),
-          ),
-        );
-        return {
-          ...p,
-          createdAt: utcCreatedAt,
+      if (path.length < 2) {
+        return path.map((p) => ({
           latitude: parseFloat(String(p.latitude)),
           longitude: parseFloat(String(p.longitude)),
-        };
-      });
+        }));
+      }
+
+      // Convert to GeoJSON LineString
+      const line = lineString(
+        path.map((p) => [
+          parseFloat(String(p.longitude)),
+          parseFloat(String(p.latitude)),
+        ])
+      );
+
+      // Simplify route (tolerance 0.0001 roughly equals 11 meters)
+      const simplifiedLine = simplify(line, { tolerance: 0.0001, highQuality: true });
+
+      // Map back to expected array format
+      return simplifiedLine.geometry.coordinates.map((coord) => ({
+        longitude: coord[0],
+        latitude: coord[1],
+      }));
     }),
 });

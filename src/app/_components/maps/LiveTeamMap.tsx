@@ -28,6 +28,10 @@ const Polyline = dynamic(
   () => import("react-leaflet").then((mod) => mod.Polyline),
   { ssr: false },
 );
+const MarkerClusterGroup = dynamic(
+  () => import("react-leaflet-cluster"),
+  { ssr: false },
+);
 
 import type * as Leaflet from "leaflet";
 
@@ -117,56 +121,63 @@ export default function LiveTeamMap() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {teamLocations?.map((loc) => (
-          <Marker
-            key={loc.id}
-            position={[loc.latitude, loc.longitude]}
-            icon={createIcon(
-              `${loc.user.firstName} ${loc.user.lastName}`,
-              loc.isOnline,
-            )}
-            eventHandlers={{
-              click: () => setSelectedUserId(loc.userId),
-            }}
-          >
-            <Popup className="premium-popup">
-              <div className="p-2">
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className={`h-2.5 w-2.5 rounded-full ${loc.isOnline ? "animate-pulse bg-green-500" : "bg-gray-400"}`}
-                  />
-                  <p className="font-bold text-gray-900">
-                    {loc.user.firstName} {loc.user.lastName}
+        <MarkerClusterGroup
+          chunkedLoading
+          maxClusterRadius={50}
+          showCoverageOnHover={false}
+          spiderfyOnMaxZoom={true}
+        >
+          {teamLocations?.map((loc) => (
+            <Marker
+              key={loc.id}
+              position={[loc.latitude, loc.longitude]}
+              icon={createIcon(
+                `${loc.user.firstName} ${loc.user.lastName}`,
+                loc.isOnline,
+              )}
+              eventHandlers={{
+                click: () => setSelectedUserId(loc.userId),
+              }}
+            >
+              <Popup className="premium-popup">
+                <div className="p-2">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${loc.isOnline ? "animate-pulse bg-green-500" : "bg-gray-400"}`}
+                    />
+                    <p className="font-bold text-gray-900">
+                      {loc.user.firstName} {loc.user.lastName}
+                    </p>
+                  </div>
+
+                  <p className="mt-2.5 text-[10px] tracking-widest text-gray-400 uppercase">
+                    Status
                   </p>
-                </div>
-
-                <p className="mt-2.5 text-[10px] tracking-widest text-gray-400 uppercase">
-                  Status
-                </p>
-                <p
-                  className={`text-xs font-bold ${loc.isOnline ? "text-green-600" : "text-gray-500"}`}
-                >
-                  {loc.isOnline ? "ONLINE (Active Now)" : "OFFLINE"}
-                </p>
-
-                <p className="mt-2 text-[10px] tracking-widest text-gray-400 uppercase">
-                  Last Seen
-                </p>
-                <p className="text-xs font-medium text-gray-700">
-                  {new Date(loc.createdAt).toLocaleString()}
-                </p>
-                <div className="mt-3.5">
-                  <button
-                    onClick={() => setSelectedUserId(loc.userId)}
-                    className="w-full rounded-lg bg-blue-600 py-1.5 text-[10px] font-bold tracking-widest text-white uppercase shadow-sm transition-colors hover:bg-blue-700"
+                  <p
+                    className={`text-xs font-bold ${loc.isOnline ? "text-green-600" : "text-gray-500"}`}
                   >
-                    View Today&apos;s Route
-                  </button>
+                    {loc.isOnline ? "ONLINE (Active Now)" : "OFFLINE"}
+                  </p>
+
+                  <p className="mt-2 text-[10px] tracking-widest text-gray-400 uppercase">
+                    Last Seen
+                  </p>
+                  <p className="text-xs font-medium text-gray-700">
+                    {new Date(loc.createdAt).toLocaleString()}
+                  </p>
+                  <div className="mt-3.5">
+                    <button
+                      onClick={() => setSelectedUserId(loc.userId)}
+                      className="w-full rounded-lg bg-blue-600 py-1.5 text-[10px] font-bold tracking-widest text-white uppercase shadow-sm transition-colors hover:bg-blue-700"
+                    >
+                      View Today&apos;s Route
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
 
         {playbackPath && playbackPath.length > 1 && (
           <Polyline
