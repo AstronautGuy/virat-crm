@@ -31,8 +31,10 @@ Secure, mobile-first operations management that ensures authenticated access and
 
 ### Active (Milestone 9: Planning)
 
-- [ ] Email and SMS Notification Integrations
-- [ ] Role-based UI customization profiles
+- [ ] Real-time Team Map (Live view of all field agents on a map)
+- [ ] Historical Route Playback (See a specific agent's path for a past date)
+- [ ] Distance/Mileage Reports (Calculate total distance traveled for reimbursements)
+- [ ] Geofence Analytics (Time spent inside client/branch geofences)
 
 ### Out of Scope
 
@@ -50,9 +52,9 @@ Secure, mobile-first operations management that ensures authenticated access and
 - **v7: Advanced Intelligence**: Predictive modeling, Isar sync database queue, sovereign locks & licensing controls.
 - **v8: Advanced Multi-Tenant Isolation & Live Alerts**: Hardened DB boundaries, strict branch isolation, live VAPID alerts & mobile background sync.
 
-### Next Milestone: M9 (Enterprise Scalability & Communications)
+### Next Milestone: M9 (Live Tracking & Location Reports)
 
-- Goal: Build unified communications gateway for SMS/Email alerts and advanced role customization.
+- Goal: Provide robust real-time tracking, historical routes, mileage reimbursement reports, and geofence analytics for field agents.
 
 ## Constraints
 
