@@ -292,7 +292,7 @@ export default function NewSale() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <Label htmlFor="branchId" className="text-xs">
-                        Branch
+                        Branch <span className="text-destructive">*</span>
                       </Label>
                       <Select
                         value={branchId}
@@ -423,7 +423,7 @@ export default function NewSale() {
                       className="flex items-end gap-2 border-b pb-4 last:border-0 last:pb-0"
                     >
                       <div className="flex-1 space-y-1">
-                        <Label className="text-xs">Product</Label>
+                        <Label className="text-xs">Product <span className="text-destructive">*</span></Label>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
@@ -468,7 +468,7 @@ export default function NewSale() {
                         </Popover>
                       </div>
                       <div className="w-20 space-y-1">
-                        <Label className="text-xs">Qty</Label>
+                        <Label className="text-xs">Qty <span className="text-destructive">*</span></Label>
                         <Input
                           value={item.quantity}
                           onChange={(e) =>

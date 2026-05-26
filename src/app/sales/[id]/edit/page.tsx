@@ -257,7 +257,7 @@ export default function EditSale() {
                     {items.map((item) => (
                       <div key={item.id} className="flex items-end gap-2 border-b pb-4 last:border-0 last:pb-0">
                         <div className="flex-1 space-y-1">
-                          <Label className="text-xs">Product</Label>
+                          <Label className="text-xs">Product <span className="text-destructive">*</span></Label>
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button
@@ -302,7 +302,7 @@ export default function EditSale() {
                           </Popover>
                         </div>
                         <div className="w-20 space-y-1">
-                          <Label className="text-xs">Qty</Label>
+                          <Label className="text-xs">Qty <span className="text-destructive">*</span></Label>
                           <Input value={item.quantity} onChange={(e) => updateItem(item.id, "quantity", e.target.value)} type="number" min="1" />
                         </div>
                         <div className="flex h-10 items-center space-x-2 rounded-md border px-2">

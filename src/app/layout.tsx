@@ -5,6 +5,7 @@ import { Inter } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
 import { SkeletonProvider } from "@/components/ui/skeleton-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Virat CRM",
@@ -44,7 +45,10 @@ export default async function RootLayout({
     <html lang="en" className={`light ${inter.variable}`}>
       <body className="bg-background text-foreground selection:bg-primary/10 selection:text-primary min-h-screen antialiased">
         <TRPCReactProvider>
-          <SkeletonProvider>{children}</SkeletonProvider>
+          <SkeletonProvider>
+            {children}
+            <Toaster />
+          </SkeletonProvider>
         </TRPCReactProvider>
       </body>
     </html>
