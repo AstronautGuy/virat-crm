@@ -15,14 +15,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Combobox,
-  ComboboxInput,
-  ComboboxContent,
-  ComboboxList,
-  ComboboxItem,
-  ComboboxEmpty,
-} from "@/components/ui/combobox";
-import { ArrowLeft, Plus, Trash2, Loader2, CheckCircle } from "lucide-react";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { toast } from "sonner";
+import { ArrowLeft, Plus, Trash2, Loader2, CheckCircle, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -118,6 +124,14 @@ export default function EditSale() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Frontend Validation
+    const missingItems = items.some((item) => !item.productId || !item.quantity);
+    if (missingItems) {
+      toast.error("Please select a product and quantity for all items");
+      return;
+    }
+    
     updateSale({
       id: saleId,
       pincode: pincode === "" ? undefined : pincode,
@@ -244,32 +258,52 @@ export default function EditSale() {
                       <div key={item.id} className="flex items-end gap-2 border-b pb-4 last:border-0 last:pb-0">
                         <div className="flex-1 space-y-1">
                           <Label className="text-xs">Product</Label>
-                          <Combobox
-                            value={item.productId}
-                            onValueChange={(val) => {
-                              if (val && typeof val === 'string') {
-                                updateItem(item.id, "productId", val);
-                              } else if (Array.isArray(val) && val.length > 0) {
-                                updateItem(item.id, "productId", val[0]);
-                              }
-                            }}
-                          >
-                            <ComboboxInput placeholder="Select product" required />
-                            <ComboboxContent>
-                              <ComboboxEmpty>No product found.</ComboboxEmpty>
-                              <ComboboxList>
-                                {products.map((product) => (
-                                  <ComboboxItem key={product.id} value={product.id.toString()}>
-                                    {product.name}
-                                  </ComboboxItem>
-                                ))}
-                              </ComboboxList>
-                            </ComboboxContent>
-                          </Combobox>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                className={cn(
+                                  "w-full justify-between font-normal",
+                                  !item.productId && "text-muted-foreground"
+                                )}
+                              >
+                                {item.productId
+                                  ? products.find((p) => p.id.toString() === item.productId)?.name
+                                  : "Select product..."}
+                                <ChevronsUpDown className="opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[300px] p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder="Search product..." />
+                                <CommandList>
+                                  <CommandEmpty>No product found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {products.map((product) => (
+                                      <CommandItem
+                                        key={product.id}
+                                        value={product.name}
+                                        onSelect={() => updateItem(item.id, "productId", product.id.toString())}
+                                      >
+                                        {product.name}
+                                        <Check
+                                          className={cn(
+                                            "ml-auto",
+                                            item.productId === product.id.toString() ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                         </div>
                         <div className="w-20 space-y-1">
                           <Label className="text-xs">Qty</Label>
-                          <Input value={item.quantity} onChange={(e) => updateItem(item.id, "quantity", e.target.value)} type="number" min="1" required />
+                          <Input value={item.quantity} onChange={(e) => updateItem(item.id, "quantity", e.target.value)} type="number" min="1" />
                         </div>
                         <div className="flex h-10 items-center space-x-2 rounded-md border px-2">
                           <input type="checkbox" id={`free-${item.id}`} checked={item.isFree} onChange={(e) => updateItem(item.id, "isFree", e.target.checked)} className="accent-primary h-4 w-4" />

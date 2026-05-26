@@ -17,13 +17,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Combobox,
-  ComboboxInput,
-  ComboboxContent,
-  ComboboxList,
-  ComboboxItem,
-  ComboboxEmpty,
-} from "@/components/ui/combobox";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   Plus,
@@ -31,6 +37,8 @@ import {
   Loader2,
   CheckCircle,
   WifiOff,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -117,6 +125,18 @@ export default function NewSale() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Frontend Validation
+    if (!branchId) {
+      toast.error("Please select a branch");
+      return;
+    }
+    const missingItems = items.some((item) => !item.productId || !item.quantity);
+    if (missingItems) {
+      toast.error("Please select a product and quantity for all items");
+      return;
+    }
+    
     const saleData = {
       branchId: parseInt(branchId),
       pincode: pincode === "" ? undefined : pincode,
@@ -277,7 +297,6 @@ export default function NewSale() {
                       <Select
                         value={branchId}
                         onValueChange={setBranchId}
-                        required
                       >
                         <SelectTrigger id="branchId">
                           <SelectValue placeholder="Select branch" />
@@ -405,28 +424,48 @@ export default function NewSale() {
                     >
                       <div className="flex-1 space-y-1">
                         <Label className="text-xs">Product</Label>
-                        <Combobox
-                          value={item.productId}
-                          onValueChange={(val) => {
-                            if (val && typeof val === 'string') {
-                              updateItem(item.id, "productId", val);
-                            } else if (Array.isArray(val) && val.length > 0) {
-                              updateItem(item.id, "productId", val[0]);
-                            }
-                          }}
-                        >
-                          <ComboboxInput placeholder="Select product" required />
-                          <ComboboxContent>
-                            <ComboboxEmpty>No product found.</ComboboxEmpty>
-                            <ComboboxList>
-                              {products.map((product) => (
-                                <ComboboxItem key={product.id} value={product.id.toString()}>
-                                  {product.name}
-                                </ComboboxItem>
-                              ))}
-                            </ComboboxList>
-                          </ComboboxContent>
-                        </Combobox>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-full justify-between font-normal",
+                                !item.productId && "text-muted-foreground"
+                              )}
+                            >
+                              {item.productId
+                                ? products.find((p) => p.id.toString() === item.productId)?.name
+                                : "Select product..."}
+                              <ChevronsUpDown className="opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[300px] p-0" align="start">
+                            <Command>
+                              <CommandInput placeholder="Search product..." />
+                              <CommandList>
+                                <CommandEmpty>No product found.</CommandEmpty>
+                                <CommandGroup>
+                                  {products.map((product) => (
+                                    <CommandItem
+                                      key={product.id}
+                                      value={product.name}
+                                      onSelect={() => updateItem(item.id, "productId", product.id.toString())}
+                                    >
+                                      {product.name}
+                                      <Check
+                                        className={cn(
+                                          "ml-auto",
+                                          item.productId === product.id.toString() ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                       <div className="w-20 space-y-1">
                         <Label className="text-xs">Qty</Label>
@@ -437,7 +476,6 @@ export default function NewSale() {
                           }
                           type="number"
                           min="1"
-                          required
                         />
                       </div>
                       <div className="flex h-10 items-center space-x-2 rounded-md border px-2">
