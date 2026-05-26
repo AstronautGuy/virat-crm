@@ -136,12 +136,20 @@ export default function NewSale() {
       toast.error("Please select a product and quantity for all items");
       return;
     }
-    if (pincode && !/^[1-9][0-9]{5}$/.test(pincode)) {
-      toast.error("Invalid Pincode format. Must be 6 digits.");
+    if (!customerName?.trim()) {
+      toast.error("Customer Name is required");
       return;
     }
-    if (invoiceAmount && parseFloat(invoiceAmount) < 0) {
-      toast.error("Invoice Amount cannot be negative");
+    if (!pincode || !/^[1-9][0-9]{5}$/.test(pincode)) {
+      toast.error("Valid 6-digit Pincode is required");
+      return;
+    }
+    if (!city?.trim() || !state?.trim() || !addressLine1?.trim()) {
+      toast.error("City, State, and Address Line 1 are required");
+      return;
+    }
+    if (!invoiceAmount || parseFloat(invoiceAmount) < 0) {
+      toast.error("Valid Invoice Amount is required");
       return;
     }
     
@@ -323,7 +331,7 @@ export default function NewSale() {
                         htmlFor="pincode"
                         className="flex items-center justify-between text-xs"
                       >
-                        Pincode
+                        <span>Pincode <span className="text-destructive">*</span></span>
                         {isFetchingPincode && (
                           <Loader2 className="text-primary h-3 w-3 animate-spin" />
                         )}
@@ -341,7 +349,7 @@ export default function NewSale() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <Label htmlFor="city" className="text-xs">
-                        City
+                        City <span className="text-destructive">*</span>
                       </Label>
                       <Input
                         id="city"
@@ -351,7 +359,7 @@ export default function NewSale() {
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="state" className="text-xs">
-                        State
+                        State <span className="text-destructive">*</span>
                       </Label>
                       <Input
                         id="state"
@@ -374,7 +382,7 @@ export default function NewSale() {
 
                   <div className="space-y-1">
                     <Label htmlFor="addressLine1" className="text-xs">
-                      Address Line 1
+                      Address Line 1 <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="addressLine1"
@@ -398,7 +406,7 @@ export default function NewSale() {
 
                   <div className="space-y-1">
                     <Label htmlFor="customerName" className="text-xs">
-                      Customer Name
+                      Customer Name <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="customerName"
@@ -527,7 +535,7 @@ export default function NewSale() {
                 <CardContent className="space-y-4">
                   <div className="space-y-1">
                     <Label htmlFor="invoiceAmount" className="text-xs">
-                      Invoice Amount
+                      Invoice Amount <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="invoiceAmount"
