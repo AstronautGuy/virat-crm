@@ -239,9 +239,15 @@ export const salesRouter = createTRPCRouter({
 
     const assignedBranchId = enforceBranchIsolation(ctx);
 
-    // Filter by branch for non-admins
+    // Filter by branch for non-admins, and also by userId for Employees
     return ctx.db.query.sales.findMany({
-      where: eq(sales.branchId, assignedBranchId!),
+      where:
+        currentUser.role === "Employee"
+          ? and(
+              eq(sales.branchId, assignedBranchId!),
+              eq(sales.userId, currentUser.id),
+            )
+          : eq(sales.branchId, assignedBranchId!),
       with: {
         user: true,
         manager: true,

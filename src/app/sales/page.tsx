@@ -11,6 +11,13 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -35,6 +42,13 @@ export default function SalesDashboard() {
   const [filter, setFilter] = useState<
     "All" | "Pending" | "Approved" | "Rejected"
   >("All");
+
+  const [selectedSale, setSelectedSale] = useState<
+    (typeof filteredSales)[number] | null
+  >(null);
+
+  const { data: user } = api.users.getMe.useQuery();
+  const canApprove = user?.role === "Admin" || user?.role === "Manager";
 
   const { data: sales, isLoading, refetch } = api.sales.getSales.useQuery();
   const { mutate: updateStatus, isPending: isUpdating } =
@@ -115,7 +129,8 @@ export default function SalesDashboard() {
                   return (
                     <Card
                       key={sale?.id ?? idx}
-                      className="group overflow-hidden border-none"
+                      className="group overflow-hidden border-none cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => sale && setSelectedSale(sale)}
                     >
                       <CardHeader className="group-hover:bg-primary/5 bg-slate-50/50 pb-3 transition-colors">
                         <div className="flex items-center justify-between">
@@ -143,6 +158,9 @@ export default function SalesDashboard() {
                             ? new Date(sale.createdAt).toLocaleDateString()
                             : "Date Placeholder"}{" "}
                           • {sale?.customerName ?? "Customer Name"}
+                          {sale?.user && (
+                            <> • {sale.user.firstName} {sale.user.lastName}</>
+                          )}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="pt-5">
@@ -177,17 +195,18 @@ export default function SalesDashboard() {
                           </div>
                         </div>
 
-                        {sale?.status === "Pending" && (
+                        {sale?.status === "Pending" && canApprove && (
                           <div className="mt-6 flex gap-3 border-t border-slate-50 pt-4">
                             <Button
                               className="h-11 flex-1 rounded-xl"
-                              onClick={() =>
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 sale.id &&
-                                updateStatus({
-                                  saleId: sale.id,
-                                  status: "Approved",
-                                })
-                              }
+                                  updateStatus({
+                                    saleId: sale.id,
+                                    status: "Approved",
+                                  });
+                              }}
                               disabled={isUpdating}
                             >
                               <Check className="mr-2 h-4 w-4" /> Approve
@@ -195,13 +214,14 @@ export default function SalesDashboard() {
                             <Button
                               variant="outline"
                               className="h-11 flex-1 rounded-xl border-slate-200 text-slate-600"
-                              onClick={() =>
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 sale.id &&
-                                updateStatus({
-                                  saleId: sale.id,
-                                  status: "Rejected",
-                                })
-                              }
+                                  updateStatus({
+                                    saleId: sale.id,
+                                    status: "Rejected",
+                                  });
+                              }}
                               disabled={isUpdating}
                             >
                               <X className="mr-2 h-4 w-4" /> Reject
@@ -214,6 +234,88 @@ export default function SalesDashboard() {
                 })}
               </div>
             )}
+            
+            {/* Expanded Sale Details Sheet */}
+            <Sheet open={!!selectedSale} onOpenChange={(open) => !open && setSelectedSale(null)}>
+              <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+                <SheetHeader className="mb-6">
+                  <SheetTitle className="text-2xl font-bold">Sale Details</SheetTitle>
+                  <SheetDescription>
+                    {selectedSale?.orderNumber} • {selectedSale?.status}
+                  </SheetDescription>
+                </SheetHeader>
+                
+                {selectedSale && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-semibold text-slate-500 block">Customer</span>
+                        <span className="text-slate-900">{selectedSale.customerName}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-slate-500 block">Creator</span>
+                        <span className="text-slate-900">
+                          {selectedSale.user?.firstName} {selectedSale.user?.lastName} 
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-slate-500 block">Invoice Amount</span>
+                        <span className="text-slate-900">₹{selectedSale.invoiceAmount}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-slate-500 block">Balance</span>
+                        <span className="text-red-500 font-bold">₹{selectedSale.balanceAmount}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="font-semibold text-slate-500 block">Delivery Address</span>
+                        <span className="text-slate-900">
+                          {selectedSale.deliveryAddress || `${selectedSale.addressLine1}, ${selectedSale.city}, ${selectedSale.state} - ${selectedSale.pincode}`}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-bold text-slate-900 mb-3 border-b pb-2">Items</h4>
+                      <div className="space-y-2">
+                        {selectedSale.items?.map((item) => (
+                          <div key={item.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border">
+                            <span className="font-medium text-slate-800">Product #{item.productId}</span>
+                            <span className="text-slate-600">Qty: {item.quantity} {item.isFree && <Badge variant="secondary" className="ml-2">Free</Badge>}</span>
+                          </div>
+                        ))}
+                        {!selectedSale.items?.length && <p className="text-slate-500 italic text-sm">No items found.</p>}
+                      </div>
+                    </div>
+
+                    {selectedSale.status === "Pending" && canApprove && (
+                      <div className="flex gap-3 pt-4 border-t">
+                        <Button
+                          className="flex-1"
+                          onClick={() => {
+                            updateStatus({ saleId: selectedSale.id, status: "Approved" });
+                            setSelectedSale(null);
+                          }}
+                          disabled={isUpdating}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => {
+                            updateStatus({ saleId: selectedSale.id, status: "Rejected" });
+                            setSelectedSale(null);
+                          }}
+                          disabled={isUpdating}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </SheetContent>
+            </Sheet>
           </div>
         </PageWrapper>
       </FeatureGate>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
 import { sales } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getSessionFromHeaders } from "@/server/lib/auth";
 import { users } from "@/server/db/schema/users";
 
@@ -43,9 +43,12 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // Filter by branch
+      // Filter by branch (and by userId for Employees)
       const data = await db.query.sales.findMany({
-        where: eq(sales.branchId, user.branchId),
+        where:
+          user.role === "Employee"
+            ? and(eq(sales.branchId, user.branchId), eq(sales.userId, user.id))
+            : eq(sales.branchId, user.branchId),
         orderBy: (sales, { desc }) => [desc(sales.createdAt)],
       });
 
