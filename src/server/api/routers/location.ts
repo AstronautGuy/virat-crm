@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { breadcrumbs, users, locationLogs, branches } from "@/server/db/schema";
+import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
+import { breadcrumbs, users, locationLogs, branches, customerVisits, customers } from "@/server/db/schema";
 import {
   eq,
   and,
@@ -11,6 +12,7 @@ import {
   lte,
   asc,
   lt,
+  isNull,
   type SQL,
 } from "drizzle-orm";
 
@@ -62,6 +64,80 @@ async function reverseGeocode(lat: number, lon: number): Promise<string> {
     return data.display_name ?? `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
   } catch {
     return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+  }
+}
+
+async function trackCustomerVisit(ctx: any, user: any, latitude: number, longitude: number) {
+  if (!user.branchId) return;
+
+  const dateStr = getFormattedDate();
+
+  // 1. Check for active visit today
+  const activeVisit = await ctx.db.query.customerVisits.findFirst({
+    where: and(
+      eq(customerVisits.userId, user.id),
+      eq(customerVisits.date, dateStr),
+      isNull(customerVisits.departureTime)
+    ),
+    with: {
+      customer: true
+    }
+  });
+
+  if (activeVisit) {
+    let isInside = false;
+    if (activeVisit.customer.geofencePolygon) {
+      isInside = booleanPointInPolygon([longitude, latitude], activeVisit.customer.geofencePolygon as any);
+    } else if (activeVisit.customer.latitude && activeVisit.customer.longitude) {
+       const dist = haversineDistance(latitude, longitude, parseFloat(activeVisit.customer.latitude), parseFloat(activeVisit.customer.longitude));
+       isInside = dist <= 50;
+    }
+
+    if (!isInside) {
+      const durationMs = Date.now() - activeVisit.arrivalTime.getTime();
+      const durationMinutes = Math.floor(durationMs / 60000);
+      await ctx.db.update(customerVisits).set({
+        departureTime: new Date(),
+        durationMinutes
+      }).where(eq(customerVisits.id, activeVisit.id));
+    }
+    return;
+  }
+
+  // 2. Find nearby customers (~1km bounding box)
+  const latMin = (latitude - 0.01).toString();
+  const latMax = (latitude + 0.01).toString();
+  const lngMin = (longitude - 0.01).toString();
+  const lngMax = (longitude + 0.01).toString();
+
+  const nearbyCustomers = await ctx.db.query.customers.findMany({
+    where: and(
+      eq(customers.branchId, user.branchId),
+      gte(customers.latitude, latMin),
+      lte(customers.latitude, latMax),
+      gte(customers.longitude, lngMin),
+      lte(customers.longitude, lngMax)
+    )
+  });
+
+  for (const customer of nearbyCustomers) {
+    let isInside = false;
+    if (customer.geofencePolygon) {
+      isInside = booleanPointInPolygon([longitude, latitude], customer.geofencePolygon as any);
+    } else if (customer.latitude && customer.longitude) {
+       const dist = haversineDistance(latitude, longitude, parseFloat(customer.latitude), parseFloat(customer.longitude));
+       isInside = dist <= 50;
+    }
+
+    if (isInside) {
+      await ctx.db.insert(customerVisits).values({
+        userId: user.id,
+        customerId: customer.id,
+        date: dateStr,
+        arrivalTime: new Date(),
+      });
+      break;
+    }
   }
 }
 
@@ -211,6 +287,9 @@ export const locationRouter = createTRPCRouter({
         longitude: input.longitude,
         accuracy: input.accuracy,
       });
+
+      // Track customer visits in the background
+      ctx.waitUntil?.(trackCustomerVisit(ctx, user, input.latitude, input.longitude).catch(console.error)) ?? trackCustomerVisit(ctx, user, input.latitude, input.longitude).catch(console.error);
 
       return { success: true };
     }),
@@ -375,6 +454,9 @@ export const locationRouter = createTRPCRouter({
         longitude: input.longitude,
         accuracy: input.accuracy,
       });
+
+      // Track customer visits in the background
+      ctx.waitUntil?.(trackCustomerVisit(ctx, user, input.latitude, input.longitude).catch(console.error)) ?? trackCustomerVisit(ctx, user, input.latitude, input.longitude).catch(console.error);
 
       return { success: true };
     }),

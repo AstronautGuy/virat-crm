@@ -1,4 +1,4 @@
-import { varchar, uuid, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { varchar, uuid, integer, timestamp, pgEnum, jsonb, numeric, index } from "drizzle-orm/pg-core";
 import { createTable, users } from "./users";
 import { branches } from "./branches";
 import { relations } from "drizzle-orm";
@@ -21,6 +21,9 @@ export const customers = createTable("customer", {
   branchId: integer("branch_id")
     .notNull()
     .references(() => branches.id),
+  geofencePolygon: jsonb("geofence_polygon"), // Stores GeoJSON polygon
+  latitude: numeric("latitude", { precision: 10, scale: 8 }),
+  longitude: numeric("longitude", { precision: 11, scale: 8 }),
   status: customerStatusEnum("status").default("Draft").notNull(),
   createdBy: uuid("created_by")
     .notNull()
@@ -31,7 +34,10 @@ export const customers = createTable("customer", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
     () => new Date(),
   ),
-});
+}, (table) => ({
+  latLngIdx: index("customers_lat_lng_idx").on(table.latitude, table.longitude),
+  branchIdx: index("customers_branch_idx").on(table.branchId),
+}));
 
 export const customersRelations = relations(customers, ({ one }) => ({
   branch: one(branches, {

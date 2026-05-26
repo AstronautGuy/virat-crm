@@ -32,3 +32,4 @@ export { customers, customersRelations, customerStatusEnum } from "./customers";
 export { dailyReports, dailyReportsRelations } from "./daily_reports";
 export { systemSettings } from "./systemSettings";
 export { dailyMileage, dailyMileageRelations } from "./daily_mileage";
+export { customerVisits, customerVisitsRelations } from "./customer_visits";
