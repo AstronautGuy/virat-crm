@@ -331,16 +331,13 @@ export const inventoryRouter = createTRPCRouter({
 
       return ctx.db.query.inventory.findMany({
         where: isAdmin
-          ? sql`${inventory.quantity} <= ${inventory.minThreshold}`
-          : and(
-              eq(inventory.branchId, dbUser.branchId ?? 0),
-              sql`${inventory.quantity} <= ${inventory.minThreshold}`,
-            ),
+          ? undefined
+          : eq(inventory.branchId, dbUser.branchId ?? 0),
         with: {
           product: true,
           branch: true,
         },
-      });
+      }).then(items => items.filter(item => item.quantity <= (item.product?.minThreshold ?? 10)));
     },
   ),
 });

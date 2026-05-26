@@ -27,10 +27,15 @@ export async function checkAndNotifyLowStock(
       return;
     }
 
-    // 2. Check if quantity is below or equal to minThreshold
-    if (stock.quantity <= (stock.minThreshold ?? 0)) {
+    // 2. Check if quantity is below or equal to product's minThreshold
+    const threshold = stock.product.minThreshold ?? 10;
+    
+    // We only want to alert if it crossed the threshold. To perfectly do this, 
+    // we would check previous stock. But checking if it is below or equal is fine for now,
+    // though we might want to ensure we don't spam if they already have an unread alert.
+    if (stock.quantity <= threshold) {
       const title = "⚠️ Low Stock Alert";
-      const message = `Stock level for "${stock.product.name}" at branch "${stock.branch.name}" has fallen to ${stock.quantity} (Threshold: ${stock.minThreshold}).`;
+      const message = `Stock level for "${stock.product.name}" at branch "${stock.branch.name}" has fallen to ${stock.quantity} (Threshold: ${threshold}).`;
 
       // 3. Find recipients: Branch Managers, Admins, Developers
       const recipients = await tx.query.users.findMany({
