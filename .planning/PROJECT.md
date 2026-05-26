@@ -29,11 +29,10 @@ Secure, mobile-first operations management that ensures authenticated access and
 - ✓ Sovereign Overrides & Developer License Controls (M7)
 - ✓ Location-Gated Fleet Tracking & Background Interceptors (M7)
 
-### Active (Milestone 8: Planning)
+### Active (Milestone 9: Planning)
 
-- [ ] Multi-tenant branch isolation hardening & database partitioning
-- [ ] Real-time Inventory Alerts & SMS/Email notifications
-- [ ] Advanced performance optimization (caching & Edge compute)
+- [ ] Email and SMS Notification Integrations
+- [ ] Role-based UI customization profiles
 
 ### Out of Scope
 
@@ -49,10 +48,11 @@ Secure, mobile-first operations management that ensures authenticated access and
 - **v5: Inventory**: Multi-branch stock transfers, atomic transactions, archival.
 - **v6: CRM & Bulk**: Customer master, Manager RBAC, Excel utilities, Soft Modernism UI.
 - **v7: Advanced Intelligence**: Predictive modeling, Isar sync database queue, sovereign locks & licensing controls.
+- **v8: Advanced Multi-Tenant Isolation & Live Alerts**: Hardened DB boundaries, strict branch isolation, live VAPID alerts & mobile background sync.
 
-### Next Milestone: M8 (Advanced Multi-Tenant Isolation & Live Alerts)
+### Next Milestone: M9 (Enterprise Scalability & Communications)
 
-- Goal: Harden database isolation boundaries, implement live alerts, and prepare for multi-branch enterprise expansion.
+- Goal: Build unified communications gateway for SMS/Email alerts and advanced role customization.
 
 ## Constraints
 
@@ -84,4 +84,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-_Last updated: 2026-05-19 after Milestone 7 Completion_
+_Last updated: 2026-05-26 after Milestone 8 Completion_
