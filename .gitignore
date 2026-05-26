@@ -49,3 +49,4 @@ yarn-error.log*
 .planning_temp/
 .gsd/
 *.scratch.*
+.vercel
