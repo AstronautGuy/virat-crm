@@ -14,6 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from "@/components/ui/combobox";
 import { ArrowLeft, Plus, Trash2, Loader2, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -40,7 +48,9 @@ export default function EditSale() {
   const [customerAddress, setCustomerAddress] = useState("");
   const [invoiceAmount, setInvoiceAmount] = useState("");
   const [advancePaymentAmount, setAdvancePaymentAmount] = useState("");
-  const [receivedAmount, setReceivedAmount] = useState("");
+
+  const pendingAmount =
+    parseFloat(invoiceAmount || "0") - parseFloat(advancePaymentAmount || "0");
 
   const [items, setItems] = useState<
     { id: number; productId: string; quantity: string; isFree: boolean }[]
@@ -58,7 +68,6 @@ export default function EditSale() {
       setCustomerAddress(sale.customerAddress ?? "");
       setInvoiceAmount(sale.invoiceAmount ?? "");
       setAdvancePaymentAmount(sale.advancePaymentAmount ?? "");
-      setReceivedAmount(sale.receivedAmount ?? "");
       
       if (sale.items) {
         setItems(sale.items.map((item, idx) => ({
@@ -121,7 +130,7 @@ export default function EditSale() {
       customerAddress: customerAddress === "" ? undefined : customerAddress,
       invoiceAmount: invoiceAmount === "" ? undefined : invoiceAmount,
       advancePaymentAmount: advancePaymentAmount === "" ? undefined : advancePaymentAmount,
-      receivedAmount: receivedAmount === "" ? undefined : receivedAmount,
+      receivedAmount: "0",
       items: items.map((item) => ({
         productId: parseInt(item.productId),
         quantity: parseInt(item.quantity),
@@ -136,6 +145,15 @@ export default function EditSale() {
     setItems(items.filter((item) => item.id !== id));
   };
   const updateItem = (id: number, field: string, value: string | boolean) => {
+    if (field === "productId") {
+      const isDuplicate = items.some(
+        (item) => item.id !== id && item.productId === value,
+      );
+      if (isDuplicate) {
+        alert("This product is already added to the sale.");
+        return;
+      }
+    }
     setItems(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
   };
 
@@ -226,22 +244,28 @@ export default function EditSale() {
                       <div key={item.id} className="flex items-end gap-2 border-b pb-4 last:border-0 last:pb-0">
                         <div className="flex-1 space-y-1">
                           <Label className="text-xs">Product</Label>
-                          <Select
+                          <Combobox
                             value={item.productId}
-                            onValueChange={(val) => updateItem(item.id, "productId", val)}
-                            required
+                            onValueChange={(val) => {
+                              if (val && typeof val === 'string') {
+                                updateItem(item.id, "productId", val);
+                              } else if (Array.isArray(val) && val.length > 0) {
+                                updateItem(item.id, "productId", val[0]);
+                              }
+                            }}
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select product" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {products.map((product) => (
-                                <SelectItem key={product.id} value={product.id.toString()}>
-                                  {product.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            <ComboboxInput placeholder="Select product" required />
+                            <ComboboxContent>
+                              <ComboboxEmpty>No product found.</ComboboxEmpty>
+                              <ComboboxList>
+                                {products.map((product) => (
+                                  <ComboboxItem key={product.id} value={product.id.toString()}>
+                                    {product.name}
+                                  </ComboboxItem>
+                                ))}
+                              </ComboboxList>
+                            </ComboboxContent>
+                          </Combobox>
                         </div>
                         <div className="w-20 space-y-1">
                           <Label className="text-xs">Qty</Label>
@@ -271,11 +295,27 @@ export default function EditSale() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <Label htmlFor="advancePaymentAmount" className="text-xs">Advance Amount</Label>
-                        <Input id="advancePaymentAmount" value={advancePaymentAmount} onChange={(e) => setAdvancePaymentAmount(e.target.value)} type="number" step="0.01" />
+                        <Input 
+                          id="advancePaymentAmount" 
+                          value={advancePaymentAmount} 
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (parseFloat(val) > parseFloat(invoiceAmount || "0")) return;
+                            setAdvancePaymentAmount(val);
+                          }} 
+                          type="number" step="0.01" 
+                        />
                       </div>
                       <div className="space-y-1">
-                        <Label htmlFor="receivedAmount" className="text-xs">Received</Label>
-                        <Input id="receivedAmount" value={receivedAmount} onChange={(e) => setReceivedAmount(e.target.value)} type="number" step="0.01" />
+                        <Label htmlFor="pendingAmount" className="text-xs text-muted-foreground">Pending Amount</Label>
+                        <Input 
+                          id="pendingAmount" 
+                          value={pendingAmount > 0 ? pendingAmount : 0} 
+                          readOnly 
+                          disabled 
+                          type="number" 
+                          className="bg-muted/50" 
+                        />
                       </div>
                     </div>
                   </CardContent>

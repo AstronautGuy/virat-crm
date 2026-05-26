@@ -17,6 +17,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from "@/components/ui/combobox";
+import {
   ArrowLeft,
   Plus,
   Trash2,
@@ -46,7 +54,9 @@ export default function NewSale() {
   const [customerAddress, setCustomerAddress] = useState("");
   const [invoiceAmount, setInvoiceAmount] = useState("");
   const [advancePaymentAmount, setAdvancePaymentAmount] = useState("");
-  const [receivedAmount, setReceivedAmount] = useState("");
+
+  const pendingAmount =
+    parseFloat(invoiceAmount || "0") - parseFloat(advancePaymentAmount || "0");
 
   const [items, setItems] = useState([
     { id: Date.now(), productId: "", quantity: "1", isFree: false },
@@ -120,7 +130,7 @@ export default function NewSale() {
       invoiceAmount: invoiceAmount === "" ? undefined : invoiceAmount,
       advancePaymentAmount:
         advancePaymentAmount === "" ? undefined : advancePaymentAmount,
-      receivedAmount: receivedAmount === "" ? undefined : receivedAmount,
+      receivedAmount: "0",
       items: items.map((item) => ({
         productId: parseInt(item.productId),
         quantity: parseInt(item.quantity),
@@ -156,6 +166,15 @@ export default function NewSale() {
   };
 
   const updateItem = (id: number, field: string, value: string | boolean) => {
+    if (field === "productId") {
+      const isDuplicate = items.some(
+        (item) => item.id !== id && item.productId === value,
+      );
+      if (isDuplicate) {
+        alert("This product is already added to the sale.");
+        return;
+      }
+    }
     setItems(
       items.map((item) =>
         item.id === id ? { ...item, [field]: value } : item,
@@ -386,22 +405,28 @@ export default function NewSale() {
                     >
                       <div className="flex-1 space-y-1">
                         <Label className="text-xs">Product</Label>
-                        <Select
+                        <Combobox
                           value={item.productId}
-                          onValueChange={(val) => updateItem(item.id, "productId", val)}
-                          required
+                          onValueChange={(val) => {
+                            if (val && typeof val === 'string') {
+                              updateItem(item.id, "productId", val);
+                            } else if (Array.isArray(val) && val.length > 0) {
+                              updateItem(item.id, "productId", val[0]);
+                            }
+                          }}
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select product" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {products.map((product) => (
-                              <SelectItem key={product.id} value={product.id.toString()}>
-                                {product.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          <ComboboxInput placeholder="Select product" required />
+                          <ComboboxContent>
+                            <ComboboxEmpty>No product found.</ComboboxEmpty>
+                            <ComboboxList>
+                              {products.map((product) => (
+                                <ComboboxItem key={product.id} value={product.id.toString()}>
+                                  {product.name}
+                                </ComboboxItem>
+                              ))}
+                            </ComboboxList>
+                          </ComboboxContent>
+                        </Combobox>
                       </div>
                       <div className="w-20 space-y-1">
                         <Label className="text-xs">Qty</Label>
@@ -474,23 +499,28 @@ export default function NewSale() {
                       <Input
                         id="advancePaymentAmount"
                         value={advancePaymentAmount}
-                        onChange={(e) =>
-                          setAdvancePaymentAmount(e.target.value)
-                        }
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (parseFloat(val) > parseFloat(invoiceAmount || "0")) {
+                            return; // Prevent setting advance greater than invoice
+                          }
+                          setAdvancePaymentAmount(val);
+                        }}
                         type="number"
                         step="0.01"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="receivedAmount" className="text-xs">
-                        Received Today
+                      <Label htmlFor="pendingAmount" className="text-xs text-muted-foreground">
+                        Pending Amount
                       </Label>
                       <Input
-                        id="receivedAmount"
-                        value={receivedAmount}
-                        onChange={(e) => setReceivedAmount(e.target.value)}
+                        id="pendingAmount"
+                        value={pendingAmount > 0 ? pendingAmount : 0}
+                        readOnly
+                        disabled
                         type="number"
-                        step="0.01"
+                        className="bg-muted/50"
                       />
                     </div>
                   </div>
