@@ -7,6 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ArrowLeft, Plus, Trash2, Loader2, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -20,6 +27,7 @@ export default function EditSale() {
   const saleId = parseInt(params.id as string);
 
   const { data: sale, isLoading: isFetchingSale } = api.sales.getSale.useQuery({ id: saleId }, { enabled: !!saleId });
+  const { data: products = [] } = api.inventory.getProducts.useQuery();
 
   const [success, setSuccess] = useState(false);
   const [pincode, setPincode] = useState("");
@@ -122,7 +130,7 @@ export default function EditSale() {
     });
   };
 
-  const addItem = () => setItems([...items, { id: Date.now(), productId: "1", quantity: "1", isFree: false }]);
+  const addItem = () => setItems([...items, { id: Date.now(), productId: "", quantity: "1", isFree: false }]);
   const removeItem = (id: number) => {
     if (items.length === 1) return;
     setItems(items.filter((item) => item.id !== id));
@@ -217,8 +225,23 @@ export default function EditSale() {
                     {items.map((item) => (
                       <div key={item.id} className="flex items-end gap-2 border-b pb-4 last:border-0 last:pb-0">
                         <div className="flex-1 space-y-1">
-                          <Label className="text-xs">Product ID</Label>
-                          <Input value={item.productId} onChange={(e) => updateItem(item.id, "productId", e.target.value)} type="number" required />
+                          <Label className="text-xs">Product</Label>
+                          <Select
+                            value={item.productId}
+                            onValueChange={(val) => updateItem(item.id, "productId", val)}
+                            required
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select product" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {products.map((product) => (
+                                <SelectItem key={product.id} value={product.id.toString()}>
+                                  {product.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="w-20 space-y-1">
                           <Label className="text-xs">Qty</Label>

@@ -10,6 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ArrowLeft,
   Plus,
   Trash2,
@@ -42,8 +49,11 @@ export default function NewSale() {
   const [receivedAmount, setReceivedAmount] = useState("");
 
   const [items, setItems] = useState([
-    { id: Date.now(), productId: "1", quantity: "1", isFree: false },
+    { id: Date.now(), productId: "", quantity: "1", isFree: false },
   ]);
+
+  const { data: branches = [] } = api.inventory.getBranches.useQuery();
+  const { data: products = [] } = api.inventory.getProducts.useQuery();
 
   // Pincode Auto-fill Effect
   const [isFetchingPincode, setIsFetchingPincode] = useState(false);
@@ -136,7 +146,7 @@ export default function NewSale() {
   const addItem = () => {
     setItems([
       ...items,
-      { id: Date.now(), productId: "1", quantity: "1", isFree: false },
+      { id: Date.now(), productId: "", quantity: "1", isFree: false },
     ]);
   };
 
@@ -243,15 +253,24 @@ export default function NewSale() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <Label htmlFor="branchId" className="text-xs">
-                        Branch ID
+                        Branch
                       </Label>
-                      <Input
-                        id="branchId"
+                      <Select
                         value={branchId}
-                        onChange={(e) => setBranchId(e.target.value)}
+                        onValueChange={setBranchId}
                         required
-                        type="number"
-                      />
+                      >
+                        <SelectTrigger id="branchId">
+                          <SelectValue placeholder="Select branch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {branches.map((branch) => (
+                            <SelectItem key={branch.id} value={branch.id.toString()}>
+                              {branch.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-1">
                       <Label
@@ -366,15 +385,23 @@ export default function NewSale() {
                       className="flex items-end gap-2 border-b pb-4 last:border-0 last:pb-0"
                     >
                       <div className="flex-1 space-y-1">
-                        <Label className="text-xs">Product ID</Label>
-                        <Input
+                        <Label className="text-xs">Product</Label>
+                        <Select
                           value={item.productId}
-                          onChange={(e) =>
-                            updateItem(item.id, "productId", e.target.value)
-                          }
-                          type="number"
+                          onValueChange={(val) => updateItem(item.id, "productId", val)}
                           required
-                        />
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select product" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {products.map((product) => (
+                              <SelectItem key={product.id} value={product.id.toString()}>
+                                {product.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="w-20 space-y-1">
                         <Label className="text-xs">Qty</Label>

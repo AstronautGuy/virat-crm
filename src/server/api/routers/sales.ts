@@ -82,25 +82,18 @@ export const salesRouter = createTRPCRouter({
       return await ctx.db.transaction(async (tx) => {
         // 1. Stock Check & Decrement
         for (const item of input.items) {
-          const stockEntry = await tx.query.inventory.findFirst({
-            where: and(
-              eq(inventory.productId, item.productId),
-              eq(inventory.branchId, targetBranchId),
-            ),
-          });
-
-          if (!stockEntry || stockEntry.quantity < item.quantity) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: `Insufficient stock for product ID ${item.productId} at this branch.`,
-            });
-          }
-
-          // Update inventory
+          // Update or Insert inventory with negative
           await tx
-            .update(inventory)
-            .set({ quantity: stockEntry.quantity - item.quantity })
-            .where(eq(inventory.id, stockEntry.id));
+            .insert(inventory)
+            .values({
+              productId: item.productId,
+              branchId: targetBranchId,
+              quantity: -item.quantity,
+            })
+            .onConflictDoUpdate({
+              target: [inventory.productId, inventory.branchId],
+              set: { quantity: sql`${inventory.quantity} - ${item.quantity}` },
+            });
 
           // Trigger Low Stock Alerts
           await checkAndNotifyLowStock(tx, targetBranchId, item.productId);
@@ -297,24 +290,17 @@ export const salesRouter = createTRPCRouter({
         // Decrement new items inventory
         if (existingSale.status !== "Rejected") {
           for (const item of input.items) {
-            const stockEntry = await tx.query.inventory.findFirst({
-              where: and(
-                eq(inventory.productId, item.productId),
-                eq(inventory.branchId, existingSale.branchId)
-              ),
-            });
-
-            if (!stockEntry || stockEntry.quantity < item.quantity) {
-              throw new TRPCError({
-                code: "BAD_REQUEST",
-                message: `Insufficient stock for product ID ${item.productId}`,
-              });
-            }
-
             await tx
-              .update(inventory)
-              .set({ quantity: stockEntry.quantity - item.quantity })
-              .where(eq(inventory.id, stockEntry.id));
+              .insert(inventory)
+              .values({
+                productId: item.productId,
+                branchId: existingSale.branchId,
+                quantity: -item.quantity,
+              })
+              .onConflictDoUpdate({
+                target: [inventory.productId, inventory.branchId],
+                set: { quantity: sql`${inventory.quantity} - ${item.quantity}` },
+              });
 
             await tx.insert(inventoryTransactions).values({
               productId: item.productId,
@@ -538,24 +524,18 @@ export const salesRouter = createTRPCRouter({
           (input.status === "Pending" || input.status === "Approved")
         ) {
           for (const item of targetSale.items) {
-            // Atomic decrement
-            const decr = await tx
-              .update(inventory)
-              .set({ quantity: sql`${inventory.quantity} - ${item.quantity}` })
-              .where(
-                and(
-                  eq(inventory.productId, item.productId),
-                  eq(inventory.branchId, targetSale.branchId),
-                ),
-              )
-              .returning();
-
-            if (!decr[0] || decr[0].quantity < 0) {
-              throw new TRPCError({
-                code: "BAD_REQUEST",
-                message: `Insufficient stock to re-activate sale for product ${item.productId}`,
+            // Atomic decrement via Upsert
+            await tx
+              .insert(inventory)
+              .values({
+                productId: item.productId,
+                branchId: targetSale.branchId,
+                quantity: -item.quantity,
+              })
+              .onConflictDoUpdate({
+                target: [inventory.productId, inventory.branchId],
+                set: { quantity: sql`${inventory.quantity} - ${item.quantity}` },
               });
-            }
 
             await tx.insert(inventoryTransactions).values({
               productId: item.productId,
