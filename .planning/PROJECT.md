@@ -29,12 +29,9 @@ Secure, mobile-first operations management that ensures authenticated access and
 - ✓ Sovereign Overrides & Developer License Controls (M7)
 - ✓ Location-Gated Fleet Tracking & Background Interceptors (M7)
 
-### Active (Milestone 9: Planning)
+### Active (Milestone 10: Planning)
 
-- [ ] Real-time Team Map (Live view of all field agents on a map)
-- [ ] Historical Route Playback (See a specific agent's path for a past date)
-- [ ] Distance/Mileage Reports (Calculate total distance traveled for reimbursements)
-- [ ] Geofence Analytics (Time spent inside client/branch geofences)
+- [ ] Goals to be defined in next milestone.
 
 ### Out of Scope
 
@@ -51,10 +48,11 @@ Secure, mobile-first operations management that ensures authenticated access and
 - **v6: CRM & Bulk**: Customer master, Manager RBAC, Excel utilities, Soft Modernism UI.
 - **v7: Advanced Intelligence**: Predictive modeling, Isar sync database queue, sovereign locks & licensing controls.
 - **v8: Advanced Multi-Tenant Isolation & Live Alerts**: Hardened DB boundaries, strict branch isolation, live VAPID alerts & mobile background sync.
+- **v9: Live Tracking & Location Reports**: Robust real-time tracking, historical routes, mileage reimbursement reports, and geofence analytics for field agents.
 
-### Next Milestone: M9 (Live Tracking & Location Reports)
+### Next Milestone: M10 (To be defined)
 
-- Goal: Provide robust real-time tracking, historical routes, mileage reimbursement reports, and geofence analytics for field agents.
+- Goal: Define focus via `/gsd-new-milestone`.
 
 ## Constraints
 
@@ -79,6 +77,7 @@ Secure, mobile-first operations management that ensures authenticated access and
 | Serwist PWA           | Modern Service Worker management for Next.js 15         | Completed (Phase 6) |
 | Web Push (VAPID)      | Native notifications for real-time workflow alerts      | Completed (Phase 8) |
 | IndexedDB Queue       | Robust offline resilience for field agents              | Completed (Phase 9) |
+| Turf.js & Map clustering | Offline GPS math & robust DOM clustering for Maps    | Completed (M9)      |
 
 ## Evolution
 
@@ -86,4 +85,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-_Last updated: 2026-05-26 after Milestone 8 Completion_
+_Last updated: 2026-05-27 after Milestone 9 Completion_
