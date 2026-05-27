@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { sales, branches, locationLogs, users } from "@/server/db/schema";
+import { sales, branches, locationLogs, users, dailyMileage } from "@/server/db/schema";
 import { and, gte, lte, eq, sql, inArray } from "drizzle-orm";
 import { getDateRange } from "@/server/lib/date";
 
@@ -204,6 +204,98 @@ export const reportsRouter = createTRPCRouter({
         attendance: attendanceData,
         yearlyStats,
         summary,
+      };
+    }),
+
+  getMileageReport: featureProtectedProcedure("reports")
+    .input(
+      z.object({
+        preset: z.enum(["today", "7d", "30d", "quarter", "year", "all"]),
+        scope: z.enum(["individual", "team", "management", "branch"]),
+        targetId: z.string().uuid().optional(),
+        branchId: z.number().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { start, end } = getDateRange(input.preset);
+      const currentUser = ctx.dbUser;
+
+      // 1. Identify Target Users based on Scope
+      let targetUserIds: string[] = [];
+      const effectiveId = input.targetId ?? currentUser.id;
+
+      if (input.scope === "individual") {
+        targetUserIds = [effectiveId];
+      } else if (input.scope === "team") {
+        const team = await ctx.db.query.users.findMany({
+          where: eq(users.managerId, effectiveId),
+          columns: { id: true },
+        });
+        targetUserIds = team.map((u) => u.id);
+      } else if (input.scope === "branch") {
+        if (currentUser.role !== "Admin")
+          throw new TRPCError({ code: "FORBIDDEN" });
+        const branchUsers = await ctx.db.query.users.findMany({
+          where: eq(users.branchId, input.branchId!),
+          columns: { id: true },
+        });
+        targetUserIds = branchUsers.map((u) => u.id);
+      } else if (input.scope === "management") {
+        const descendantsQuery = sql`
+          WITH RECURSIVE subordinates AS (
+            SELECT id FROM "virat-crm_user" WHERE manager_id = ${effectiveId}
+            UNION
+            SELECT e.id FROM "virat-crm_user" e
+            INNER JOIN subordinates s ON s.id = e.manager_id
+          )
+          SELECT id FROM subordinates;
+        `;
+        const rows = (await ctx.db.execute(descendantsQuery)) as unknown as {
+          id: string;
+        }[];
+        targetUserIds = rows.map((r) => String(r.id));
+      }
+
+      if (targetUserIds.length === 0 && input.scope !== "individual") {
+        return { records: [], totalKm: 0 };
+      }
+
+      // Convert start and end dates to YYYY-MM-DD strings for filtering `daily_mileage.date`
+      const startDateStr = start.toISOString().split("T")[0]!;
+      const endDateStr = end.toISOString().split("T")[0]!;
+
+      const mileageData = await ctx.db
+        .select({
+          id: dailyMileage.id,
+          date: dailyMileage.date,
+          totalDistanceMeters: dailyMileage.totalDistanceMeters,
+          validPointsCount: dailyMileage.validPointsCount,
+          userName: sql<string>`${users.firstName} || ' ' || ${users.lastName}`,
+          employeeCode: users.employeeCode,
+        })
+        .from(dailyMileage)
+        .innerJoin(users, eq(dailyMileage.userId, users.id))
+        .where(
+          and(
+            inArray(dailyMileage.userId, targetUserIds),
+            gte(dailyMileage.date, startDateStr),
+            lte(dailyMileage.date, endDateStr),
+          ),
+        );
+
+      let totalKm = 0;
+      const records = mileageData.map((m) => {
+        const km = parseFloat(m.totalDistanceMeters) / 1000;
+        totalKm += km;
+        return {
+          ...m,
+          totalDistanceKm: parseFloat(km.toFixed(2)),
+        };
+      });
+
+      return {
+        records,
+        totalKm: parseFloat(totalKm.toFixed(2)),
       };
     }),
 

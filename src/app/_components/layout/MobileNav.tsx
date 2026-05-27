@@ -66,6 +66,12 @@ export function MobileNav() {
       hidden: !getIsFeatureEnabled("reports"),
     },
     {
+      href: "/reports/mileage",
+      label: "Mileage",
+      icon: FileText,
+      hidden: !getIsFeatureEnabled("reports"),
+    },
+    {
       href: "/attendance",
       label: "Staff",
       icon: Users,

@@ -79,6 +79,12 @@ export function DesktopSidebar() {
       hidden: !getIsFeatureEnabled("reports"),
     },
     {
+      href: "/reports/mileage",
+      label: "Mileage Reports",
+      icon: FileText,
+      hidden: !getIsFeatureEnabled("reports"),
+    },
+    {
       href: "/attendance",
       label: "Workforce",
       icon: Users,
