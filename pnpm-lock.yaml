@@ -71,6 +71,15 @@ importers:
       '@trpc/server':
         specifier: ^11.17.0
         version: 11.17.0(typescript@5.9.3)
+      '@turf/boolean-point-in-polygon':
+        specifier: ^7.3.5
+        version: 7.3.5
+      '@turf/helpers':
+        specifier: ^7.3.5
+        version: 7.3.5
+      '@turf/simplify':
+        specifier: ^7.3.5
+        version: 7.3.5
       '@turf/turf':
         specifier: ^7.3.5
         version: 7.3.5
