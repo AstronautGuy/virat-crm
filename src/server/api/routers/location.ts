@@ -659,22 +659,9 @@ export const locationRouter = createTRPCRouter({
         .orderBy(breadcrumbs.userId, desc(breadcrumbs.createdAt));
 
       return latestBreadcrumbs.map((b) => {
-        // Convert timestamp without timezone from local server time to actual UTC Date
-        const utcCreatedAt = new Date(
-          Date.UTC(
-            b.createdAt.getFullYear(),
-            b.createdAt.getMonth(),
-            b.createdAt.getDate(),
-            b.createdAt.getHours(),
-            b.createdAt.getMinutes(),
-            b.createdAt.getSeconds(),
-            b.createdAt.getMilliseconds(),
-          ),
-        );
-        const isOnline = Date.now() - utcCreatedAt.getTime() < 15 * 60 * 1000;
+        const isOnline = Date.now() - b.createdAt.getTime() < 15 * 60 * 1000;
         return {
           ...b,
-          createdAt: utcCreatedAt,
           latitude: parseFloat(String(b.latitude)),
           longitude: parseFloat(String(b.longitude)),
           isOnline,

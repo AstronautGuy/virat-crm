@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { format } from "date-fns";
 import { env } from "@/env";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
@@ -164,7 +165,7 @@ export default function LiveTeamMap() {
                     Last Seen
                   </p>
                   <p className="text-xs font-medium text-gray-700">
-                    {new Date(loc.createdAt).toLocaleString()}
+                    {format(new Date(loc.createdAt), "hh:mm a, MMM do")}
                   </p>
                   <div className="mt-3.5">
                     <button
