@@ -31,7 +31,11 @@ Secure, mobile-first operations management that ensures authenticated access and
 
 ### Active (Milestone 10: Planning)
 
-- [ ] Goals to be defined in next milestone.
+- [ ] Expo App Background/Foreground Sync (Perfect location tracking sync from Expo app to backend)
+- [ ] Time Sync Fix (Resolve previous time synchronization issues ensuring accurate timestamps)
+- [ ] Hardened Live Location & Routes (Maximum reliability, bug fixes, and robust historical route playback)
+- [ ] Verified Reports (Accurate historical reports with specific time slab location logs)
+- [ ] Global Codebase Audit (Scan the entire project for hard-coded values and correct them)
 
 ### Out of Scope
 
@@ -50,9 +54,9 @@ Secure, mobile-first operations management that ensures authenticated access and
 - **v8: Advanced Multi-Tenant Isolation & Live Alerts**: Hardened DB boundaries, strict branch isolation, live VAPID alerts & mobile background sync.
 - **v9: Live Tracking & Location Reports**: Robust real-time tracking, historical routes, mileage reimbursement reports, and geofence analytics for field agents.
 
-### Next Milestone: M10 (To be defined)
+### Next Milestone: M10 (Expo App Sync, Hardening & Global Refactoring)
 
-- Goal: Define focus via `/gsd-new-milestone`.
+- Goal: Ensure the Expo mobile app perfectly syncs location data in both foreground and background without time discrepancies, while hardening live location/reports and performing a global audit to eliminate hard-coded values.
 
 ## Constraints
 
