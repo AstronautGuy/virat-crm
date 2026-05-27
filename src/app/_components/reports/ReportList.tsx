@@ -14,8 +14,15 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TimeSlabHistory } from "./TimeSlabHistory";
+import { useState } from "react";
 
 interface ReportListProps {
   isManager?: boolean;
@@ -23,6 +30,7 @@ interface ReportListProps {
 
 export function ReportList({ isManager = false }: ReportListProps) {
   const [search, setSearch] = useState("");
+  const [selectedReport, setSelectedReport] = useState<any>(null);
 
   const myReports = api.dailyReports.listMyReports.useQuery(undefined, {
     enabled: !isManager,
@@ -139,7 +147,10 @@ export function ReportList({ isManager = false }: ReportListProps) {
                         Submitted at{" "}
                         {format(new Date(report.createdAt), "hh:mm a")}
                       </div>
-                      <button className="flex items-center gap-1 text-[10px] font-bold tracking-tight text-blue-600 uppercase hover:underline">
+                      <button 
+                        onClick={() => setSelectedReport(report)}
+                        className="flex items-center gap-1 text-[10px] font-bold tracking-tight text-blue-600 uppercase hover:underline"
+                      >
                         View Full History <ArrowRight className="h-3 w-3" />
                       </button>
                     </div>
@@ -164,6 +175,23 @@ export function ReportList({ isManager = false }: ReportListProps) {
           </div>
         )}
       </div>
+
+      <Dialog open={!!selectedReport} onOpenChange={(open) => !open && setSelectedReport(null)}>
+        <DialogContent className="sm:max-w-[600px] overflow-hidden bg-slate-50/50">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <Calendar className="h-5 w-5 text-blue-500" />
+              History for {selectedReport && format(new Date(selectedReport.reportDate), "MMM dd, yyyy")}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedReport && (
+            <TimeSlabHistory 
+              userId={selectedReport.user.id} 
+              date={new Date(selectedReport.reportDate)} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 "use client";
-
+import { env } from "@/env";
 import { FeatureGate } from "@/app/_components/auth/FeatureGate";
 
 import { DashboardLayout } from "../../_components/layout/DashboardLayout";
@@ -81,7 +81,7 @@ export default function NewSale() {
         setIsFetchingPincode(true);
         try {
           const res = await fetch(
-            `https://api.postalpincode.in/pincode/${pincode}`,
+            `${env.NEXT_PUBLIC_PINCODE_API_URL}/${pincode}`,
           );
           interface PincodeResponse {
             PostOffice: Array<{

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { env } from "@/env";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
 import { api } from "@/trpc/react";
@@ -118,8 +119,8 @@ export default function LiveTeamMap() {
         className="z-0 h-full w-full"
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution={env.NEXT_PUBLIC_MAP_ATTRIBUTION}
+          url={env.NEXT_PUBLIC_MAP_TILE_URL}
         />
         <MarkerClusterGroup
           chunkedLoading

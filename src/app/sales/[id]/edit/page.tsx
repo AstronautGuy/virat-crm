@@ -5,6 +5,7 @@ import { DashboardLayout } from "@/app/_components/layout/DashboardLayout";
 import { api } from "@/trpc/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { env } from "@/env";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -92,7 +93,7 @@ export default function EditSale() {
       const fetchDetails = async () => {
         setIsFetchingPincode(true);
         try {
-          const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+          const res = await fetch(`${env.NEXT_PUBLIC_PINCODE_API_URL}/${pincode}`);
           const data = (await res.json()) as any[];
           if (Array.isArray(data) && data[0]?.Status === "Success") {
             const postOffice = data[0].PostOffice?.[0];

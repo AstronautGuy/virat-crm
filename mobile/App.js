@@ -16,7 +16,7 @@ Notifications.setNotificationHandler({
 });
 
 // Use Vercel URL for the production APK build
-const TARGET_URL = 'https://virat-crm.vercel.app';
+const TARGET_URL = process.env.EXPO_PUBLIC_API_URL || 'https://virat-crm.vercel.app';
 const LOCATION_TASK_NAME = 'BACKGROUND_LOCATION_TASK';
 const NOTIFICATION_TASK_NAME = 'BACKGROUND_NOTIFICATION_TASK';
 

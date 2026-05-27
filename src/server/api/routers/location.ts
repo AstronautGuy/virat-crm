@@ -1,3 +1,4 @@
+import { env } from "@/env";
 import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
@@ -61,7 +62,7 @@ function haversineDistance(
 
 async function reverseGeocode(lat: number, lon: number): Promise<string> {
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+    const url = `${env.NEXT_PUBLIC_GEOCODING_API_URL}?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
     const res = await fetch(url, { headers: { "User-Agent": "ViratCRM/1.0 (contact@viratcrm.com)" } });
     if (!res.ok) return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
     const data = await res.json() as { display_name?: string };

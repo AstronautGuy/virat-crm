@@ -1,5 +1,5 @@
 "use client";
-
+import { env } from "@/env";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -83,7 +83,7 @@ export function CustomerForm({
         setIsFetchingPincode(true);
         try {
           const res = await fetch(
-            `https://api.postalpincode.in/pincode/${pincode}`,
+            `${env.NEXT_PUBLIC_PINCODE_API_URL}/${pincode}`,
           );
           const data = (await res.json()) as {
             Status: string;
