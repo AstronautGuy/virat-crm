@@ -18,8 +18,8 @@ import {
   type SQL,
 } from "drizzle-orm";
 
-function getCurrentSlab() {
-  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+function getCurrentSlab(date: Date = new Date()) {
+  const now = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
   const hours = now.getHours();
 
   if (hours >= 0 && hours < 10) return "00:00-10:00";
@@ -144,6 +144,11 @@ async function trackCustomerVisit(ctx: any, user: any, latitude: number, longitu
 }
 
 export const locationRouter = createTRPCRouter({
+  getServerTime: featureProtectedProcedure("workforce")
+    .query(() => {
+      return { serverTime: Date.now() };
+    }),
+
   ping: featureProtectedProcedure("workforce")
     .meta({
       openapi: {
@@ -459,6 +464,129 @@ export const locationRouter = createTRPCRouter({
 
       // Track customer visits in the background
       ctx.waitUntil?.(trackCustomerVisit(ctx, user, input.latitude, input.longitude).catch(console.error)) ?? trackCustomerVisit(ctx, user, input.latitude, input.longitude).catch(console.error);
+
+      return { success: true };
+    }),
+
+  logBreadcrumbBatch: featureProtectedProcedure("workforce")
+    .input(
+      z.object({
+        locations: z.array(
+          z.object({
+            latitude: z.number(),
+            longitude: z.number(),
+            accuracy: z.number().optional(),
+            timestamp: z.number(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const user = ctx.dbUser;
+      if (user.role === "Admin") return { success: true, ignored: true }; // Admins are not tracked
+
+      const branch = user.branchId 
+        ? await ctx.db.query.branches.findFirst({ where: eq(branches.id, user.branchId) })
+        : null;
+
+      for (const loc of input.locations) {
+        const locDate = new Date(loc.timestamp);
+        
+        let isWithinRadius = false;
+        if (branch) {
+          const distance = haversineDistance(
+            loc.latitude,
+            loc.longitude,
+            parseFloat(branch.latitude),
+            parseFloat(branch.longitude)
+          );
+          isWithinRadius = distance <= branch.radiusMeters;
+        }
+
+        if (!branch || !isWithinRadius) {
+          await ctx.db.insert(breadcrumbs).values({
+            userId: user.id,
+            latitude: loc.latitude,
+            longitude: loc.longitude,
+            accuracy: loc.accuracy,
+            createdAt: locDate,
+          });
+          continue;
+        }
+
+        const slabName = getCurrentSlab(locDate);
+        const dateStr = getFormattedDate(locDate);
+
+        const roundedLat = loc.latitude.toFixed(4);
+        const roundedLng = loc.longitude.toFixed(4);
+        const coordsKey = `${roundedLat},${roundedLng}`;
+
+        const existingSlab = await ctx.db.query.locationLogs.findFirst({
+          where: and(
+            eq(locationLogs.userId, user.id),
+            eq(locationLogs.date, dateStr),
+            eq(locationLogs.slab, slabName),
+          ),
+        });
+
+        let frequencyMap: Record<string, number> = {};
+        if (existingSlab?.frequencyMap) {
+          frequencyMap = existingSlab.frequencyMap;
+        }
+
+        frequencyMap[coordsKey] = (frequencyMap[coordsKey] ?? 0) + 1;
+
+        let maxCount = 0;
+        let mostFrequentKey = coordsKey;
+        for (const [key, count] of Object.entries(frequencyMap)) {
+          if (count > maxCount) {
+            maxCount = count;
+            mostFrequentKey = key;
+          }
+        }
+
+        const [finalLatStr, finalLngStr] = mostFrequentKey.split(",");
+        const finalLat = finalLatStr!;
+        const finalLng = finalLngStr!;
+
+        let finalLocationName = existingSlab?.locationName;
+        if (existingSlab?.latitude !== finalLat || existingSlab?.longitude !== finalLng || !finalLocationName) {
+          finalLocationName = await reverseGeocode(parseFloat(finalLat), parseFloat(finalLng));
+        }
+
+        if (existingSlab) {
+          await ctx.db
+            .update(locationLogs)
+            .set({
+              frequencyMap,
+              latitude: finalLat,
+              longitude: finalLng,
+              locationName: finalLocationName,
+              recordedAt: new Date(), // updated time
+            })
+            .where(eq(locationLogs.id, existingSlab.id));
+        } else {
+          await ctx.db.insert(locationLogs).values({
+            userId: user.id,
+            date: dateStr,
+            slab: slabName,
+            frequencyMap,
+            latitude: finalLat,
+            longitude: finalLng,
+            locationName: finalLocationName,
+          });
+        }
+
+        await ctx.db.insert(breadcrumbs).values({
+          userId: user.id,
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+          accuracy: loc.accuracy,
+          createdAt: locDate,
+        });
+
+        ctx.waitUntil?.(trackCustomerVisit(ctx, user, loc.latitude, loc.longitude).catch(console.error)) ?? trackCustomerVisit(ctx, user, loc.latitude, loc.longitude).catch(console.error);
+      }
 
       return { success: true };
     }),

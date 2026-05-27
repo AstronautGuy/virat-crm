@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Alert, Platform } from 'react-native';
+import { StyleSheet, View, Text, Platform, TouchableOpacity } from 'react-native';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -19,6 +20,33 @@ const TARGET_URL = 'https://virat-crm.vercel.app';
 const LOCATION_TASK_NAME = 'BACKGROUND_LOCATION_TASK';
 const NOTIFICATION_TASK_NAME = 'BACKGROUND_NOTIFICATION_TASK';
 
+async function syncLocationQueue() {
+  try {
+    const queueStr = await AsyncStorage.getItem('location_queue');
+    if (!queueStr) return;
+    const queue = JSON.parse(queueStr);
+    if (!queue || queue.length === 0) return;
+
+    const response = await fetch(`${TARGET_URL}/api/trpc/location.logBreadcrumbBatch`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        json: { locations: queue }
+      }),
+    });
+
+    if (response.ok) {
+      // Clear queue and update last sync
+      await AsyncStorage.removeItem('location_queue');
+      await AsyncStorage.setItem('last_successful_sync', Date.now().toString());
+      await AsyncStorage.setItem('is_locked_out', 'false');
+    }
+  } catch (err) {
+    console.log('Failed to sync location batch:', err.message);
+  }
+}
+
 // Define the background task
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (error) {
@@ -30,28 +58,43 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
     const loc = locations[0];
     if (loc) {
       try {
-        // Send location to the tRPC ping endpoint
-        // Native fetch shares cookies with the WebView automatically on most platforms
-        const response = await fetch(`${TARGET_URL}/api/trpc/location.logBreadcrumb`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            json: {
-              latitude: loc.coords.latitude,
-              longitude: loc.coords.longitude,
-              accuracy: loc.coords.accuracy,
-            }
-          }),
+        // 1. Get Time Offset
+        const offsetStr = await AsyncStorage.getItem('time_offset');
+        const offset = offsetStr ? parseInt(offsetStr, 10) : 0;
+        const accurateTimestamp = Date.now() + offset;
+
+        // 2. Add to Queue
+        const queueStr = await AsyncStorage.getItem('location_queue');
+        let queue = queueStr ? JSON.parse(queueStr) : [];
+        queue.push({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          accuracy: loc.coords.accuracy,
+          timestamp: accurateTimestamp,
         });
-        
-        if (!response.ok) {
-          console.warn('Failed to ping location in background:', response.status);
+        await AsyncStorage.setItem('location_queue', JSON.stringify(queue));
+
+        // 3. Attempt Sync
+        await syncLocationQueue();
+
+        // 4. Check Lockout condition
+        const lastSyncStr = await AsyncStorage.getItem('last_successful_sync');
+        const lastSync = lastSyncStr ? parseInt(lastSyncStr, 10) : Date.now();
+        if (Date.now() - lastSync > 10 * 60 * 1000) {
+          // Locked out
+          await AsyncStorage.setItem('is_locked_out', 'true');
+          // Report lockout if possible
+          try {
+            await fetch(`${TARGET_URL}/api/trpc/alerts.reportLockout`, {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ json: null })
+            });
+          } catch (e) { /* ignore */ }
         }
       } catch (err) {
-        console.error('Network error in background location ping:', err);
+        console.error('Background location error:', err);
       }
     }
   }
@@ -93,6 +136,16 @@ TaskManager.defineTask(NOTIFICATION_TASK_NAME, async () => {
 export default function App() {
   const webviewRef = useRef(null);
   const [hasPermissions, setHasPermissions] = useState(false);
+  const [isLockedOut, setIsLockedOut] = useState(false);
+
+  useEffect(() => {
+    const checkLockout = async () => {
+      const locked = await AsyncStorage.getItem('is_locked_out');
+      setIsLockedOut(locked === 'true');
+    };
+    const interval = setInterval(checkLockout, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -119,6 +172,26 @@ export default function App() {
 
         setHasPermissions(true);
 
+        // Sync Time Offset & Initialize sync timer
+        try {
+          const res = await fetch(`${TARGET_URL}/api/trpc/location.getServerTime`, {
+             method: 'GET',
+             credentials: 'include',
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const serverTime = data?.result?.data?.serverTime;
+            if (serverTime) {
+              const offset = serverTime - Date.now();
+              await AsyncStorage.setItem('time_offset', offset.toString());
+            }
+          }
+          await AsyncStorage.setItem('last_successful_sync', Date.now().toString());
+          await AsyncStorage.setItem('is_locked_out', 'false');
+        } catch (e) { 
+          console.warn("Failed to sync time, using local clock:", e); 
+        }
+
         // Register background fetch for notifications
         await BackgroundFetch.registerTaskAsync(NOTIFICATION_TASK_NAME, {
           minimumInterval: 15 * 60, // 15 minutes
@@ -142,15 +215,20 @@ export default function App() {
         // Ping immediately on load so we don't have to wait for movement
         const currentLoc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         if (currentLoc) {
-          fetch(`${TARGET_URL}/api/trpc/location.logBreadcrumb`, {
+          const offsetStr = await AsyncStorage.getItem('time_offset');
+          const offset = offsetStr ? parseInt(offsetStr, 10) : 0;
+          fetch(`${TARGET_URL}/api/trpc/location.logBreadcrumbBatch`, {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               json: {
-                latitude: currentLoc.coords.latitude,
-                longitude: currentLoc.coords.longitude,
-                accuracy: currentLoc.coords.accuracy,
+                locations: [{
+                  latitude: currentLoc.coords.latitude,
+                  longitude: currentLoc.coords.longitude,
+                  accuracy: currentLoc.coords.accuracy,
+                  timestamp: Date.now() + offset,
+                }]
               }
             }),
           }).catch(console.warn);
@@ -163,6 +241,20 @@ export default function App() {
 
   return (
     <View style={styles.container}>
+      {isLockedOut && (
+        <View style={styles.lockoutOverlay}>
+          <Text style={styles.lockoutTitle}>App Locked</Text>
+          <Text style={styles.lockoutText}>
+            Location tracking failed for over 10 minutes. Please restore network/GPS connectivity.
+          </Text>
+          <TouchableOpacity 
+             style={styles.retryButton} 
+             onPress={() => syncLocationQueue()}
+          >
+             <Text style={styles.retryText}>Retry Sync</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       <WebView
         ref={webviewRef}
         source={{ uri: TARGET_URL }}
@@ -186,4 +278,36 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: Platform.OS === 'ios' ? 44 : 24, // Basic safe area adjustment
   },
+  lockoutOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(220, 38, 38, 0.95)',
+    zIndex: 999,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+  },
+  lockoutTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 20,
+  },
+  lockoutText: {
+    fontSize: 16,
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 30,
+    lineHeight: 24,
+  },
+  retryButton: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#dc2626',
+    fontWeight: 'bold',
+    fontSize: 16,
+  }
 });

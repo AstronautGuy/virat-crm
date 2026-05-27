@@ -19,6 +19,7 @@ import { authRouter } from "./routers/auth";
 import { heartbeatRouter } from "./routers/heartbeat";
 import { rolesRouter } from "./routers/roles";
 import { developerRouter } from "./routers/developer";
+import { alertsRouter } from "./routers/alerts";
 
 /**
  * This is the primary router for your server.
@@ -45,6 +46,7 @@ export const appRouter = createTRPCRouter({
   heartbeat: heartbeatRouter,
   roles: rolesRouter,
   developer: developerRouter,
+  alerts: alertsRouter,
 });
 
 // export type definition of API
