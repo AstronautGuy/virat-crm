@@ -69,13 +69,13 @@ async function reverseGeocode(lat: number, lon: number): Promise<string> {
   }
 }
 
-async function trackCustomerVisit(ctx: any, user: any, latitude: number, longitude: number) {
+async function trackCustomerVisit(user: { id: string, branchId: number | null }, latitude: number, longitude: number) {
   if (!user.branchId) return;
 
   const dateStr = getFormattedDate();
 
   // 1. Check for active visit today
-  const activeVisit = await ctx.db.query.customerVisits.findFirst({
+  const activeVisit = await db.query.customerVisits.findFirst({
     where: and(
       eq(customerVisits.userId, user.id),
       eq(customerVisits.date, dateStr),
@@ -98,7 +98,7 @@ async function trackCustomerVisit(ctx: any, user: any, latitude: number, longitu
     if (!isInside) {
       const durationMs = Date.now() - activeVisit.arrivalTime.getTime();
       const durationMinutes = Math.floor(durationMs / 60000);
-      await ctx.db.update(customerVisits).set({
+      await db.update(customerVisits).set({
         departureTime: new Date(),
         durationMinutes
       }).where(eq(customerVisits.id, activeVisit.id));
@@ -112,7 +112,7 @@ async function trackCustomerVisit(ctx: any, user: any, latitude: number, longitu
   const lngMin = (longitude - 0.01).toString();
   const lngMax = (longitude + 0.01).toString();
 
-  const nearbyCustomers = await ctx.db.query.customers.findMany({
+  const nearbyCustomers = await db.query.customers.findMany({
     where: and(
       eq(customers.branchId, user.branchId),
       gte(customers.latitude, latMin),
@@ -132,7 +132,7 @@ async function trackCustomerVisit(ctx: any, user: any, latitude: number, longitu
     }
 
     if (isInside) {
-      await ctx.db.insert(customerVisits).values({
+      await db.insert(customerVisits).values({
         userId: user.id,
         customerId: customer.id,
         date: dateStr,
@@ -296,7 +296,11 @@ export const locationRouter = createTRPCRouter({
       });
 
       // Track customer visits in the background
-      ctx.waitUntil?.(trackCustomerVisit(ctx, user, input.latitude, input.longitude).catch(console.error)) ?? trackCustomerVisit(ctx, user, input.latitude, input.longitude).catch(console.error);
+      if (ctx.waitUntil) {
+        ctx.waitUntil(trackCustomerVisit(user, input.latitude, input.longitude).catch(console.error));
+      } else {
+        void trackCustomerVisit(user, input.latitude, input.longitude).catch(console.error);
+      }
 
       return { success: true };
     }),
@@ -463,7 +467,11 @@ export const locationRouter = createTRPCRouter({
       });
 
       // Track customer visits in the background
-      ctx.waitUntil?.(trackCustomerVisit(ctx, user, input.latitude, input.longitude).catch(console.error)) ?? trackCustomerVisit(ctx, user, input.latitude, input.longitude).catch(console.error);
+      if (ctx.waitUntil) {
+        ctx.waitUntil(trackCustomerVisit(user, input.latitude, input.longitude).catch(console.error));
+      } else {
+        void trackCustomerVisit(user, input.latitude, input.longitude).catch(console.error);
+      }
 
       return { success: true };
     }),
@@ -585,7 +593,11 @@ export const locationRouter = createTRPCRouter({
           createdAt: locDate,
         });
 
-        ctx.waitUntil?.(trackCustomerVisit(ctx, user, loc.latitude, loc.longitude).catch(console.error)) ?? trackCustomerVisit(ctx, user, loc.latitude, loc.longitude).catch(console.error);
+        if (ctx.waitUntil) {
+          ctx.waitUntil(trackCustomerVisit(user, loc.latitude, loc.longitude).catch(console.error));
+        } else {
+          void trackCustomerVisit(user, loc.latitude, loc.longitude).catch(console.error);
+        }
       }
 
       return { success: true };

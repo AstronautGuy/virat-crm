@@ -339,7 +339,7 @@ export const salesRouter = createTRPCRouter({
               const postOffice = data[0].PostOffice?.[0];
               if (postOffice) deliveryAddress = `${postOffice.Name}, ${postOffice.District}, ${postOffice.State}`;
             }
-          } catch (e) {}
+          } catch { }
         }
 
         const [updatedSale] = await tx
@@ -351,7 +351,7 @@ export const salesRouter = createTRPCRouter({
             area: input.area,
             city: input.city,
             state: input.state,
-            deliveryAddress: deliveryAddress || undefined,
+            deliveryAddress: deliveryAddress ?? undefined,
             customerName: input.customerName,
             customerAddress: input.customerAddress,
             mainQty,

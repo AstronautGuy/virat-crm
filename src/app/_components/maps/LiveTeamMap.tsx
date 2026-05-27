@@ -181,7 +181,7 @@ export default function LiveTeamMap() {
 
         {playbackPath && playbackPath.length > 1 && (
           <Polyline
-            positions={playbackPath.map((p) => [p.latitude, p.longitude])}
+            positions={playbackPath.map((p: { latitude: number; longitude: number }) => [p.latitude, p.longitude])}
             color="#2563eb"
             weight={5}
             opacity={0.9}

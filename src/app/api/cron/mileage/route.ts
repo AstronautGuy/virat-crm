@@ -4,6 +4,7 @@ import { breadcrumbs } from "@/server/db/schema/breadcrumbs";
 import { dailyMileage } from "@/server/db/schema/daily_mileage";
 import { inArray, sql } from "drizzle-orm";
 import { distance } from "@turf/turf";
+import { point } from "@turf/helpers";
 
 export const maxDuration = 300; // Vercel Cron Max duration (5 mins)
 export const dynamic = "force-dynamic";
@@ -56,7 +57,12 @@ export async function POST(request: Request) {
     }
 
     // 3. Process each group
-    const updates = [];
+    const updates: {
+      userId: string;
+      date: string;
+      totalDistanceMeters: string;
+      validPointsCount: number;
+    }[] = [];
     const processedIds: number[] = [];
 
     for (const [key, points] of Object.entries(grouped)) {
@@ -74,9 +80,9 @@ export async function POST(request: Request) {
 
           // Calculate distance in meters using Turf
           const dist = distance(
-            [lastValidPoint.longitude, lastValidPoint.latitude],
-            [currentPoint.longitude, currentPoint.latitude],
-            { units: "meters" },
+            point([lastValidPoint.longitude, lastValidPoint.latitude]),
+            point([currentPoint.longitude, currentPoint.latitude]),
+            "meters"
           );
 
           // Drift Filtering: Ignore distance < 10 meters (typical GPS noise)

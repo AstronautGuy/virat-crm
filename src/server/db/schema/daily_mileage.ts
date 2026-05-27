@@ -4,7 +4,6 @@ import {
   timestamp,
   uuid,
   index,
-  uniqueIndex,
   varchar,
   integer,
   unique,

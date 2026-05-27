@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
-import { sendNotification } from "@/server/lib/push";
+import { sendNotificationToUser } from "@/server/lib/push";
 import { users } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 
@@ -19,13 +19,19 @@ export const alertsRouter = createTRPCRouter({
       });
 
       const notifyPromises = admins.map((admin) => 
-        sendNotification(ctx.db, admin.id, "Employee Location Lockout", message)
+        sendNotificationToUser(admin.id, { 
+          title: "Employee Location Lockout", 
+          body: message 
+        })
       );
 
       // Find Manager if applicable
       if (user.managerId) {
         notifyPromises.push(
-          sendNotification(ctx.db, user.managerId, "Team Member Location Lockout", message)
+          sendNotificationToUser(user.managerId, { 
+            title: "Team Member Location Lockout", 
+            body: message 
+          })
         );
       }
 
