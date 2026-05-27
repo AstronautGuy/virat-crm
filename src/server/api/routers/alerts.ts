@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { sendNotificationToUser } from "@/server/lib/push";
 import { users } from "@/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 export const alertsRouter = createTRPCRouter({
   reportLockout: featureProtectedProcedure("workforce")

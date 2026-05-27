@@ -1,8 +1,6 @@
 import { z } from "zod";
 import {
   createTRPCRouter,
-  protectedProcedure,
-  managerProcedure,
   featureProtectedProcedure,
   featureManagerProcedure,
   enforceBranchIsolation,
@@ -187,7 +185,7 @@ export const crmRouter = createTRPCRouter({
         });
       }
 
-      const { branchId, ...rest } = input;
+      const { branchId: _branchId, ...rest } = input;
 
       return await db
         .insert(customers)
@@ -238,7 +236,7 @@ export const crmRouter = createTRPCRouter({
         });
       }
 
-      const { branchId, ...rest } = input;
+      const { branchId: _branchId, ...rest } = input;
 
       return await db
         .insert(customers)

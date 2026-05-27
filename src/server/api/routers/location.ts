@@ -5,6 +5,7 @@ import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 import simplify from "@turf/simplify";
 import { lineString } from "@turf/helpers";
 import { breadcrumbs, users, locationLogs, branches, customerVisits, customers } from "@/server/db/schema";
+import { db } from "@/server/db";
 import {
   eq,
   and,
