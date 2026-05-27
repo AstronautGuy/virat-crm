@@ -1,9 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
-import simplify from "@turf/simplify";
-import { lineString } from "@turf/helpers";
+import { booleanPointInPolygon, simplify } from "@turf/turf";
+import { lineString, point } from "@turf/helpers";
 import { breadcrumbs, users, locationLogs, branches, customerVisits, customers } from "@/server/db/schema";
 import { db } from "@/server/db";
 import {
@@ -90,7 +89,7 @@ async function trackCustomerVisit(user: { id: string, branchId: number | null },
   if (activeVisit) {
     let isInside = false;
     if (activeVisit.customer.geofencePolygon) {
-      isInside = booleanPointInPolygon([longitude, latitude], activeVisit.customer.geofencePolygon as any);
+      isInside = booleanPointInPolygon(point([longitude, latitude]), activeVisit.customer.geofencePolygon as any);
     } else if (activeVisit.customer.latitude && activeVisit.customer.longitude) {
        const dist = haversineDistance(latitude, longitude, parseFloat(activeVisit.customer.latitude), parseFloat(activeVisit.customer.longitude));
        isInside = dist <= 50;
@@ -126,7 +125,7 @@ async function trackCustomerVisit(user: { id: string, branchId: number | null },
   for (const customer of nearbyCustomers) {
     let isInside = false;
     if (customer.geofencePolygon) {
-      isInside = booleanPointInPolygon([longitude, latitude], customer.geofencePolygon as any);
+      isInside = booleanPointInPolygon(point([longitude, latitude]), customer.geofencePolygon as any);
     } else if (customer.latitude && customer.longitude) {
        const dist = haversineDistance(latitude, longitude, parseFloat(customer.latitude), parseFloat(customer.longitude));
        isInside = dist <= 50;
