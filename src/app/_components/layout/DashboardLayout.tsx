@@ -1,7 +1,8 @@
 "use client";
 
 import { DesktopSidebar } from "./DesktopSidebar";
-import { MobileNav } from "./MobileNav";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
 import { useSyncManager } from "@/hooks/use-sync-manager";
 import { useLocationBreadcrumbs } from "@/hooks/use-location-breadcrumbs";
 import { RefreshCcw, WifiOff } from "lucide-react";
@@ -59,9 +60,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="bg-background text-foreground flex min-h-screen">
+    <div className="bg-slate-50 dark:bg-slate-950 text-foreground flex min-h-screen">
       <DesktopSidebar />
-      <div className="flex w-full flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom,12px))] md:pb-0">
+      <div className="flex w-full flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom,16px))] md:pb-0">
         {(pendingCount > 0 || isSyncing) && (
           <div
             className={cn(
@@ -108,26 +109,33 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        {/* Premium Top Navigation Header */}
-        <header className="border-border bg-card/65 sticky top-0 z-40 flex h-16 items-center justify-between border-b px-6 backdrop-blur-md md:px-8">
-          <div className="flex flex-col">
-            <span className="text-[9px] font-bold tracking-widest text-slate-400 uppercase">
-              Portal
-            </span>
-            <h2 className="mt-0.5 text-sm font-bold tracking-tight text-slate-800 dark:text-slate-100">
+        {/* Native Top Navigation Header */}
+        <header className="border-border/50 bg-white/90 dark:bg-slate-900/90 sticky top-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-top))] items-center justify-between border-b px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl md:h-16 md:px-8 shadow-sm">
+          <div className="flex items-center gap-3">
+            <Sheet>
+              <SheetTrigger asChild>
+                <button className="md:hidden p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors">
+                  <Menu className="w-6 h-6" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-[280px]">
+                <SheetHeader className="sr-only"><SheetTitle>Navigation Menu</SheetTitle></SheetHeader>
+                <DesktopSidebar isMobile />
+              </SheetContent>
+            </Sheet>
+            <h2 className="text-lg font-bold tracking-tight text-slate-800 dark:text-slate-100">
               {getPageTitle(pathname)}
             </h2>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <NotificationBell />
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 overscroll-none scroll-smooth">
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>
-      <MobileNav />
     </div>
   );
 }

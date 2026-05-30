@@ -10,6 +10,8 @@ import {
   roles,
   rolePermissions,
   systemSettings,
+  locationLogs,
+  leaves,
 } from "./schema";
 import { sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
@@ -21,6 +23,8 @@ async function main() {
   await db.execute(sql`TRUNCATE TABLE "virat-crm_system_settings" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_role_permission" CASCADE;`);
   await db.execute(sql`TRUNCATE TABLE "virat-crm_stock_transfer" CASCADE;`);
+  await db.execute(sql`TRUNCATE TABLE "virat-crm_location_logs" CASCADE;`);
+  await db.execute(sql`TRUNCATE TABLE "virat-crm_leave" CASCADE;`);
   await db.execute(
     sql`TRUNCATE TABLE "virat-crm_inventory_transaction" CASCADE;`,
   );
@@ -377,6 +381,49 @@ async function main() {
       status: "Approved",
     },
   ]);
+
+  // Bulk Seed 20 Sales
+  const bulkSales = [];
+  for (let i = 3; i <= 22; i++) {
+    bulkSales.push({
+      branchId: hq.id,
+      orderNumber: `ORD-10${i < 10 ? '0'+i : i}`,
+      status: i % 2 === 0 ? "Approved" : "Pending",
+      userId: employee!.id,
+      managerId: manager!.id,
+      pincode: "110001",
+      customerName: `Customer ${i} Construction`,
+      customerAddress: `Address ${i}, New Delhi`,
+      mainQty: i * 10,
+      freeQty: i,
+      totalQty: i * 11,
+      invoiceAmount: (i * 3500).toFixed(2),
+      receivedAmount: (i * 3000).toFixed(2),
+      balanceAmount: (i * 500).toFixed(2),
+    });
+  }
+  await db.insert(sales).values(bulkSales as any);
+  console.log("Bulk sales seeded");
+
+  // Bulk Seed Location Logs (Attendance)
+  const bulkLocations = [];
+  for (let i = 1; i <= 20; i++) {
+    const rDate = new Date(Date.now() - i * 86400000); // subtract days instead of hours
+    bulkLocations.push({
+      userId: employee!.id,
+      branchId: hq.id,
+      date: rDate.toISOString().split("T")[0],
+      latitude: (28.6139 + Math.random() * 0.1).toFixed(4),
+      longitude: (77.2090 + Math.random() * 0.1).toFixed(4),
+      accuracy: 10 + Math.random() * 20,
+      frequencyMap: {},
+      recordedAt: rDate,
+      slab: "Morning", // just use morning for each day
+    });
+  }
+  await db.insert(locationLogs).values(bulkLocations as any);
+  console.log("Bulk location logs seeded");
+
   // Seed System Settings
   await db.insert(systemSettings).values({
     id: "global",

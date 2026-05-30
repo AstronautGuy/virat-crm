@@ -63,131 +63,120 @@ export function CustomerList({ isManager = false }: CustomerListProps) {
         </div>
       </div>
 
-      {/* Customer Table */}
-      <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-slate-50 text-xs tracking-wider text-slate-500 uppercase">
-              <tr>
-                <th className="px-6 py-4 font-semibold">Customer</th>
-                <th className="px-6 py-4 font-semibold">Location</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 text-right font-semibold">Balance</th>
-                <th className="px-6 py-4 text-right font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td colSpan={5} className="px-6 py-4">
-                      <div className="h-4 w-full rounded bg-slate-100" />
-                    </td>
-                  </tr>
-                ))
-              ) : customers?.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="px-6 py-12 text-center text-slate-500"
-                  >
-                    No customers found matching your search.
-                  </td>
-                </tr>
-              ) : (
-                customers?.map((customer) => (
-                  <tr
-                    key={customer.id}
-                    className="group transition-colors hover:bg-slate-50/50"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="flex items-center gap-1 font-medium text-slate-900">
-                          {customer.name}
-                          <Link
-                            href={`/crm/${customer.id}`}
-                            className="opacity-0 transition-opacity group-hover:opacity-100"
-                          >
-                            <ExternalLink className="h-3 w-3 text-blue-500" />
-                          </Link>
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-slate-500">
-                          <Phone className="h-3 w-3" /> {customer.mobile}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-slate-700">
-                          {customer.village}
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          {customer.district}, {customer.state}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
-                          customer.status === "Approved"
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-amber-50 text-amber-700",
-                        )}
-                      >
-                        {customer.status === "Approved" ? (
-                          <CheckCircle2 className="h-3 w-3" />
-                        ) : (
-                          <Clock className="h-3 w-3" />
-                        )}
-                        {customer.status}
+      {/* Customer List */}
+      <div className="flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+        <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="animate-pulse flex items-center justify-between p-5">
+                <div className="flex gap-4 items-center">
+                  <div className="bg-slate-200 dark:bg-slate-800 h-10 w-10 rounded-xl" />
+                  <div className="flex flex-col gap-2">
+                     <div className="bg-slate-200 dark:bg-slate-800 h-4 w-32 rounded" />
+                     <div className="bg-slate-200 dark:bg-slate-800 h-3 w-20 rounded" />
+                  </div>
+                </div>
+                <div className="bg-slate-200 dark:bg-slate-800 h-8 w-24 rounded-full" />
+              </div>
+            ))
+          ) : customers?.length === 0 ? (
+            <div className="text-slate-500 px-6 py-12 text-center font-medium italic">
+              No customers found matching your search.
+            </div>
+          ) : (
+            customers?.map((customer) => (
+              <div
+                key={customer.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group relative"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="hidden sm:flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 font-bold shadow-sm">
+                    {customer.name.charAt(0)}
+                  </div>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-900 dark:text-slate-100 text-base font-bold tracking-tight">
+                        {customer.name}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex flex-col items-end">
-                        <span
-                          className={cn(
-                            "font-bold tabular-nums",
-                            customer.totalPending > 0
-                              ? "text-red-600"
-                              : "text-emerald-600",
-                          )}
+                      <Link
+                        href={`/crm/${customer.id}`}
+                        className="opacity-0 transition-opacity group-hover:opacity-100"
+                        title="View Customer Details"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 text-blue-500" />
+                      </Link>
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="flex items-center gap-1 text-xs text-slate-500 font-medium">
+                        <Phone className="h-3 w-3" /> {customer.mobile}
+                      </span>
+                      <span className="text-slate-300 dark:text-slate-600">•</span>
+                      <span className="flex items-center gap-1 text-xs text-slate-500">
+                        <MapPin className="h-3 w-3" /> {customer.village}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/2">
+                  <div className="flex flex-col sm:items-end">
+                    <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+                      Total Pending
+                    </span>
+                    <span
+                      className={cn(
+                        "text-lg font-bold tabular-nums",
+                        customer.totalPending > 0
+                          ? "text-rose-500"
+                          : "text-emerald-500"
+                      )}
+                    >
+                      ₹{customer.totalPending.toLocaleString()}
+                    </span>
+                  </div>
+                  
+                  <div className="flex flex-col sm:items-end gap-2">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold shadow-sm",
+                        customer.status === "Approved"
+                          ? "bg-emerald-500 text-white"
+                          : "bg-amber-400 text-amber-950",
+                      )}
+                    >
+                      {customer.status === "Approved" ? (
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      ) : (
+                        <Clock className="h-3.5 w-3.5" />
+                      )}
+                      {customer.status}
+                    </span>
+                    
+                    <div className="flex items-center gap-2">
+                      {isManager && customer.status === "Draft" && (
+                        <Button
+                          size="sm"
+                          className="h-7 px-3 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-[10px] uppercase font-bold tracking-wider"
+                          onClick={() => approveCustomer({ id: customer.id })}
                         >
-                          ₹{customer.totalPending.toLocaleString()}
-                        </span>
-                        <span className="text-[10px] tracking-tighter text-slate-400 uppercase">
-                          Total Pending
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {isManager && customer.status === "Draft" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 border-emerald-200 bg-emerald-50 text-xs text-emerald-700 hover:bg-emerald-100"
-                            onClick={() => approveCustomer({ id: customer.id })}
-                          >
-                            Approve
-                          </Button>
-                        )}
-                        {isManager && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 text-xs text-blue-600 hover:text-blue-700"
-                          >
-                            Edit
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                          Approve
+                        </Button>
+                      )}
+                      {isManager && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-3 text-blue-600 hover:bg-blue-50 text-[10px] uppercase font-bold tracking-wider"
+                        >
+                          Edit
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

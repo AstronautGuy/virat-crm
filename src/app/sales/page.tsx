@@ -50,7 +50,12 @@ export default function SalesDashboard() {
   const { data: user } = api.users.getMe.useQuery();
   const canApprove = user?.role === "Admin" || user?.role === "Manager";
 
-  const { data: sales, isLoading, refetch } = api.sales.getSales.useQuery();
+  const { data: salesData, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = 
+    api.sales.getSales.useInfiniteQuery(
+      { limit: 20 },
+      { getNextPageParam: (lastPage) => lastPage.nextCursor }
+    );
+
   const { mutate: updateStatus, isPending: isUpdating } =
     api.sales.updateSaleStatus.useMutation({
       onSuccess: () => refetch(),
@@ -59,8 +64,9 @@ export default function SalesDashboard() {
       },
     });
 
+  const allSales = salesData?.pages.flatMap((page) => page.items) ?? [];
   const filteredSales =
-    sales?.filter((sale) => filter === "All" || sale.status === filter) ?? [];
+    allSales.filter((sale) => filter === "All" || sale.status === filter);
 
   return (
     <DashboardLayout>
@@ -117,121 +123,79 @@ export default function SalesDashboard() {
                 </p>
               </Card>
             ) : (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {/* When loading, Skelon will use these as blueprint */}
+              <div className="flex flex-col gap-3">
+                {/* List Layout for Dense Data */}
                 {(isLoading
                   ? Array.from({ length: 6 })
-                  : (filteredSales ?? [])
+                  : filteredSales
                 ).map((saleItem, idx) => {
                   const sale = saleItem as
                     | (typeof filteredSales)[number]
                     | undefined;
                   return (
-                    <Card
+                    <div
                       key={sale?.id ?? idx}
-                      className="group overflow-hidden border-none cursor-pointer hover:shadow-md transition-shadow"
+                      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 md:p-5 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md cursor-pointer transition-all active:scale-[0.99]"
                       onClick={() => sale && setSelectedSale(sale)}
                     >
-                      <CardHeader className="group-hover:bg-primary/5 bg-slate-50/50 pb-3 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <CardTitle
-                            className="truncate text-base font-bold tracking-tight text-slate-800"
-                            title={sale?.orderNumber ?? ""}
-                          >
+                      <div className="flex items-center gap-4">
+                        <div className="hidden sm:flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary font-bold shadow-inner">
+                          {sale?.customerName?.charAt(0) ?? "C"}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-base text-slate-900 dark:text-slate-100 tracking-tight">
                             {sale?.orderNumber ?? "ORD-000000"}
-                          </CardTitle>
-                          <Badge
-                            className={cn(
-                              "rounded-lg border-none px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase",
-                              sale?.status === "Approved"
-                                ? "bg-green-100 text-green-700"
-                                : sale?.status === "Rejected"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-amber-100 text-amber-700",
-                            )}
-                          >
-                            {sale?.status ?? "Pending"}
-                          </Badge>
+                          </span>
+                          <span className="text-sm font-medium text-slate-500">
+                            {sale?.customerName ?? "Customer Name"}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            {sale?.createdAt
+                              ? new Date(sale.createdAt).toLocaleDateString()
+                              : "Date Placeholder"}
+                          </span>
                         </div>
-                        <CardDescription className="text-xs font-medium text-slate-400">
-                          {sale?.createdAt
-                            ? new Date(sale.createdAt).toLocaleDateString()
-                            : "Date Placeholder"}{" "}
-                          • {sale?.customerName ?? "Customer Name"}
-                          {sale?.user && (
-                            <> • {sale.user.firstName} {sale.user.lastName}</>
-                          )}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="pt-5">
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+                      </div>
+                      
+                      <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/3">
+                        <div className="flex flex-col sm:items-end">
+                           <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
                               Amount
-                            </span>
-                            <span className="text-lg font-bold text-slate-900">
+                           </span>
+                           <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
                               ₹{sale?.invoiceAmount ?? "00,000"}
-                            </span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
-                              Balance
-                            </span>
-                            <span className="text-lg font-bold text-red-500">
-                              ₹{sale?.balanceAmount ?? "00,000"}
-                            </span>
-                          </div>
-                          <div className="col-span-2 flex flex-col border-t border-slate-50 pt-4">
-                            <span className="mb-2 flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase">
-                              <FileText className="h-3.5 w-3.5" /> Documents
-                            </span>
-                            {sale?.id && sale?.files && (
-                              <FileGallery
-                                entityType="sale"
-                                entityId={sale.id}
-                                initialFiles={sale.files}
-                              />
-                            )}
-                          </div>
+                           </span>
                         </div>
-
-                        {sale?.status === "Pending" && canApprove && (
-                          <div className="mt-6 flex gap-3 border-t border-slate-50 pt-4">
-                            <Button
-                              className="h-11 flex-1 rounded-xl"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                sale.id &&
-                                  updateStatus({
-                                    saleId: sale.id,
-                                    status: "Approved",
-                                  });
-                              }}
-                              disabled={isUpdating}
-                            >
-                              <Check className="mr-2 h-4 w-4" /> Approve
-                            </Button>
-                            <Button
-                              variant="outline"
-                              className="h-11 flex-1 rounded-xl border-slate-200 text-slate-600"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                sale.id &&
-                                  updateStatus({
-                                    saleId: sale.id,
-                                    status: "Rejected",
-                                  });
-                              }}
-                              disabled={isUpdating}
-                            >
-                              <X className="mr-2 h-4 w-4" /> Reject
-                            </Button>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                        <Badge
+                          className={cn(
+                            "rounded-lg border-none px-3 py-1 text-xs font-bold tracking-widest uppercase shadow-sm",
+                            sale?.status === "Approved"
+                              ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                              : sale?.status === "Rejected"
+                                ? "bg-rose-500 text-white hover:bg-rose-600"
+                                : "bg-amber-400 text-amber-950 hover:bg-amber-500",
+                          )}
+                        >
+                          {sale?.status ?? "Pending"}
+                        </Badge>
+                      </div>
+                    </div>
                   );
                 })}
+                
+                {hasNextPage && (
+                  <Button
+                    variant="outline"
+                    className="mt-4 rounded-xl h-12 border-slate-200 bg-slate-50/50 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900/50"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                  >
+                    {isFetchingNextPage ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin text-slate-500" />
+                    ) : null}
+                    Load More Sales
+                  </Button>
+                )}
               </div>
             )}
             

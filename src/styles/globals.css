@@ -55,13 +55,13 @@
 }
 
 :root {
-  --background: oklch(0.98 0.005 240); /* Very light slate/blue hint */
-  --foreground: oklch(0.2 0.02 240);
+  --background: oklch(0.95 0.04 250); 
+  --foreground: oklch(0.15 0.05 250);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.02 240);
+  --card-foreground: oklch(0.15 0.05 250);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.02 240);
-  --primary: oklch(0.6 0.18 255); /* Softer, premium blue */
+  --popover-foreground: oklch(0.15 0.05 250);
+  --primary: oklch(0.55 0.3 260); /* Extremely vibrant, deep purple-blue */
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.96 0.01 240);
   --secondary-foreground: oklch(0.2 0.02 240);
@@ -98,7 +98,9 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground selection:bg-primary/10 selection:text-primary antialiased;
+    @apply text-foreground selection:bg-primary/10 selection:text-primary antialiased;
+    background: linear-gradient(135deg, oklch(0.95 0.04 250), oklch(0.93 0.06 280));
+    background-attachment: fixed;
     /* PWA Safe Area Support */
     padding-bottom: env(safe-area-inset-bottom);
   }

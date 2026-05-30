@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateSalesXLSX, generateAttendanceXLSX } from "@/lib/excel";
+import { generateSalesPDF, generateAttendancePDF } from "@/lib/pdf";
 import { type LucideIcon } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -124,10 +125,22 @@ function ReportsPageContent() {
     await generateSalesXLSX(reportData.sales, filename);
   };
 
+  const handleDownloadSalesPDF = () => {
+    if (!reportData?.sales) return;
+    const filename = `Sales_Report_${scope}_${preset}_${new Date().toISOString().split("T")[0]}`;
+    generateSalesPDF(reportData.sales, filename);
+  };
+
   const handleDownloadAttendance = async () => {
     if (!reportData?.attendance) return;
     const filename = `Attendance_Report_${scope}_${preset}_${new Date().toISOString().split("T")[0]}`;
     await generateAttendanceXLSX(reportData.attendance, filename);
+  };
+
+  const handleDownloadAttendancePDF = () => {
+    if (!reportData?.attendance) return;
+    const filename = `Attendance_Report_${scope}_${preset}_${new Date().toISOString().split("T")[0]}`;
+    generateAttendancePDF(reportData.attendance, filename);
   };
 
   return (
@@ -717,25 +730,36 @@ function ReportsPageContent() {
                     <button
                       onClick={handleDownloadSales}
                       disabled={!reportData?.sales.length}
-                      className="flex items-center space-x-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-bold text-white transition-all hover:bg-blue-700 disabled:opacity-50"
+                      className="flex items-center space-x-2 rounded-xl bg-blue-100 px-5 py-2 text-sm font-bold text-blue-700 transition-all hover:bg-blue-200 disabled:opacity-50"
                     >
                       <Download className="h-4 w-4" />
                       <span>Export Sales XLSX</span>
                     </button>
                     <button
+                      onClick={handleDownloadSalesPDF}
+                      disabled={!reportData?.sales.length}
+                      id="export-sales-pdf"
+                      className="flex items-center space-x-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-bold text-white transition-all hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      <Download className="h-4 w-4" />
+                      <span>Export Sales PDF</span>
+                    </button>
+                    <button
                       onClick={handleDownloadAttendance}
                       disabled={!reportData?.attendance.length}
-                      className="flex items-center space-x-2 rounded-xl bg-purple-600 px-5 py-2 text-sm font-bold text-white transition-all hover:bg-purple-700 disabled:opacity-50"
+                      className="flex items-center space-x-2 rounded-xl bg-purple-100 px-5 py-2 text-sm font-bold text-purple-700 transition-all hover:bg-purple-200 disabled:opacity-50"
                     >
                       <Download className="h-4 w-4" />
                       <span>Export Attendance XLSX</span>
                     </button>
                     <button
-                      onClick={() => window.print()}
-                      className="flex items-center space-x-2 rounded-xl bg-slate-800 px-5 py-2 text-sm font-bold text-white transition-all hover:bg-slate-900 shadow-sm active:scale-95"
+                      onClick={handleDownloadAttendancePDF}
+                      disabled={!reportData?.attendance.length}
+                      id="export-attendance-pdf"
+                      className="flex items-center space-x-2 rounded-xl bg-purple-600 px-5 py-2 text-sm font-bold text-white transition-all hover:bg-purple-700 disabled:opacity-50"
                     >
-                      <Printer className="h-4 w-4" />
-                      <span>Print Report</span>
+                      <Download className="h-4 w-4" />
+                      <span>Export Attendance PDF</span>
                     </button>
                     <button
                       onClick={() => {

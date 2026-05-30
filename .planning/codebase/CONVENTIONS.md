@@ -1,21 +1,20 @@
-# Conventions
+---
+focus: quality
+last_mapped_commit: HEAD
+date: 2026-05-29
+---
 
-**Date Mapped:** 2026-05-26
+# CONVENTIONS.md
 
-## 1. Code Style
-- **Linter**: ESLint (Next.js preset) using the new flat config (`eslint.config.js`).
-- **Formatter**: Prettier (`prettier.config.js`) configured with `prettier-plugin-tailwindcss` for class sorting.
-- **Language**: Strict TypeScript (`tsconfig.json`) across the stack.
+## Code Style
+- **TypeScript**: Strict mode enabled. Prefer `interface` or `type` for definitions.
+- **Formatting**: Prettier is used for code formatting (`pnpm format:write`). Tailwind classes are sorted automatically via `prettier-plugin-tailwindcss`.
+- **Linting**: ESLint configured with Next.js defaults and Drizzle plugin (`pnpm lint`).
 
-## 2. Naming Patterns
-- **Files**: Kebab-case for React components, hooks, and pages (e.g., `use-location-breadcrumbs.ts`).
-- **Types/Interfaces**: PascalCase for type definitions and interfaces.
-- **Variables**: camelCase for variables and function names.
+## Component Patterns
+- Use Server Components by default. Add `"use client"` directive only when hooks or interactivity are needed.
+- shadcn/ui components are stored in `src/components/ui/` and should rarely be modified unless global styling changes are needed.
 
-## 3. Error Handling
-- **API Boundary**: Zod is heavily used for request validation (`z.object({...})`). tRPC procedures throw `TRPCError` for structured error responses.
-- **Client**: Forms use `react-hook-form` connected with `@hookform/resolvers/zod` to provide client-side validation errors seamlessly.
-
-## 4. Components
-- **UI Architecture**: shadcn/ui approach (Tailwind + Radix UI primitives) where components are owned by the project rather than an opaque node_module.
-- **Props**: Destructured with explicit TS interfaces.
+## Error Handling
+- Use `zod` for parsing and validating both environment variables and user input.
+- Return explicit `TRPCError` in backend routers for anticipated failures.

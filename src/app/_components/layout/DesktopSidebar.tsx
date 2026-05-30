@@ -21,7 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 
-export function DesktopSidebar() {
+export function DesktopSidebar({ isMobile }: { isMobile?: boolean }) {
   const pathname = usePathname();
   const { data: user, isLoading: userLoading } = api.users.getMe.useQuery();
   const { data: rolePermissions, isLoading: permissionsLoading } =
@@ -152,7 +152,12 @@ export function DesktopSidebar() {
   ];
 
   return (
-    <div className="border-border bg-card hidden w-64 border-r md:block">
+    <div
+      className={cn(
+        "border-border bg-card flex flex-col h-full",
+        !isMobile && "hidden w-64 border-r md:flex"
+      )}
+    >
       <div className="border-border flex h-16 items-center border-b px-6">
         <h1 className="text-primary text-xl font-bold tracking-tight">
           Virat CRM

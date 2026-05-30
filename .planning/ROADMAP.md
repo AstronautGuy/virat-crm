@@ -16,3 +16,7 @@
 - **Phase 42: Global Codebase Hard-Code Audit**
   - Goal: Scan the entire Next.js and Expo project for any hard-coded strings, limits, and URLs, moving them to configuration enums or .env variables.
   - Requirements: REFACTOR-01
+
+- **Phase 43: Reporting Verification & Export Testing**
+  - Goal: Verify all reporting features, test CSV/PDF generation, and create sample exports in a temporary directory.
+  - Requirements: REPORT-01

@@ -386,11 +386,24 @@ export const salesRouter = createTRPCRouter({
       });
     }),
 
-  getSales: featureProtectedProcedure("sales").query(async ({ ctx }) => {
+  getSales: featureProtectedProcedure("sales")
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).nullish(),
+        cursor: z.number().nullish(), // Use sale id as cursor for keyset pagination
+      }).optional()
+    )
+    .query(async ({ ctx, input }) => {
     const currentUser = ctx.dbUser;
+    const limit = input?.limit ?? 20;
+    const cursor = input?.cursor;
+
+    let items;
 
     if (currentUser.role === "Admin" || currentUser.role === "Developer") {
-      return ctx.db.query.sales.findMany({
+      items = await ctx.db.query.sales.findMany({
+        where: cursor ? (sales, { lt }) => lt(sales.id, cursor) : undefined,
+        limit: limit + 1,
         with: {
           user: true,
           manager: true,
@@ -400,32 +413,48 @@ export const salesRouter = createTRPCRouter({
             where: (files, { eq }) => eq(files.entityType, "sale"),
           },
         },
-        orderBy: (sales, { desc }) => [desc(sales.createdAt)],
+        orderBy: (sales, { desc }) => [desc(sales.id)],
+      });
+    } else {
+      const assignedBranchId = enforceBranchIsolation(ctx);
+
+      const conditions = currentUser.role === "Employee"
+            ? and(
+                eq(sales.branchId, assignedBranchId!),
+                eq(sales.userId, currentUser.id),
+                cursor ? sql`${sales.id} < ${cursor}` : undefined
+              )
+            : and(
+                eq(sales.branchId, assignedBranchId!),
+                cursor ? sql`${sales.id} < ${cursor}` : undefined
+              );
+
+      items = await ctx.db.query.sales.findMany({
+        where: conditions,
+        limit: limit + 1,
+        with: {
+          user: true,
+          manager: true,
+          branch: true,
+          items: true,
+          files: {
+            where: (files, { eq }) => eq(files.entityType, "sale"),
+          },
+        },
+        orderBy: (sales, { desc }) => [desc(sales.id)],
       });
     }
 
-    const assignedBranchId = enforceBranchIsolation(ctx);
+    let nextCursor: typeof cursor | undefined = undefined;
+    if (items.length > limit) {
+      const nextItem = items.pop();
+      nextCursor = nextItem!.id;
+    }
 
-    // Filter by branch for non-admins, and also by userId for Employees
-    return ctx.db.query.sales.findMany({
-      where:
-        currentUser.role === "Employee"
-          ? and(
-              eq(sales.branchId, assignedBranchId!),
-              eq(sales.userId, currentUser.id),
-            )
-          : eq(sales.branchId, assignedBranchId!),
-      with: {
-        user: true,
-        manager: true,
-        branch: true,
-        items: true,
-        files: {
-          where: (files, { eq }) => eq(files.entityType, "sale"),
-        },
-      },
-      orderBy: (sales, { desc }) => [desc(sales.createdAt)],
-    });
+    return {
+      items,
+      nextCursor,
+    };
   }),
 
   getSale: featureProtectedProcedure("sales")
