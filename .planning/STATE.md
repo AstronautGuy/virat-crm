@@ -1,6 +1,6 @@
 ---
-milestone: "v9"
-name: "Live Tracking & Location Reports"
+milestone: "v10"
+name: "UI Polish, Data Entry Enhancements & Sync Hardening"
 status: "planning"
 progress:
   phases: 0
@@ -12,4 +12,4 @@ progress:
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements
-Last activity: 2026-05-26 — Milestone v9 started
+Last activity: 2026-05-30 — Milestone v10 started

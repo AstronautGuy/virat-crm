@@ -10,7 +10,7 @@ import { format } from "date-fns";
 export default async function LiveMapPage() {
   const activeAgents = await api.location.getLiveTeam({});
   const onFieldCount = activeAgents.length;
-  
+
   const today = format(new Date(), "yyyy-MM-dd");
   const visits = await db.query.customerVisits.findMany({
     where: (visits, { eq }) => eq(visits.date, today),
@@ -50,7 +50,9 @@ export default async function LiveMapPage() {
                   <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
                     On Field
                   </p>
-                  <p className="text-xl font-bold text-gray-900">{onFieldCount} Agents</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {onFieldCount} Agents
+                  </p>
                 </div>
               </div>
             </div>
@@ -63,7 +65,9 @@ export default async function LiveMapPage() {
                   <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
                     Total Visits
                   </p>
-                  <p className="text-xl font-bold text-gray-900">{totalVisitsCount} Points</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {totalVisitsCount} Points
+                  </p>
                 </div>
               </div>
             </div>

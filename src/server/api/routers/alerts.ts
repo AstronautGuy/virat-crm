@@ -18,20 +18,25 @@ export const alertsRouter = createTRPCRouter({
         where: eq(users.role, "Admin"),
       });
 
-      const notifyPromises = admins.map((admin) => 
-        sendNotificationToUser(admin.id, { 
-          title: "Employee Location Lockout", 
-          body: message 
-        })
+      const notifyPromises = admins.map((admin) =>
+        sendNotificationToUser(admin.id, {
+          title: "Employee Location Lockout",
+          body: message,
+        }),
       );
 
-      // Find Manager if applicable
-      if (user.managerId) {
+      // Find Managers if applicable
+      const { userManagers } = require("@/server/db/schema/users");
+      const teamMappings = await ctx.db.query.userManagers.findMany({
+        where: eq(userManagers.userId, user.id),
+      });
+
+      for (const mapping of teamMappings) {
         notifyPromises.push(
-          sendNotificationToUser(user.managerId, { 
-            title: "Team Member Location Lockout", 
-            body: message 
-          })
+          sendNotificationToUser(mapping.managerId, {
+            title: "Team Member Location Lockout",
+            body: message,
+          }),
         );
       }
 

@@ -147,7 +147,7 @@ export function ReportList({ isManager = false }: ReportListProps) {
                         Submitted at{" "}
                         {format(new Date(report.createdAt), "hh:mm a")}
                       </div>
-                      <button 
+                      <button
                         onClick={() => setSelectedReport(report)}
                         className="flex items-center gap-1 text-[10px] font-bold tracking-tight text-blue-600 uppercase hover:underline"
                       >
@@ -176,18 +176,23 @@ export function ReportList({ isManager = false }: ReportListProps) {
         )}
       </div>
 
-      <Dialog open={!!selectedReport} onOpenChange={(open) => !open && setSelectedReport(null)}>
-        <DialogContent className="sm:max-w-[600px] overflow-hidden bg-slate-50/50">
+      <Dialog
+        open={!!selectedReport}
+        onOpenChange={(open) => !open && setSelectedReport(null)}
+      >
+        <DialogContent className="overflow-hidden bg-slate-50/50 sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
               <Calendar className="h-5 w-5 text-blue-500" />
-              History for {selectedReport && format(new Date(selectedReport.reportDate), "MMM dd, yyyy")}
+              History for{" "}
+              {selectedReport &&
+                format(new Date(selectedReport.reportDate), "MMM dd, yyyy")}
             </DialogTitle>
           </DialogHeader>
           {selectedReport && (
-            <TimeSlabHistory 
-              userId={selectedReport.user.id} 
-              date={new Date(selectedReport.reportDate)} 
+            <TimeSlabHistory
+              userId={selectedReport.user.id}
+              date={new Date(selectedReport.reportDate)}
             />
           )}
         </DialogContent>

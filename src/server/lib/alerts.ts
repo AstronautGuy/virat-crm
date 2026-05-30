@@ -29,8 +29,8 @@ export async function checkAndNotifyLowStock(
 
     // 2. Check if quantity is below or equal to product's minThreshold
     const threshold = stock.product.minThreshold ?? 10;
-    
-    // We only want to alert if it crossed the threshold. To perfectly do this, 
+
+    // We only want to alert if it crossed the threshold. To perfectly do this,
     // we would check previous stock. But checking if it is below or equal is fine for now,
     // though we might want to ensure we don't spam if they already have an unread alert.
     if (stock.quantity <= threshold) {

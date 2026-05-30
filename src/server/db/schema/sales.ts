@@ -16,6 +16,7 @@ import { saleItems } from "./saleItems";
 import { replacements } from "./replacements";
 import { files } from "./files";
 import { customers } from "./customers";
+import { saleAssignments } from "./saleAssignments";
 
 export const createTable = pgTableCreator((name) => `virat-crm_${name}`);
 
@@ -113,4 +114,5 @@ export const salesRelations = relations(sales, ({ one, many }) => ({
     fields: [sales.customerId],
     references: [customers.id],
   }),
+  assignments: many(saleAssignments),
 }));

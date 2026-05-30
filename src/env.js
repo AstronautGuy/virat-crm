@@ -30,10 +30,24 @@ export const env = createEnv({
    */
   client: {
     NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().min(1),
-    NEXT_PUBLIC_PINCODE_API_URL: z.string().url().default("https://api.postalpincode.in/pincode"),
-    NEXT_PUBLIC_GEOCODING_API_URL: z.string().url().default("https://nominatim.openstreetmap.org/reverse"),
-    NEXT_PUBLIC_MAP_TILE_URL: z.string().min(1).default("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"),
-    NEXT_PUBLIC_MAP_ATTRIBUTION: z.string().min(1).default('&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'),
+    NEXT_PUBLIC_PINCODE_API_URL: z
+      .string()
+      .url()
+      .default("https://api.postalpincode.in/pincode"),
+    NEXT_PUBLIC_GEOCODING_API_URL: z
+      .string()
+      .url()
+      .default("https://nominatim.openstreetmap.org/reverse"),
+    NEXT_PUBLIC_MAP_TILE_URL: z
+      .string()
+      .min(1)
+      .default("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"),
+    NEXT_PUBLIC_MAP_ATTRIBUTION: z
+      .string()
+      .min(1)
+      .default(
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      ),
   },
 
   /**

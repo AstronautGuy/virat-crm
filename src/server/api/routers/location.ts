@@ -7,7 +7,15 @@ import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 // @ts-ignore
 import simplify from "@turf/simplify";
 import { lineString, point } from "@turf/helpers";
-import { breadcrumbs, users, locationLogs, branches, customerVisits, customers } from "@/server/db/schema";
+import {
+  breadcrumbs,
+  users,
+  locationLogs,
+  branches,
+  customerVisits,
+  customers,
+  userManagers,
+} from "@/server/db/schema";
 import { db } from "@/server/db";
 import {
   eq,
@@ -22,8 +30,15 @@ import {
 } from "drizzle-orm";
 
 function getCurrentSlab(date: Date = new Date()) {
-  const now = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-  const hours = now.getHours();
+  // Use Intl.DateTimeFormat to reliably extract the hour in IST
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Kolkata",
+    hour: "numeric",
+    hourCycle: "h23", // 0 to 23
+  });
+  const parts = formatter.formatToParts(date);
+  const hourPart = parts.find((p) => p.type === "hour");
+  const hours = parseInt(hourPart?.value ?? "0", 10);
 
   if (hours >= 0 && hours < 10) return "00:00-10:00";
   if (hours >= 10 && hours < 14) return "10:00-14:00";
@@ -33,10 +48,16 @@ function getCurrentSlab(date: Date = new Date()) {
 }
 
 function getFormattedDate(date: Date = new Date()) {
-  const tzDate = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-  const year = tzDate.getFullYear();
-  const month = String(tzDate.getMonth() + 1).padStart(2, '0');
-  const day = String(tzDate.getDate()).padStart(2, '0');
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = formatter.formatToParts(date);
+  const year = parts.find((p) => p.type === "year")?.value;
+  const month = parts.find((p) => p.type === "month")?.value;
+  const day = parts.find((p) => p.type === "day")?.value;
   return `${year}-${month}-${day}`;
 }
 
@@ -63,16 +84,22 @@ function haversineDistance(
 async function reverseGeocode(lat: number, lon: number): Promise<string> {
   try {
     const url = `${env.NEXT_PUBLIC_GEOCODING_API_URL}?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
-    const res = await fetch(url, { headers: { "User-Agent": "ViratCRM/1.0 (contact@viratcrm.com)" } });
+    const res = await fetch(url, {
+      headers: { "User-Agent": "ViratCRM/1.0 (contact@viratcrm.com)" },
+    });
     if (!res.ok) return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-    const data = await res.json() as { display_name?: string };
+    const data = (await res.json()) as { display_name?: string };
     return data.display_name ?? `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
   } catch {
     return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
   }
 }
 
-async function trackCustomerVisit(user: { id: string, branchId: number | null }, latitude: number, longitude: number) {
+async function trackCustomerVisit(
+  user: { id: string; branchId: number | null },
+  latitude: number,
+  longitude: number,
+) {
   if (!user.branchId) return;
 
   const dateStr = getFormattedDate();
@@ -82,30 +109,44 @@ async function trackCustomerVisit(user: { id: string, branchId: number | null },
     where: and(
       eq(customerVisits.userId, user.id),
       eq(customerVisits.date, dateStr),
-      isNull(customerVisits.departureTime)
+      isNull(customerVisits.departureTime),
     ),
     with: {
-      customer: true
-    }
+      customer: true,
+    },
   });
 
   if (activeVisit) {
     let isInside = false;
     if (activeVisit.customer.geofencePolygon) {
       // @ts-ignore missing types
-      isInside = booleanPointInPolygon(point([longitude, latitude]), activeVisit.customer.geofencePolygon as any);
-    } else if (activeVisit.customer.latitude && activeVisit.customer.longitude) {
-       const dist = haversineDistance(latitude, longitude, parseFloat(activeVisit.customer.latitude), parseFloat(activeVisit.customer.longitude));
-       isInside = dist <= 50;
+      isInside = booleanPointInPolygon(
+        point([longitude, latitude]),
+        activeVisit.customer.geofencePolygon as any,
+      );
+    } else if (
+      activeVisit.customer.latitude &&
+      activeVisit.customer.longitude
+    ) {
+      const dist = haversineDistance(
+        latitude,
+        longitude,
+        parseFloat(activeVisit.customer.latitude),
+        parseFloat(activeVisit.customer.longitude),
+      );
+      isInside = dist <= 50;
     }
 
     if (!isInside) {
       const durationMs = Date.now() - activeVisit.arrivalTime.getTime();
       const durationMinutes = Math.floor(durationMs / 60000);
-      await db.update(customerVisits).set({
-        departureTime: new Date(),
-        durationMinutes
-      }).where(eq(customerVisits.id, activeVisit.id));
+      await db
+        .update(customerVisits)
+        .set({
+          departureTime: new Date(),
+          durationMinutes,
+        })
+        .where(eq(customerVisits.id, activeVisit.id));
     }
     return;
   }
@@ -122,18 +163,26 @@ async function trackCustomerVisit(user: { id: string, branchId: number | null },
       gte(customers.latitude, latMin),
       lte(customers.latitude, latMax),
       gte(customers.longitude, lngMin),
-      lte(customers.longitude, lngMax)
-    )
+      lte(customers.longitude, lngMax),
+    ),
   });
 
   for (const customer of nearbyCustomers) {
     let isInside = false;
     if (customer.geofencePolygon) {
       // @ts-ignore missing types
-      isInside = booleanPointInPolygon(point([longitude, latitude]), customer.geofencePolygon as any);
+      isInside = booleanPointInPolygon(
+        point([longitude, latitude]),
+        customer.geofencePolygon as any,
+      );
     } else if (customer.latitude && customer.longitude) {
-       const dist = haversineDistance(latitude, longitude, parseFloat(customer.latitude), parseFloat(customer.longitude));
-       isInside = dist <= 50;
+      const dist = haversineDistance(
+        latitude,
+        longitude,
+        parseFloat(customer.latitude),
+        parseFloat(customer.longitude),
+      );
+      isInside = dist <= 50;
     }
 
     if (isInside) {
@@ -149,10 +198,9 @@ async function trackCustomerVisit(user: { id: string, branchId: number | null },
 }
 
 export const locationRouter = createTRPCRouter({
-  getServerTime: featureProtectedProcedure("workforce")
-    .query(() => {
-      return { serverTime: Date.now() };
-    }),
+  getServerTime: featureProtectedProcedure("workforce").query(() => {
+    return { serverTime: Date.now() };
+  }),
 
   ping: featureProtectedProcedure("workforce")
     .meta({
@@ -263,8 +311,15 @@ export const locationRouter = createTRPCRouter({
       const finalLng = finalLngStr!;
 
       let finalLocationName = existingSlab?.locationName;
-      if (existingSlab?.latitude !== finalLat || existingSlab?.longitude !== finalLng || !finalLocationName) {
-        finalLocationName = await reverseGeocode(parseFloat(finalLat), parseFloat(finalLng));
+      if (
+        existingSlab?.latitude !== finalLat ||
+        existingSlab?.longitude !== finalLng ||
+        !finalLocationName
+      ) {
+        finalLocationName = await reverseGeocode(
+          parseFloat(finalLat),
+          parseFloat(finalLng),
+        );
       }
 
       if (existingSlab) {
@@ -302,9 +357,15 @@ export const locationRouter = createTRPCRouter({
 
       // Track customer visits in the background
       if ("waitUntil" in ctx && typeof (ctx as any).waitUntil === "function") {
-        (ctx as any).waitUntil(trackCustomerVisit(user, input.latitude, input.longitude).catch(console.error));
+        (ctx as any).waitUntil(
+          trackCustomerVisit(user, input.latitude, input.longitude).catch(
+            console.error,
+          ),
+        );
       } else {
-        void trackCustomerVisit(user, input.latitude, input.longitude).catch(console.error);
+        void trackCustomerVisit(user, input.latitude, input.longitude).catch(
+          console.error,
+        );
       }
 
       return { success: true };
@@ -434,8 +495,15 @@ export const locationRouter = createTRPCRouter({
       const finalLng = finalLngStr!;
 
       let finalLocationName = existingSlab?.locationName;
-      if (existingSlab?.latitude !== finalLat || existingSlab?.longitude !== finalLng || !finalLocationName) {
-        finalLocationName = await reverseGeocode(parseFloat(finalLat), parseFloat(finalLng));
+      if (
+        existingSlab?.latitude !== finalLat ||
+        existingSlab?.longitude !== finalLng ||
+        !finalLocationName
+      ) {
+        finalLocationName = await reverseGeocode(
+          parseFloat(finalLat),
+          parseFloat(finalLng),
+        );
       }
 
       if (existingSlab) {
@@ -473,9 +541,15 @@ export const locationRouter = createTRPCRouter({
 
       // Track customer visits in the background
       if ("waitUntil" in ctx && typeof (ctx as any).waitUntil === "function") {
-        (ctx as any).waitUntil(trackCustomerVisit(user, input.latitude, input.longitude).catch(console.error));
+        (ctx as any).waitUntil(
+          trackCustomerVisit(user, input.latitude, input.longitude).catch(
+            console.error,
+          ),
+        );
       } else {
-        void trackCustomerVisit(user, input.latitude, input.longitude).catch(console.error);
+        void trackCustomerVisit(user, input.latitude, input.longitude).catch(
+          console.error,
+        );
       }
 
       return { success: true };
@@ -490,28 +564,30 @@ export const locationRouter = createTRPCRouter({
             longitude: z.number(),
             accuracy: z.number().optional(),
             timestamp: z.number(),
-          })
+          }),
         ),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const user = ctx.dbUser;
       if (user.role === "Admin") return { success: true, ignored: true }; // Admins are not tracked
 
-      const branch = user.branchId 
-        ? await ctx.db.query.branches.findFirst({ where: eq(branches.id, user.branchId) })
+      const branch = user.branchId
+        ? await ctx.db.query.branches.findFirst({
+            where: eq(branches.id, user.branchId),
+          })
         : null;
 
       for (const loc of input.locations) {
         const locDate = new Date(loc.timestamp);
-        
+
         let isWithinRadius = false;
         if (branch) {
           const distance = haversineDistance(
             loc.latitude,
             loc.longitude,
             parseFloat(branch.latitude),
-            parseFloat(branch.longitude)
+            parseFloat(branch.longitude),
           );
           isWithinRadius = distance <= branch.radiusMeters;
         }
@@ -563,8 +639,15 @@ export const locationRouter = createTRPCRouter({
         const finalLng = finalLngStr!;
 
         let finalLocationName = existingSlab?.locationName;
-        if (existingSlab?.latitude !== finalLat || existingSlab?.longitude !== finalLng || !finalLocationName) {
-          finalLocationName = await reverseGeocode(parseFloat(finalLat), parseFloat(finalLng));
+        if (
+          existingSlab?.latitude !== finalLat ||
+          existingSlab?.longitude !== finalLng ||
+          !finalLocationName
+        ) {
+          finalLocationName = await reverseGeocode(
+            parseFloat(finalLat),
+            parseFloat(finalLng),
+          );
         }
 
         if (existingSlab) {
@@ -598,10 +681,19 @@ export const locationRouter = createTRPCRouter({
           createdAt: locDate,
         });
 
-        if ("waitUntil" in ctx && typeof (ctx as any).waitUntil === "function") {
-          (ctx as any).waitUntil(trackCustomerVisit(user, loc.latitude, loc.longitude).catch(console.error));
+        if (
+          "waitUntil" in ctx &&
+          typeof (ctx as any).waitUntil === "function"
+        ) {
+          (ctx as any).waitUntil(
+            trackCustomerVisit(user, loc.latitude, loc.longitude).catch(
+              console.error,
+            ),
+          );
         } else {
-          void trackCustomerVisit(user, loc.latitude, loc.longitude).catch(console.error);
+          void trackCustomerVisit(user, loc.latitude, loc.longitude).catch(
+            console.error,
+          );
         }
       }
 
@@ -617,23 +709,36 @@ export const locationRouter = createTRPCRouter({
       // 1. Identify Visible Users based on RBAC and Branch
       let visibleUserIds: string[] = [];
 
-      const filters: SQL[] = [];
       if (!isSystemAdmin) {
         // Manager sees their branch + subordinates
-        if (currentUser.branchId) {
-          filters.push(eq(users.branchId, currentUser.branchId));
+        const teamMappings = await ctx.db.query.userManagers.findMany({
+          where: eq(userManagers.managerId, currentUser.id),
+        });
+        visibleUserIds = teamMappings.map((m) => m.userId);
+
+        if (currentUser.branchId && visibleUserIds.length > 0) {
+          const branchUsers = await ctx.db.query.users.findMany({
+            where: and(
+              eq(users.branchId, currentUser.branchId),
+              inArray(users.id, visibleUserIds),
+            ),
+            columns: { id: true },
+          });
+          visibleUserIds = branchUsers.map((u) => u.id);
         }
-        filters.push(eq(users.managerId, currentUser.id));
       } else if (input.branchId) {
         // Admin filters by specific branch
-        filters.push(eq(users.branchId, input.branchId));
+        const branchUsers = await ctx.db.query.users.findMany({
+          where: eq(users.branchId, input.branchId),
+          columns: { id: true },
+        });
+        visibleUserIds = branchUsers.map((u) => u.id);
+      } else {
+        const allUsers = await ctx.db.query.users.findMany({
+          columns: { id: true },
+        });
+        visibleUserIds = allUsers.map((u) => u.id);
       }
-
-      const visibleUsers = await ctx.db.query.users.findMany({
-        where: filters.length > 0 ? and(...filters) : undefined,
-        columns: { id: true },
-      });
-      visibleUserIds = visibleUsers.map((u) => u.id);
 
       if (visibleUserIds.length === 0) return [];
 
@@ -651,6 +756,7 @@ export const locationRouter = createTRPCRouter({
             lastName: users.lastName,
             email: users.email,
             role: users.role,
+            employeeCode: users.employeeCode,
           },
         })
         .from(breadcrumbs)
@@ -682,13 +788,13 @@ export const locationRouter = createTRPCRouter({
 
       // Check if manager is authorized to see this user
       if (!isSystemAdmin) {
-        const targetUser = await ctx.db.query.users.findFirst({
+        const targetUserMapping = await ctx.db.query.userManagers.findFirst({
           where: and(
-            eq(users.id, input.userId),
-            eq(users.managerId, currentUser.id),
+            eq(userManagers.userId, input.userId),
+            eq(userManagers.managerId, currentUser.id),
           ),
         });
-        if (!targetUser)
+        if (!targetUserMapping)
           throw new Error("Not authorized to view this user's route");
       }
 
@@ -712,8 +818,44 @@ export const locationRouter = createTRPCRouter({
         orderBy: [asc(breadcrumbs.createdAt)],
       });
 
-      if (path.length < 2) {
-        return path.map((p) => ({
+      // Filter out low accuracy points
+      let filteredPath = path.filter((p) => !p.accuracy || p.accuracy <= 100);
+
+      // Filter out impossible jumps (> 150km/h)
+      const validPath = [];
+      let lastValidPoint = null;
+      for (const p of filteredPath) {
+        if (!lastValidPoint) {
+          validPath.push(p);
+          lastValidPoint = p;
+          continue;
+        }
+
+        const dist = haversineDistance(
+          parseFloat(String(lastValidPoint.latitude)),
+          parseFloat(String(lastValidPoint.longitude)),
+          parseFloat(String(p.latitude)),
+          parseFloat(String(p.longitude)),
+        );
+        const timeDiffHours =
+          (p.createdAt.getTime() - lastValidPoint.createdAt.getTime()) /
+          (1000 * 60 * 60);
+
+        // If speed > 150km/h and distance > 500m, it's likely a GPS jump
+        if (
+          timeDiffHours > 0 &&
+          dist / 1000 / timeDiffHours > 150 &&
+          dist > 500
+        ) {
+          continue; // Skip this point
+        }
+
+        validPath.push(p);
+        lastValidPoint = p;
+      }
+
+      if (validPath.length < 2) {
+        return validPath.map((p) => ({
           latitude: parseFloat(String(p.latitude)),
           longitude: parseFloat(String(p.longitude)),
         }));
@@ -721,15 +863,18 @@ export const locationRouter = createTRPCRouter({
 
       // Convert to GeoJSON LineString
       const line = lineString(
-        path.map((p) => [
+        validPath.map((p) => [
           parseFloat(String(p.longitude)),
           parseFloat(String(p.latitude)),
-        ])
+        ]),
       );
 
       // Simplify route (tolerance 0.0001 roughly equals 11 meters)
       // @ts-ignore simplify types might differ
-      const simplifiedLine = simplify(line, { tolerance: 0.0001, highQuality: true }) as any;
+      const simplifiedLine = simplify(line, {
+        tolerance: 0.0001,
+        highQuality: true,
+      }) as any;
 
       // Map back to expected array format
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any

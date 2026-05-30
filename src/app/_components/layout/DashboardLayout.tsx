@@ -1,7 +1,13 @@
 "use client";
 
 import { DesktopSidebar } from "./DesktopSidebar";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+  SheetHeader,
+} from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 import { useSyncManager } from "@/hooks/use-sync-manager";
 import { useLocationBreadcrumbs } from "@/hooks/use-location-breadcrumbs";
@@ -23,16 +29,19 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     retry: false,
   });
 
-  const { data: notifications = [], refetch } = api.notifications.getMyNotifications.useQuery(undefined, {
-    refetchInterval: 15000,
-  });
+  const { data: notifications = [], refetch } =
+    api.notifications.getMyNotifications.useQuery(undefined, {
+      refetchInterval: 15000,
+    });
   const markAsRead = api.notifications.markAsRead.useMutation({
     onSuccess: () => void refetch(),
   });
 
   const isSystemLocked = error?.message?.includes("SYSTEM_LOCKED");
 
-  const unreadLowStockAlert = notifications.find(n => !n.isRead && n.title.includes("Low Stock"));
+  const unreadLowStockAlert = notifications.find(
+    (n) => !n.isRead && n.title.includes("Low Stock"),
+  );
 
   if (isSystemLocked) {
     return <SuspendedView />;
@@ -60,7 +69,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-950 text-foreground flex min-h-screen">
+    <div className="text-foreground flex min-h-screen bg-slate-50 dark:bg-slate-950">
       <DesktopSidebar />
       <div className="flex w-full flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom,16px))] md:pb-0">
         {(pendingCount > 0 || isSyncing) && (
@@ -85,9 +94,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         )}
 
         {unreadLowStockAlert && (
-          <div className="bg-red-50 dark:bg-red-950/40 border-b border-red-100 dark:border-red-900 px-6 py-3 flex items-center justify-between shadow-sm z-50 animate-in slide-in-from-top-2">
+          <div className="animate-in slide-in-from-top-2 z-50 flex items-center justify-between border-b border-red-100 bg-red-50 px-6 py-3 shadow-sm dark:border-red-900 dark:bg-red-950/40">
             <div className="flex items-center gap-3">
-              <div className="bg-red-100 dark:bg-red-900/50 p-1.5 rounded-full text-red-600 dark:text-red-400">
+              <div className="rounded-full bg-red-100 p-1.5 text-red-600 dark:bg-red-900/50 dark:text-red-400">
                 <AlertTriangle className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
@@ -100,8 +109,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <button
-              onClick={() => markAsRead.mutate({ notificationId: unreadLowStockAlert.id })}
-              className="text-red-700 hover:text-red-800 dark:text-red-300 dark:hover:text-red-100 bg-red-100/50 hover:bg-red-200/50 dark:bg-red-900/30 dark:hover:bg-red-800/50 transition-colors px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5"
+              onClick={() =>
+                markAsRead.mutate({ notificationId: unreadLowStockAlert.id })
+              }
+              className="flex items-center gap-1.5 rounded-md bg-red-100/50 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-200/50 hover:text-red-800 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-800/50 dark:hover:text-red-100"
             >
               <X className="h-3.5 w-3.5" />
               Dismiss
@@ -110,16 +121,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         )}
 
         {/* Native Top Navigation Header */}
-        <header className="border-border/50 bg-white/90 dark:bg-slate-900/90 sticky top-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-top))] items-center justify-between border-b px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl md:h-16 md:px-8 shadow-sm">
+        <header className="border-border/50 sticky top-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-top))] items-center justify-between border-b bg-white/90 px-4 pt-[env(safe-area-inset-top)] shadow-sm backdrop-blur-xl md:h-16 md:px-8 dark:bg-slate-900/90">
           <div className="flex items-center gap-3">
             <Sheet>
               <SheetTrigger asChild>
-                <button className="md:hidden p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors">
-                  <Menu className="w-6 h-6" />
+                <button className="rounded-md p-2 text-slate-700 transition-colors hover:bg-slate-100 md:hidden dark:text-slate-300 dark:hover:bg-slate-800">
+                  <Menu className="h-6 w-6" />
                 </button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-[280px]">
-                <SheetHeader className="sr-only"><SheetTitle>Navigation Menu</SheetTitle></SheetHeader>
+              <SheetContent side="left" className="w-[280px] p-0">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Navigation Menu</SheetTitle>
+                </SheetHeader>
                 <DesktopSidebar isMobile />
               </SheetContent>
             </Sheet>
@@ -132,7 +145,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 overscroll-none scroll-smooth">
+        <main className="flex-1 overflow-y-auto overscroll-none scroll-smooth p-4 md:p-6 lg:p-8">
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>

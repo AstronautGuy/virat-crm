@@ -35,16 +35,13 @@ export const customerVisits = createTable(
   }),
 );
 
-export const customerVisitsRelations = relations(
-  customerVisits,
-  ({ one }) => ({
-    user: one(users, {
-      fields: [customerVisits.userId],
-      references: [users.id],
-    }),
-    customer: one(customers, {
-      fields: [customerVisits.customerId],
-      references: [customers.id],
-    }),
+export const customerVisitsRelations = relations(customerVisits, ({ one }) => ({
+  user: one(users, {
+    fields: [customerVisits.userId],
+    references: [users.id],
   }),
-);
+  customer: one(customers, {
+    fields: [customerVisits.customerId],
+    references: [customers.id],
+  }),
+}));

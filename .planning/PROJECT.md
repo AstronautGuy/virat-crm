@@ -29,8 +29,13 @@ Secure, mobile-first operations management that ensures authenticated access and
 - ✓ Sovereign Overrides & Developer License Controls (M7)
 - ✓ Location-Gated Fleet Tracking & Background Interceptors (M7)
 
-### Active (Milestone 10: Planning)
+### Active (Milestone 10: UI Polish, Data Entry Enhancements & Sync Hardening)
 
+- [ ] Inventory Page Polish (Working new item button, remove transfer stock, add price column)
+- [ ] Sales Register Upgrades (Manual unique Order ID, auto-incrementing Invoice ID)
+- [ ] Sales Customer Search & Add Modal (Searchable dropdown from Customer Master, inline add modal)
+- [ ] Sales Admin Overrides (Hierarchy selection dropdowns, auto-approval for admin entries)
+- [ ] Live View Search (Pin employees by name or code)
 - [ ] Expo App Background/Foreground Sync (Perfect location tracking sync from Expo app to backend)
 - [ ] Time Sync Fix (Resolve previous time synchronization issues ensuring accurate timestamps)
 - [ ] Hardened Live Location & Routes (Maximum reliability, bug fixes, and robust historical route playback)
@@ -54,9 +59,9 @@ Secure, mobile-first operations management that ensures authenticated access and
 - **v8: Advanced Multi-Tenant Isolation & Live Alerts**: Hardened DB boundaries, strict branch isolation, live VAPID alerts & mobile background sync.
 - **v9: Live Tracking & Location Reports**: Robust real-time tracking, historical routes, mileage reimbursement reports, and geofence analytics for field agents.
 
-### Next Milestone: M10 (Expo App Sync, Hardening & Global Refactoring)
+### Next Milestone: M10 (UI Polish, Data Entry Enhancements & Sync Hardening)
 
-- Goal: Ensure the Expo mobile app perfectly syncs location data in both foreground and background without time discrepancies, while hardening live location/reports and performing a global audit to eliminate hard-coded values.
+- Goal: Improve data entry flows in Inventory and Sales, enhance the Live View tracking with search capabilities, and ensure reliable Expo mobile app sync.
 
 ## Constraints
 

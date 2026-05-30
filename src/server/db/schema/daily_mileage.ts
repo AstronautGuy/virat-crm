@@ -20,7 +20,12 @@ export const dailyMileage = createTable(
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     date: varchar("date", { length: 10 }).notNull(), // 'YYYY-MM-DD'
-    totalDistanceMeters: numeric("total_distance_meters", { precision: 12, scale: 2 }).notNull().default("0"),
+    totalDistanceMeters: numeric("total_distance_meters", {
+      precision: 12,
+      scale: 2,
+    })
+      .notNull()
+      .default("0"),
     validPointsCount: integer("valid_points_count").notNull().default(0),
     calculatedAt: timestamp("calculated_at", { withTimezone: true })
       .defaultNow()

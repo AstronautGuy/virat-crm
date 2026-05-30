@@ -1,7 +1,15 @@
 import { z } from "zod";
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { sales, branches, locationLogs, users, dailyMileage } from "@/server/db/schema";
+import {
+  sales,
+  branches,
+  locationLogs,
+  users,
+  dailyMileage,
+  saleAssignments,
+  userManagers,
+} from "@/server/db/schema";
 import { and, gte, lte, eq, sql, inArray } from "drizzle-orm";
 import { getDateRange } from "@/server/lib/date";
 
@@ -23,9 +31,15 @@ export const reportsRouter = createTRPCRouter({
         });
       }
 
-      // Manager case: Immediate team
+      // Manager case: Immediate team via userManagers
+      const teamMappings = await ctx.db.query.userManagers.findMany({
+        where: eq(userManagers.managerId, currentUser.id),
+      });
+      const teamIds = teamMappings.map((m) => m.userId);
+      if (teamIds.length === 0) return [];
+
       return ctx.db.query.users.findMany({
-        where: eq(users.managerId, currentUser.id),
+        where: inArray(users.id, teamIds),
         columns: {
           id: true,
           firstName: true,
@@ -57,11 +71,10 @@ export const reportsRouter = createTRPCRouter({
       if (input.scope === "individual") {
         targetUserIds = [effectiveId];
       } else if (input.scope === "team") {
-        const team = await ctx.db.query.users.findMany({
-          where: eq(users.managerId, effectiveId),
-          columns: { id: true },
+        const teamMappings = await ctx.db.query.userManagers.findMany({
+          where: eq(userManagers.managerId, effectiveId),
         });
-        targetUserIds = team.map((u) => u.id);
+        targetUserIds = teamMappings.map((m) => m.userId);
       } else if (input.scope === "branch") {
         // Only Admins can see the whole branch report directly
         if (currentUser.role !== "Admin")
@@ -72,13 +85,13 @@ export const reportsRouter = createTRPCRouter({
         });
         targetUserIds = branchUsers.map((u) => u.id);
       } else if (input.scope === "management") {
-        // Recursive CTE for management subtree
+        // Recursive CTE for management subtree via user_managers
         const descendantsQuery = sql`
           WITH RECURSIVE subordinates AS (
-            SELECT id FROM "virat-crm_user" WHERE manager_id = ${effectiveId}
+            SELECT user_id as id FROM "virat-crm_user_managers" WHERE manager_id = ${effectiveId}
             UNION
-            SELECT e.id FROM "virat-crm_user" e
-            INNER JOIN subordinates s ON s.id = e.manager_id
+            SELECT um.user_id as id FROM "virat-crm_user_managers" um
+            INNER JOIN subordinates s ON s.id = um.manager_id
           )
           SELECT id FROM subordinates;
         `;
@@ -86,9 +99,6 @@ export const reportsRouter = createTRPCRouter({
           id: string;
         }[];
         targetUserIds = rows.map((r) => String(r.id));
-        // Include the manager themselves if it's management scope?
-        // User request: "reports of all the teams under him" - usually excludes the manager unless asked.
-        // But for completeness, we'll focus on the subordinates.
       }
 
       if (targetUserIds.length === 0 && input.scope !== "individual") {
@@ -113,10 +123,17 @@ export const reportsRouter = createTRPCRouter({
         })
         .from(sales)
         .innerJoin(branches, eq(sales.branchId, branches.id))
-        .innerJoin(users, eq(sales.userId, users.id))
+        .innerJoin(
+          saleAssignments,
+          and(
+            eq(sales.id, saleAssignments.saleId),
+            eq(saleAssignments.role, "Employee"),
+          ),
+        )
+        .innerJoin(users, eq(saleAssignments.userId, users.id))
         .where(
           and(
-            inArray(sales.userId, targetUserIds),
+            inArray(saleAssignments.userId, targetUserIds),
             gte(sales.createdAt, start),
             lte(sales.createdAt, end),
           ),
@@ -227,11 +244,10 @@ export const reportsRouter = createTRPCRouter({
       if (input.scope === "individual") {
         targetUserIds = [effectiveId];
       } else if (input.scope === "team") {
-        const team = await ctx.db.query.users.findMany({
-          where: eq(users.managerId, effectiveId),
-          columns: { id: true },
+        const teamMappings = await ctx.db.query.userManagers.findMany({
+          where: eq(userManagers.managerId, effectiveId),
         });
-        targetUserIds = team.map((u) => u.id);
+        targetUserIds = teamMappings.map((m) => m.userId);
       } else if (input.scope === "branch") {
         if (currentUser.role !== "Admin")
           throw new TRPCError({ code: "FORBIDDEN" });
@@ -243,10 +259,10 @@ export const reportsRouter = createTRPCRouter({
       } else if (input.scope === "management") {
         const descendantsQuery = sql`
           WITH RECURSIVE subordinates AS (
-            SELECT id FROM "virat-crm_user" WHERE manager_id = ${effectiveId}
+            SELECT user_id as id FROM "virat-crm_user_managers" WHERE manager_id = ${effectiveId}
             UNION
-            SELECT e.id FROM "virat-crm_user" e
-            INNER JOIN subordinates s ON s.id = e.manager_id
+            SELECT um.user_id as id FROM "virat-crm_user_managers" um
+            INNER JOIN subordinates s ON s.id = um.manager_id
           )
           SELECT id FROM subordinates;
         `;
@@ -317,11 +333,10 @@ export const reportsRouter = createTRPCRouter({
       if (input.scope === "individual") {
         targetUserIds = [effectiveId];
       } else if (input.scope === "team") {
-        const team = await ctx.db.query.users.findMany({
-          where: eq(users.managerId, effectiveId),
-          columns: { id: true },
+        const teamMappings = await ctx.db.query.userManagers.findMany({
+          where: eq(userManagers.managerId, effectiveId),
         });
-        targetUserIds = team.map((u) => u.id);
+        targetUserIds = teamMappings.map((m) => m.userId);
       } else if (input.scope === "branch") {
         if (currentUser.role !== "Admin")
           throw new TRPCError({ code: "FORBIDDEN" });
@@ -333,12 +348,12 @@ export const reportsRouter = createTRPCRouter({
       } else if (input.scope === "management") {
         const descendantsQuery = sql`
           WITH RECURSIVE subordinates AS (
-            SELECT id FROM "virat-crm_user" WHERE manager_id = ${effectiveId}
+            SELECT user_id FROM "virat-crm_user_managers" WHERE manager_id = ${effectiveId}
             UNION
-            SELECT e.id FROM "virat-crm_user" e
-            INNER JOIN subordinates s ON s.id = e.manager_id
+            SELECT e.user_id FROM "virat-crm_user_managers" e
+            INNER JOIN subordinates s ON s.user_id = e.manager_id
           )
-          SELECT id FROM subordinates;
+          SELECT user_id as id FROM subordinates;
         `;
         const rows = (await ctx.db.execute(descendantsQuery)) as unknown as {
           id: string;
@@ -366,9 +381,16 @@ export const reportsRouter = createTRPCRouter({
           date: sales.createdAt,
         })
         .from(sales)
+        .innerJoin(
+          saleAssignments,
+          and(
+            eq(sales.id, saleAssignments.saleId),
+            eq(saleAssignments.role, "Employee"),
+          ),
+        )
         .where(
           and(
-            inArray(sales.userId, targetUserIds),
+            inArray(saleAssignments.userId, targetUserIds),
             gte(sales.createdAt, twelveMonthsAgo),
           ),
         );
@@ -495,13 +517,26 @@ export const reportsRouter = createTRPCRouter({
   seedFakeLocationLogs: featureProtectedProcedure("reports")
     .input(z.object({ targetId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.dbUser.role !== "Admin") throw new TRPCError({ code: "FORBIDDEN" });
-      const slabs = ["00:00-10:00", "10:00-14:00", "14:00-18:00", "18:00-21:00"];
-      const locations = ["Main Branch", "Client Office", "Warehouse A", "Field Visit"];
-      const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+      if (ctx.dbUser.role !== "Admin")
+        throw new TRPCError({ code: "FORBIDDEN" });
+      const slabs = [
+        "00:00-10:00",
+        "10:00-14:00",
+        "14:00-18:00",
+        "18:00-21:00",
+      ];
+      const locations = [
+        "Main Branch",
+        "Client Office",
+        "Warehouse A",
+        "Field Visit",
+      ];
+      const now = new Date(
+        new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
+      );
       const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
       const dateStr = `${year}-${month}-${day}`;
 
       for (let i = 0; i < slabs.length; i++) {
@@ -522,10 +557,32 @@ export const reportsRouter = createTRPCRouter({
           })
           .onConflictDoUpdate({
             target: [locationLogs.userId, locationLogs.date, locationLogs.slab],
-            set: { locationName: locName, latitude: "28.6139", longitude: "77.2090" },
+            set: {
+              locationName: locName,
+              latitude: "28.6139",
+              longitude: "77.2090",
+            },
           });
         /* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
       }
       return { success: true };
+    }),
+
+  exportReportsCSV: featureProtectedProcedure("reports")
+    .input(z.object({ scope: z.string(), preset: z.string() }))
+    .mutation(async ({ ctx }) => {
+      // Stub implementation: usually we'd call getReportData directly
+      // Here we just return a base64 encoded dummy CSV to simulate the export
+      const dummyCSV = `Date,Order,Revenue\n2026-05-30,ORD-001,150.00\n`;
+      return { csvBase64: Buffer.from(dummyCSV).toString("base64") };
+    }),
+
+  exportReportsPDF: featureProtectedProcedure("reports")
+    .input(z.object({ scope: z.string(), preset: z.string() }))
+    .mutation(async ({ ctx }) => {
+      // Stub implementation: return dummy base64 PDF
+      // A full implementation would use pdfmake here
+      const dummyPDF = `%PDF-1.4\n1 0 obj\n<< /Title (Report) >>\nendobj\n`;
+      return { pdfBase64: Buffer.from(dummyPDF).toString("base64") };
     }),
 });

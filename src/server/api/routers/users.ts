@@ -80,9 +80,19 @@ export const usersRouter = createTRPCRouter({
   getMe: protectedProcedure.query(async ({ ctx }) => {
     // In our new system, ctx.dbUser is already fetched in the context
     // We can just return it with calculated permissions
+    // Fetch managers for the current user since trpc.ts doesn't populate it
+    const currentUserWithManagers = await ctx.db.query.users.findFirst({
+      where: eq(users.id, ctx.dbUser.id),
+      with: {
+        managers: {
+          with: { manager: true },
+        },
+      },
+    });
 
     return {
       ...ctx.dbUser,
+      managers: currentUserWithManagers?.managers ?? [],
       permissions: {
         isManager: ctx.dbUser.role === "Manager" || ctx.dbUser.role === "Admin",
         isAdmin: ctx.dbUser.role === "Admin",
@@ -134,7 +144,7 @@ export const usersRouter = createTRPCRouter({
         password: z.string().min(6),
         role: z.string().min(2).max(64),
         branchId: z.number(),
-        managerId: z.string().optional(),
+        managerIds: z.array(z.string()).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -167,13 +177,28 @@ export const usersRouter = createTRPCRouter({
 
       const hashedPassword = await bcrypt.hash(input.password, 10);
 
-      return await ctx.db
+      const { managerIds, ...userData } = input;
+
+      const [newUser] = await ctx.db
         .insert(users)
         .values({
-          ...input,
+          ...userData,
           password: hashedPassword,
         })
         .returning();
+
+      if (newUser && managerIds && managerIds.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { userManagers } = require("@/server/db/schema/users");
+        await ctx.db.insert(userManagers).values(
+          managerIds.map((managerId) => ({
+            userId: newUser.id,
+            managerId,
+          })),
+        );
+      }
+
+      return newUser;
     }),
 
   getAllUsers: protectedProcedure.query(async ({ ctx }) => {
@@ -188,7 +213,9 @@ export const usersRouter = createTRPCRouter({
     return ctx.db.query.users.findMany({
       with: {
         branch: true,
-        manager: true,
+        managers: {
+          with: { manager: true },
+        },
       },
     });
   }),
@@ -295,7 +322,7 @@ export const usersRouter = createTRPCRouter({
         employeeCode: z.string().min(3),
         role: z.string().min(2).max(64),
         branchId: z.number().nullable().optional(),
-        managerId: z.string().nullable().optional(),
+        managerIds: z.array(z.string()).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -328,7 +355,7 @@ export const usersRouter = createTRPCRouter({
         });
       }
 
-      if (input.managerId && input.managerId === input.userId) {
+      if (input.managerIds && input.managerIds.includes(input.userId)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "An employee cannot be their own manager",
@@ -351,7 +378,7 @@ export const usersRouter = createTRPCRouter({
         });
       }
 
-      const { userId, ...updateData } = input;
+      const { userId, managerIds, ...updateData } = input;
 
       const [updatedUser] = await ctx.db
         .update(users)
@@ -359,13 +386,36 @@ export const usersRouter = createTRPCRouter({
         .where(eq(users.id, userId))
         .returning();
 
+      if (managerIds !== undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { userManagers } = require("@/server/db/schema/users");
+
+        // Remove existing managers
+        await ctx.db
+          .delete(userManagers)
+          .where(eq(userManagers.userId, userId));
+
+        // Add new managers
+        if (managerIds.length > 0) {
+          await ctx.db.insert(userManagers).values(
+            managerIds.map((managerId) => ({
+              userId,
+              managerId,
+            })),
+          );
+        }
+      }
+
       return updatedUser;
     }),
 
   getOrgTree: featureProtectedProcedure("org-chart").query(async ({ ctx }) => {
-    // Fetch all active users
+    // Fetch all active users with their managers
     const allUsers = await ctx.db.query.users.findMany({
       where: eq(users.isActive, true),
+      with: {
+        managers: true,
+      },
     });
 
     const isAdmin = ctx.dbUser.role === "Admin";
@@ -379,7 +429,7 @@ export const usersRouter = createTRPCRouter({
       name: string;
       role: string | null;
       employeeCode: string | null;
-      managerId: string | null;
+      managerIds: string[];
       children: OrgNode[];
     }
 
@@ -392,19 +442,31 @@ export const usersRouter = createTRPCRouter({
         name: `${u.firstName} ${u.lastName}`,
         role: u.role,
         employeeCode: u.employeeCode,
-        managerId: u.managerId,
+        managerIds: u.managers.map((m: any) => m.managerId),
         children: [],
       });
     });
 
     const roots: OrgNode[] = [];
 
-    // Build the tree
+    // Build the tree (a user can be pushed to multiple managers' children)
     allUsers.forEach((u) => {
       const node = userMap.get(u.id);
-      if (node && u.managerId && userMap.has(u.managerId)) {
-        userMap.get(u.managerId)?.children.push(node);
-      } else if (node) {
+      if (!node) return;
+
+      const mIds = node.managerIds;
+      if (mIds.length > 0) {
+        let hasValidManager = false;
+        mIds.forEach((mId) => {
+          if (userMap.has(mId)) {
+            userMap.get(mId)?.children.push(node);
+            hasValidManager = true;
+          }
+        });
+        if (!hasValidManager) {
+          roots.push(node);
+        }
+      } else {
         roots.push(node);
       }
     });

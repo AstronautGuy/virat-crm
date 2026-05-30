@@ -7,7 +7,7 @@ describe("Multi-Tenant Isolation", () => {
     const ctx = {
       dbUser: { role: "Developer", branchId: 1 },
     };
-    
+
     // Developer requesting data from branch 2
     const result = enforceBranchIsolation(ctx, 2);
     expect(result).toBe(2);
@@ -17,7 +17,7 @@ describe("Multi-Tenant Isolation", () => {
     const ctx = {
       dbUser: { role: "Admin", branchId: 1 },
     };
-    
+
     // Admin requesting data from branch 3
     const result = enforceBranchIsolation(ctx, 3);
     expect(result).toBe(3);
@@ -27,7 +27,7 @@ describe("Multi-Tenant Isolation", () => {
     const ctx = {
       dbUser: { role: "Employee", branchId: 5 },
     };
-    
+
     const result = enforceBranchIsolation(ctx);
     expect(result).toBe(5);
   });
@@ -36,7 +36,7 @@ describe("Multi-Tenant Isolation", () => {
     const ctx = {
       dbUser: { role: "Employee", branchId: 5 },
     };
-    
+
     // Employee assigned to branch 5 requesting data from branch 2
     expect(() => enforceBranchIsolation(ctx, 2)).toThrow(TRPCError);
     expect(() => enforceBranchIsolation(ctx, 2)).toThrow(/Access Denied/);
@@ -46,7 +46,7 @@ describe("Multi-Tenant Isolation", () => {
     const ctx = {
       dbUser: { role: "Employee", branchId: null },
     };
-    
+
     expect(() => enforceBranchIsolation(ctx)).toThrow(TRPCError);
     expect(() => enforceBranchIsolation(ctx)).toThrow(/no branch assignment/);
   });
@@ -55,7 +55,7 @@ describe("Multi-Tenant Isolation", () => {
     const ctx = {
       dbUser: null,
     };
-    
+
     expect(() => enforceBranchIsolation(ctx)).toThrow(TRPCError);
     expect(() => enforceBranchIsolation(ctx)).toThrow(/User profile not found/);
   });

@@ -10,13 +10,37 @@ import {
   saleItems,
   inventory,
   inventoryTransactions,
+  saleAssignments,
+  userManagers,
 } from "@/server/db/schema";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, desc, exists } from "drizzle-orm";
 import { sendNotificationToUser } from "@/server/lib/push";
 import { checkAndNotifyLowStock } from "@/server/lib/alerts";
 import { TRPCError } from "@trpc/server";
 
 export const salesRouter = createTRPCRouter({
+  getNextInvoiceId: featureProtectedProcedure("sales").query(
+    async ({ ctx }) => {
+      const lastSale = await ctx.db.query.sales.findFirst({
+        where: sql`${sales.transactionNumber} IS NOT NULL`,
+        orderBy: [desc(sales.createdAt)],
+      });
+
+      if (!lastSale || !lastSale.transactionNumber) {
+        return "INV-1000";
+      }
+
+      const match = lastSale.transactionNumber.match(/(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1]!, 10);
+        const prefix = lastSale.transactionNumber.slice(0, match.index);
+        return `${prefix}${num + 1}`;
+      }
+
+      return `${lastSale.transactionNumber}-1`;
+    },
+  ),
+
   createSale: featureProtectedProcedure("sales")
     .meta({
       openapi: {
@@ -28,6 +52,8 @@ export const salesRouter = createTRPCRouter({
     })
     .input(
       z.object({
+        orderNumber: z.string().min(1, "Order Number is required"),
+        transactionNumber: z.string().optional(),
         branchId: z.number().optional(),
         pincode: z
           .string()
@@ -40,6 +66,8 @@ export const salesRouter = createTRPCRouter({
         state: z.string().optional(),
         customerName: z.string().optional(),
         customerAddress: z.string().optional(),
+        userIds: z.array(z.string()).optional(),
+        managerIds: z.array(z.string()).optional(),
         invoiceAmount: z.string().optional(),
         advancePaymentAmount: z.string().optional(),
         receivedAmount: z.string().optional(),
@@ -136,42 +164,101 @@ export const salesRouter = createTRPCRouter({
         const receivedAmt = parseFloat(input.receivedAmount ?? "0");
         const balanceAmt = invoiceAmt - advanceAmt - receivedAmt;
 
-        const orderNumber = `ORD-${Date.now()}`;
-        const transactionNumber = `TXN-${Date.now()}`;
+        const orderNumber = input.orderNumber;
+        const transactionNumber = input.transactionNumber ?? null;
+
+        const finalUserIds =
+          ctx.dbUser.role === "Admin" && input.userIds?.length
+            ? input.userIds
+            : [ctx.dbUser.id];
+        const userManagersList = await tx.query.userManagers.findMany({
+          where: eq(userManagers.userId, ctx.dbUser.id),
+        });
+        const finalManagerIds =
+          ctx.dbUser.role === "Admin" && input.managerIds?.length
+            ? input.managerIds
+            : userManagersList.map((m) => m.managerId);
+        const finalStatus =
+          ctx.dbUser.role === "Admin" ? "Approved" : "Pending";
+
+        const primaryUserId = finalUserIds[0] ?? ctx.dbUser.id;
+        const primaryManagerId = finalManagerIds[0] ?? null;
 
         // 3. Insert Sale
-        const [newSale] = await tx
-          .insert(sales)
-          .values({
-            branchId: targetBranchId,
-            userId: ctx.dbUser.id,
-            managerId: ctx.dbUser.managerId,
-            orderNumber,
-            transactionNumber,
-            pincode: input.pincode,
-            addressLine1: input.addressLine1,
-            landmark: input.landmark,
-            area: input.area,
-            city: input.city,
-            state: input.state,
-            deliveryAddress: deliveryAddress || undefined,
-            customerName: input.customerName,
-            customerAddress: input.customerAddress,
-            mainQty,
-            freeQty,
-            totalQty,
-            invoiceAmount: invoiceAmt.toString(),
-            advancePaymentAmount: advanceAmt.toString(),
-            receivedAmount: receivedAmt.toString(),
-            balanceAmount: balanceAmt.toString(),
-          })
-          .returning();
+        let newSale;
+        try {
+          const [insertedSale] = await tx
+            .insert(sales)
+            .values({
+              branchId: targetBranchId,
+              userId: primaryUserId,
+              managerId: primaryManagerId,
+              status: finalStatus as any,
+              orderNumber,
+              transactionNumber,
+              pincode: input.pincode,
+              addressLine1: input.addressLine1,
+              landmark: input.landmark,
+              area: input.area,
+              city: input.city,
+              state: input.state,
+              deliveryAddress: deliveryAddress || undefined,
+              customerName: input.customerName,
+              customerAddress: input.customerAddress,
+              mainQty,
+              freeQty,
+              totalQty,
+              invoiceAmount: invoiceAmt.toString(),
+              advancePaymentAmount: advanceAmt.toString(),
+              receivedAmount: receivedAmt.toString(),
+              balanceAmount: balanceAmt.toString(),
+            })
+            .returning();
+          newSale = insertedSale;
+        } catch (error: any) {
+          if (
+            error.code === "23505" ||
+            error.message?.includes("23505") ||
+            error.message?.includes("unique constraint")
+          ) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: "Order ID already exists. Please use a unique Order ID.",
+            });
+          }
+          throw error;
+        }
 
         if (!newSale)
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: "Failed to create sale",
           });
+
+        // Insert into saleAssignments
+        const assignments = [];
+        for (const uid of finalUserIds) {
+          assignments.push({
+            saleId: newSale.id,
+            userId: uid,
+            role: "Employee",
+          });
+        }
+        for (const mid of finalManagerIds) {
+          assignments.push({
+            saleId: newSale.id,
+            userId: mid,
+            role: "Manager",
+          });
+        }
+        if (assignments.length > 0) {
+          const uniqueAssignments = Array.from(
+            new Map(
+              assignments.map((a) => [`${a.userId}-${a.role}`, a]),
+            ).values(),
+          );
+          await tx.insert(saleAssignments).values(uniqueAssignments);
+        }
 
         // 4. Insert Sale Items & Transactions
         if (input.items.length > 0) {
@@ -226,7 +313,10 @@ export const salesRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.number(),
-        pincode: z.string().regex(/^[1-9][0-9]{5}$/, "Invalid Pincode").optional(),
+        pincode: z
+          .string()
+          .regex(/^[1-9][0-9]{5}$/, "Invalid Pincode")
+          .optional(),
         addressLine1: z.string().optional(),
         landmark: z.string().optional(),
         area: z.string().optional(),
@@ -242,13 +332,16 @@ export const salesRouter = createTRPCRouter({
             productId: z.number(),
             quantity: z.number().min(1),
             isFree: z.boolean().default(false),
-          })
+          }),
         ),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       if (ctx.dbUser.role !== "Admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only Admins can edit sales" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only Admins can edit sales",
+        });
       }
 
       return await ctx.db.transaction(async (tx) => {
@@ -257,7 +350,8 @@ export const salesRouter = createTRPCRouter({
           with: { items: true },
         });
 
-        if (!existingSale) throw new TRPCError({ code: "NOT_FOUND", message: "Sale not found" });
+        if (!existingSale)
+          throw new TRPCError({ code: "NOT_FOUND", message: "Sale not found" });
 
         // If the sale was not rejected, we must revert the old items' inventory
         if (existingSale.status !== "Rejected") {
@@ -271,7 +365,9 @@ export const salesRouter = createTRPCRouter({
               })
               .onConflictDoUpdate({
                 target: [inventory.productId, inventory.branchId],
-                set: { quantity: sql`${inventory.quantity} + ${oldItem.quantity}` },
+                set: {
+                  quantity: sql`${inventory.quantity} + ${oldItem.quantity}`,
+                },
               });
 
             await tx.insert(inventoryTransactions).values({
@@ -301,7 +397,9 @@ export const salesRouter = createTRPCRouter({
               })
               .onConflictDoUpdate({
                 target: [inventory.productId, inventory.branchId],
-                set: { quantity: sql`${inventory.quantity} - ${item.quantity}` },
+                set: {
+                  quantity: sql`${inventory.quantity} - ${item.quantity}`,
+                },
               });
 
             await tx.insert(inventoryTransactions).values({
@@ -334,13 +432,20 @@ export const salesRouter = createTRPCRouter({
         let deliveryAddress = existingSale.deliveryAddress;
         if (input.pincode && input.pincode !== existingSale.pincode) {
           try {
-            const res = await fetch(`${env.NEXT_PUBLIC_PINCODE_API_URL}/${input.pincode}`, { signal: AbortSignal.timeout(3000) });
-            const data = (await res.json()) as { Status: string; PostOffice: { Name: string; District: string; State: string }[] }[];
+            const res = await fetch(
+              `${env.NEXT_PUBLIC_PINCODE_API_URL}/${input.pincode}`,
+              { signal: AbortSignal.timeout(3000) },
+            );
+            const data = (await res.json()) as {
+              Status: string;
+              PostOffice: { Name: string; District: string; State: string }[];
+            }[];
             if (Array.isArray(data) && data[0]?.Status === "Success") {
               const postOffice = data[0].PostOffice?.[0];
-              if (postOffice) deliveryAddress = `${postOffice.Name}, ${postOffice.District}, ${postOffice.State}`;
+              if (postOffice)
+                deliveryAddress = `${postOffice.Name}, ${postOffice.District}, ${postOffice.State}`;
             }
-          } catch { }
+          } catch {}
         }
 
         const [updatedSale] = await tx
@@ -367,7 +472,10 @@ export const salesRouter = createTRPCRouter({
           .returning();
 
         if (!updatedSale) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to update sale" });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to update sale",
+          });
         }
 
         // Insert new items
@@ -378,7 +486,7 @@ export const salesRouter = createTRPCRouter({
               productId: item.productId,
               quantity: item.quantity,
               isFree: item.isFree,
-            }))
+            })),
           );
         }
 
@@ -388,74 +496,89 @@ export const salesRouter = createTRPCRouter({
 
   getSales: featureProtectedProcedure("sales")
     .input(
-      z.object({
-        limit: z.number().min(1).max(100).nullish(),
-        cursor: z.number().nullish(), // Use sale id as cursor for keyset pagination
-      }).optional()
+      z
+        .object({
+          limit: z.number().min(1).max(100).nullish(),
+          cursor: z.number().nullish(), // Use sale id as cursor for keyset pagination
+        })
+        .optional(),
     )
     .query(async ({ ctx, input }) => {
-    const currentUser = ctx.dbUser;
-    const limit = input?.limit ?? 20;
-    const cursor = input?.cursor;
+      const currentUser = ctx.dbUser;
+      const limit = input?.limit ?? 20;
+      const cursor = input?.cursor;
 
-    let items;
+      let items;
 
-    if (currentUser.role === "Admin" || currentUser.role === "Developer") {
-      items = await ctx.db.query.sales.findMany({
-        where: cursor ? (sales, { lt }) => lt(sales.id, cursor) : undefined,
-        limit: limit + 1,
-        with: {
-          user: true,
-          manager: true,
-          branch: true,
-          items: true,
-          files: {
-            where: (files, { eq }) => eq(files.entityType, "sale"),
+      if (currentUser.role === "Admin" || currentUser.role === "Developer") {
+        items = await ctx.db.query.sales.findMany({
+          where: cursor ? (sales, { lt }) => lt(sales.id, cursor) : undefined,
+          limit: limit + 1,
+          with: {
+            user: true,
+            manager: true,
+            branch: true,
+            items: true,
+            assignments: { with: { user: true } },
+            files: {
+              where: (files, { eq }) => eq(files.entityType, "sale"),
+            },
           },
-        },
-        orderBy: (sales, { desc }) => [desc(sales.id)],
-      });
-    } else {
-      const assignedBranchId = enforceBranchIsolation(ctx);
+          orderBy: (sales, { desc }) => [desc(sales.id)],
+        });
+      } else {
+        const assignedBranchId = enforceBranchIsolation(ctx);
 
-      const conditions = currentUser.role === "Employee"
+        const conditions =
+          currentUser.role === "Employee"
             ? and(
                 eq(sales.branchId, assignedBranchId!),
-                eq(sales.userId, currentUser.id),
-                cursor ? sql`${sales.id} < ${cursor}` : undefined
+                exists(
+                  ctx.db
+                    .select()
+                    .from(saleAssignments)
+                    .where(
+                      and(
+                        eq(saleAssignments.saleId, sales.id),
+                        eq(saleAssignments.userId, currentUser.id),
+                      ),
+                    ),
+                ),
+                cursor ? sql`${sales.id} < ${cursor}` : undefined,
               )
             : and(
                 eq(sales.branchId, assignedBranchId!),
-                cursor ? sql`${sales.id} < ${cursor}` : undefined
+                cursor ? sql`${sales.id} < ${cursor}` : undefined,
               );
 
-      items = await ctx.db.query.sales.findMany({
-        where: conditions,
-        limit: limit + 1,
-        with: {
-          user: true,
-          manager: true,
-          branch: true,
-          items: true,
-          files: {
-            where: (files, { eq }) => eq(files.entityType, "sale"),
+        items = await ctx.db.query.sales.findMany({
+          where: conditions,
+          limit: limit + 1,
+          with: {
+            user: true,
+            manager: true,
+            branch: true,
+            items: true,
+            assignments: { with: { user: true } },
+            files: {
+              where: (files, { eq }) => eq(files.entityType, "sale"),
+            },
           },
-        },
-        orderBy: (sales, { desc }) => [desc(sales.id)],
-      });
-    }
+          orderBy: (sales, { desc }) => [desc(sales.id)],
+        });
+      }
 
-    let nextCursor: typeof cursor | undefined = undefined;
-    if (items.length > limit) {
-      const nextItem = items.pop();
-      nextCursor = nextItem!.id;
-    }
+      let nextCursor: typeof cursor | undefined = undefined;
+      if (items.length > limit) {
+        const nextItem = items.pop();
+        nextCursor = nextItem!.id;
+      }
 
-    return {
-      items,
-      nextCursor,
-    };
-  }),
+      return {
+        items,
+        nextCursor,
+      };
+    }),
 
   getSale: featureProtectedProcedure("sales")
     .input(z.object({ id: z.number() }))
@@ -472,8 +595,10 @@ export const salesRouter = createTRPCRouter({
 
       if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Developer") {
         const assignedBranchId = enforceBranchIsolation(ctx);
-        if (sale.branchId !== assignedBranchId) throw new TRPCError({ code: "FORBIDDEN" });
-        if (ctx.dbUser.role === "Employee" && sale.userId !== ctx.dbUser.id) throw new TRPCError({ code: "FORBIDDEN" });
+        if (sale.branchId !== assignedBranchId)
+          throw new TRPCError({ code: "FORBIDDEN" });
+        if (ctx.dbUser.role === "Employee" && sale.userId !== ctx.dbUser.id)
+          throw new TRPCError({ code: "FORBIDDEN" });
       }
 
       return sale;
@@ -565,7 +690,9 @@ export const salesRouter = createTRPCRouter({
               })
               .onConflictDoUpdate({
                 target: [inventory.productId, inventory.branchId],
-                set: { quantity: sql`${inventory.quantity} - ${item.quantity}` },
+                set: {
+                  quantity: sql`${inventory.quantity} - ${item.quantity}`,
+                },
               });
 
             await tx.insert(inventoryTransactions).values({

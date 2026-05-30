@@ -114,8 +114,13 @@ export default function ProfilePage() {
                       Manager
                     </span>
                     <span className="font-medium">
-                      {user.managerId
-                        ? "Manager Assigned"
+                      {user.managers && user.managers.length > 0
+                        ? user.managers
+                            .map(
+                              (m) =>
+                                `${m.manager.firstName} ${m.manager.lastName}`,
+                            )
+                            .join(", ")
                         : "Direct Report / Admin"}
                     </span>
                   </div>

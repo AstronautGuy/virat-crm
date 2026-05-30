@@ -45,7 +45,7 @@ export function MileageReportList({ isManager }: { isManager: boolean }) {
           `"${r.userName}"`,
           r.totalDistanceKm,
           r.validPointsCount,
-        ].join(",")
+        ].join(","),
       ),
     ].join("\n");
 
@@ -55,7 +55,7 @@ export function MileageReportList({ isManager }: { isManager: boolean }) {
     link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      `mileage_report_${format(new Date(), "yyyy-MM-dd")}.csv`
+      `mileage_report_${format(new Date(), "yyyy-MM-dd")}.csv`,
     );
     document.body.appendChild(link);
     link.click();
@@ -66,10 +66,7 @@ export function MileageReportList({ isManager }: { isManager: boolean }) {
     <div className="space-y-6">
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div className="flex flex-wrap items-center gap-3">
-          <Select
-            value={preset}
-            onValueChange={(val: any) => setPreset(val)}
-          >
+          <Select value={preset} onValueChange={(val: any) => setPreset(val)}>
             <SelectTrigger className="w-[140px] rounded-xl border-slate-200 bg-white shadow-sm">
               <SelectValue placeholder="Date Range" />
             </SelectTrigger>
@@ -83,10 +80,7 @@ export function MileageReportList({ isManager }: { isManager: boolean }) {
           </Select>
 
           {isManager && (
-            <Select
-              value={scope}
-              onValueChange={(val: any) => setScope(val)}
-            >
+            <Select value={scope} onValueChange={(val: any) => setScope(val)}>
               <SelectTrigger className="w-[160px] rounded-xl border-slate-200 bg-white shadow-sm">
                 <SelectValue placeholder="Scope" />
               </SelectTrigger>
@@ -132,7 +126,8 @@ export function MileageReportList({ isManager }: { isManager: boolean }) {
             <div>
               <h3 className="font-bold text-slate-900">Total Mileage</h3>
               <p className="text-2xl font-black tracking-tight text-blue-600">
-                {data?.totalKm ?? 0} <span className="text-sm font-medium text-slate-500">km</span>
+                {data?.totalKm ?? 0}{" "}
+                <span className="text-sm font-medium text-slate-500">km</span>
               </p>
             </div>
           </div>
@@ -144,7 +139,7 @@ export function MileageReportList({ isManager }: { isManager: boolean }) {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm text-slate-600">
-                <thead className="bg-slate-50/50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <thead className="bg-slate-50/50 text-xs font-semibold tracking-wider text-slate-500 uppercase">
                   <tr>
                     <th className="px-6 py-4">Date</th>
                     <th className="px-6 py-4">Employee</th>
@@ -158,7 +153,7 @@ export function MileageReportList({ isManager }: { isManager: boolean }) {
                       key={r.id}
                       className="transition-colors hover:bg-slate-50/50"
                     >
-                      <td className="whitespace-nowrap px-6 py-4 font-medium text-slate-900">
+                      <td className="px-6 py-4 font-medium whitespace-nowrap text-slate-900">
                         {r.date}
                       </td>
                       <td className="px-6 py-4">
@@ -176,7 +171,7 @@ export function MileageReportList({ isManager }: { isManager: boolean }) {
                           </div>
                         </div>
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-right font-black tracking-tight text-blue-600">
+                      <td className="px-6 py-4 text-right font-black tracking-tight whitespace-nowrap text-blue-600">
                         {r.totalDistanceKm}
                       </td>
                       <td className="px-6 py-4 text-right">

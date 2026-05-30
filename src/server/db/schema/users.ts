@@ -5,6 +5,7 @@ import {
   boolean,
   integer,
   timestamp,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { branches } from "./branches";
@@ -25,9 +26,6 @@ export const users = createTable("user", {
     .notNull()
     .references(() => roles.name),
   branchId: integer("branch_id").references(() => branches.id),
-  managerId: uuid("manager_id").references((): AnyPgColumn => users.id, {
-    onDelete: "set null",
-  }),
   isActive: boolean("is_active").default(true).notNull(),
   lastActiveAt: timestamp("last_active_at", { withTimezone: true }),
   lastLat: varchar("last_lat", { length: 32 }),
@@ -44,17 +42,39 @@ export const users = createTable("user", {
   ),
 });
 
+export const userManagers = createTable(
+  "user_managers",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    managerId: uuid("manager_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.managerId] }),
+  }),
+);
+
 export const usersRelations = relations(users, ({ one, many }) => ({
   branch: one(branches, {
     fields: [users.branchId],
     references: [branches.id],
   }),
-  manager: one(users, {
-    fields: [users.managerId],
+  managers: many(userManagers, { relationName: "user_to_managers" }),
+  teamMembers: many(userManagers, { relationName: "manager_to_team" }),
+}));
+
+export const userManagersRelations = relations(userManagers, ({ one }) => ({
+  user: one(users, {
+    fields: [userManagers.userId],
     references: [users.id],
-    relationName: "manager_to_team",
+    relationName: "user_to_managers",
   }),
-  teamMembers: many(users, {
+  manager: one(users, {
+    fields: [userManagers.managerId],
+    references: [users.id],
     relationName: "manager_to_team",
   }),
 }));

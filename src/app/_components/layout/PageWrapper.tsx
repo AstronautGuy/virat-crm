@@ -17,14 +17,20 @@ export function PageWrapper({ children, isLoading }: PageWrapperProps) {
       initial="initial"
       animate="animate"
       exit="exit"
-      className="w-full relative min-h-[50vh]"
+      className="relative min-h-[50vh] w-full"
     >
       {isLoading ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-50 rounded-xl">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="bg-background/50 absolute inset-0 z-50 flex items-center justify-center rounded-xl backdrop-blur-sm">
+          <Loader2 className="text-primary h-8 w-8 animate-spin" />
         </div>
       ) : null}
-      <div className={isLoading ? "opacity-50 pointer-events-none transition-opacity duration-300" : "transition-opacity duration-300"}>
+      <div
+        className={
+          isLoading
+            ? "pointer-events-none opacity-50 transition-opacity duration-300"
+            : "transition-opacity duration-300"
+        }
+      >
         {children}
       </div>
     </motion.div>

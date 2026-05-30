@@ -97,7 +97,10 @@ export function DashboardView({
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {metrics.map((metric) => (
-              <Card key={metric.label} className="border-none p-0 shadow-sm rounded-xl transition-transform duration-300">
+              <Card
+                key={metric.label}
+                className="rounded-xl border-none p-0 shadow-sm transition-transform duration-300"
+              >
                 <CardContent className="p-6">
                   <p className="text-xs font-bold tracking-wider text-slate-400 uppercase">
                     {metric.label}
@@ -116,7 +119,7 @@ export function DashboardView({
           </div>
 
           <div className="grid gap-6 md:grid-cols-7">
-            <Card className="border-none shadow-sm rounded-xl md:col-span-4">
+            <Card className="rounded-xl border-none shadow-sm md:col-span-4">
               <CardHeader>
                 <CardTitle className="text-lg font-bold text-slate-800">
                   Recent Activity
@@ -127,7 +130,7 @@ export function DashboardView({
                   {[1, 2, 3].map((i) => (
                     <div
                       key={i}
-                      className="group flex cursor-pointer items-center gap-4 active:scale-[0.98] transition-transform duration-200 rounded-lg p-2 -mx-2 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                      className="group -mx-2 flex cursor-pointer items-center gap-4 rounded-lg p-2 transition-transform duration-200 hover:bg-slate-50 active:scale-[0.98] dark:hover:bg-slate-800/50"
                     >
                       <div className="text-primary group-hover:bg-primary flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 font-bold shadow-sm transition-all duration-300 group-hover:text-white">
                         {i}
@@ -146,7 +149,7 @@ export function DashboardView({
               </CardContent>
             </Card>
 
-            <Card className="bg-primary/5 flex flex-col items-center justify-center border-none p-8 text-center md:col-span-3 shadow-sm rounded-xl">
+            <Card className="bg-primary/5 flex flex-col items-center justify-center rounded-xl border-none p-8 text-center shadow-sm md:col-span-3">
               <div className="shadow-premium mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white transition-transform group-hover:scale-110">
                 <Plus className="text-primary h-8 w-8" />
               </div>

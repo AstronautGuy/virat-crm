@@ -10,6 +10,7 @@ import {
   inventory,
   inventoryTransactions,
   stockTransfers,
+  products,
 } from "@/server/db/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 import { checkAndNotifyLowStock } from "@/server/lib/alerts";
@@ -329,15 +330,53 @@ export const inventoryRouter = createTRPCRouter({
       const { dbUser } = ctx;
       const isAdmin = dbUser.role === "Admin" || dbUser.role === "Developer";
 
-      return ctx.db.query.inventory.findMany({
-        where: isAdmin
-          ? undefined
-          : eq(inventory.branchId, dbUser.branchId ?? 0),
-        with: {
-          product: true,
-          branch: true,
-        },
-      }).then(items => items.filter(item => item.quantity <= (item.product?.minThreshold ?? 10)));
+      return ctx.db.query.inventory
+        .findMany({
+          where: isAdmin
+            ? undefined
+            : eq(inventory.branchId, dbUser.branchId ?? 0),
+          with: {
+            product: true,
+            branch: true,
+          },
+        })
+        .then((items) =>
+          items.filter(
+            (item) => item.quantity <= (item.product?.minThreshold ?? 10),
+          ),
+        );
     },
   ),
+
+  addProduct: featureProtectedProcedure("inventory")
+    .input(
+      z.object({
+        name: z.string().min(1),
+        sku: z.string().min(1),
+        price: z.number().min(0),
+        minThreshold: z.number().min(0).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { dbUser } = ctx;
+      const isAdmin = dbUser.role === "Admin" || dbUser.role === "Developer";
+      if (!isAdmin) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only Admins can add products",
+        });
+      }
+
+      const [newProduct] = await ctx.db
+        .insert(products)
+        .values({
+          name: input.name,
+          sku: input.sku,
+          price: input.price.toString(),
+          minThreshold: input.minThreshold ?? 10,
+        })
+        .returning();
+
+      return newProduct;
+    }),
 });

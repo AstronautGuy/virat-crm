@@ -493,7 +493,7 @@ function ReportsPageContent() {
           ) : (
             <>
               {/* Configuration Grid */}
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 no-print">
+              <div className="no-print grid grid-cols-1 gap-6 lg:grid-cols-3">
                 {/* Timeframe Selection */}
                 <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
                   <div className="flex items-center space-x-2 font-semibold text-blue-600">
@@ -659,7 +659,9 @@ function ReportsPageContent() {
 
               {/* Actions & Preview */}
               <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
-                <style dangerouslySetInnerHTML={{ __html: `
+                <style
+                  dangerouslySetInnerHTML={{
+                    __html: `
                   @media print {
                     aside, header, nav, .no-print, button, select, 
                     .flex.space-x-2.border-b, .grid-cols-1.gap-6,
@@ -693,15 +695,17 @@ function ReportsPageContent() {
                       padding: 8px 12px !important;
                     }
                   }
-                `}} />
+                `,
+                  }}
+                />
 
-                <div className="flex flex-col gap-4 border-b border-gray-50 bg-gray-50/50 p-6 md:flex-row md:items-center md:justify-between no-print">
+                <div className="no-print flex flex-col gap-4 border-b border-gray-50 bg-gray-50/50 p-6 md:flex-row md:items-center md:justify-between">
                   <div className="flex flex-wrap items-center gap-4">
                     <h3 className="flex items-center space-x-2 font-bold text-gray-900">
                       <Layers className="h-5 w-5 text-blue-600" />
                       <span>Data Preview</span>
                     </h3>
-                    <div className="flex rounded-xl bg-gray-100/80 p-1 no-print-tab">
+                    <div className="no-print-tab flex rounded-xl bg-gray-100/80 p-1">
                       <button
                         onClick={() => setPreviewTab("sales")}
                         className={cn(
@@ -764,15 +768,21 @@ function ReportsPageContent() {
                     <button
                       onClick={() => {
                         if (!targetId) {
-                          alert("Please select a specific Target Entity to seed logs.");
+                          alert(
+                            "Please select a specific Target Entity to seed logs.",
+                          );
                           return;
                         }
                         seedMutation.mutate({ targetId });
                       }}
                       disabled={seedMutation.isPending}
-                      className="flex items-center space-x-2 rounded-xl bg-orange-600 px-5 py-2 text-sm font-bold text-white transition-all hover:bg-orange-700 disabled:opacity-50 shadow-sm active:scale-95 no-print"
+                      className="no-print flex items-center space-x-2 rounded-xl bg-orange-600 px-5 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-95 disabled:opacity-50"
                     >
-                      <span>{seedMutation.isPending ? "Seeding..." : "Seed Fake Data"}</span>
+                      <span>
+                        {seedMutation.isPending
+                          ? "Seeding..."
+                          : "Seed Fake Data"}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -826,7 +836,8 @@ function ReportsPageContent() {
                                   {s.customerName}
                                 </td>
                                 <td className="px-6 py-4 text-sm font-bold">
-                                  ₹{parseFloat(s.invoiceAmount).toLocaleString()}
+                                  ₹
+                                  {parseFloat(s.invoiceAmount).toLocaleString()}
                                 </td>
                                 <td className="px-6 py-4">
                                   <span
@@ -846,58 +857,102 @@ function ReportsPageContent() {
                               </tr>
                             ))
                           )}
-                          {reportData?.sales && reportData.sales.length > 10 && (
-                            <tr className="no-print">
-                              <td
-                                colSpan={6}
-                                className="px-6 py-4 text-center text-xs text-gray-400 italic"
-                              >
-                                Previewing first 10 records. Download full XLSX
-                                for complete data.
-                              </td>
-                            </tr>
-                          )}
+                          {reportData?.sales &&
+                            reportData.sales.length > 10 && (
+                              <tr className="no-print">
+                                <td
+                                  colSpan={6}
+                                  className="px-6 py-4 text-center text-xs text-gray-400 italic"
+                                >
+                                  Previewing first 10 records. Download full
+                                  XLSX for complete data.
+                                </td>
+                              </tr>
+                            )}
                         </tbody>
                       </table>
                     ) : (
-                      <div className="w-full flex flex-col gap-8">
+                      <div className="flex w-full flex-col gap-8">
                         {isLoading ? (
-                          <div className="py-12 text-center text-gray-400">Loading location logs...</div>
-                        ) : !reportData?.attendance || reportData.attendance.length === 0 ? (
-                          <div className="py-12 text-center text-gray-400">No location logs found for this selection.</div>
+                          <div className="py-12 text-center text-gray-400">
+                            Loading location logs...
+                          </div>
+                        ) : !reportData?.attendance ||
+                          reportData.attendance.length === 0 ? (
+                          <div className="py-12 text-center text-gray-400">
+                            No location logs found for this selection.
+                          </div>
                         ) : (
                           Object.entries(
-                            reportData.attendance.reduce((acc, log) => {
-                              const userAcc = acc[log.userName] ?? (acc[log.userName] = {});
-                              const dateAcc = userAcc[log.date] ?? (userAcc[log.date] = {});
-                              dateAcc[log.slab] = log.locationName ?? `${parseFloat(String(log.latitude)).toFixed(4)}, ${parseFloat(String(log.longitude)).toFixed(4)}`;
-                              return acc;
-                            }, {} as Record<string, Record<string, Record<string, string>>>)
+                            reportData.attendance.reduce(
+                              (acc, log) => {
+                                const userAcc =
+                                  acc[log.userName] ?? (acc[log.userName] = {});
+                                const dateAcc =
+                                  userAcc[log.date] ?? (userAcc[log.date] = {});
+                                dateAcc[log.slab] =
+                                  log.locationName ??
+                                  `${parseFloat(String(log.latitude)).toFixed(4)}, ${parseFloat(String(log.longitude)).toFixed(4)}`;
+                                return acc;
+                              },
+                              {} as Record<
+                                string,
+                                Record<string, Record<string, string>>
+                              >,
+                            ),
                           ).map(([employeeName, dates]) => (
-                            <div key={employeeName} className="border border-gray-200 rounded-xl overflow-hidden mb-8 break-inside-avoid">
-                              <div className="bg-gray-100 px-6 py-4 font-bold text-lg text-gray-900 border-b border-gray-200">
+                            <div
+                              key={employeeName}
+                              className="mb-8 break-inside-avoid overflow-hidden rounded-xl border border-gray-200"
+                            >
+                              <div className="border-b border-gray-200 bg-gray-100 px-6 py-4 text-lg font-bold text-gray-900">
                                 Employee Name: {employeeName}
                               </div>
                               <table className="w-full text-left">
                                 <thead className="bg-gray-50 text-xs font-bold tracking-wider text-gray-500 uppercase">
                                   <tr>
-                                    <th className="px-6 py-4 border-b border-gray-200">Date</th>
-                                    <th className="px-6 py-4 border-b border-gray-200">8-10 am</th>
-                                    <th className="px-6 py-4 border-b border-gray-200">10-2 pm</th>
-                                    <th className="px-6 py-4 border-b border-gray-200">2-6 pm</th>
-                                    <th className="px-6 py-4 border-b border-gray-200">6-9 pm</th>
+                                    <th className="border-b border-gray-200 px-6 py-4">
+                                      Date
+                                    </th>
+                                    <th className="border-b border-gray-200 px-6 py-4">
+                                      8-10 am
+                                    </th>
+                                    <th className="border-b border-gray-200 px-6 py-4">
+                                      10-2 pm
+                                    </th>
+                                    <th className="border-b border-gray-200 px-6 py-4">
+                                      2-6 pm
+                                    </th>
+                                    <th className="border-b border-gray-200 px-6 py-4">
+                                      6-9 pm
+                                    </th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                  {Object.entries(dates).map(([date, slabs]) => (
-                                    <tr key={date} className="transition-colors hover:bg-gray-50/50">
-                                      <td className="px-6 py-4 text-sm font-semibold text-gray-900 border-b border-gray-100">{date}</td>
-                                      <td className="px-6 py-4 text-sm text-gray-600 border-b border-gray-100">{slabs["00:00-10:00"] ?? "-"}</td>
-                                      <td className="px-6 py-4 text-sm text-gray-600 border-b border-gray-100">{slabs["10:00-14:00"] ?? "-"}</td>
-                                      <td className="px-6 py-4 text-sm text-gray-600 border-b border-gray-100">{slabs["14:00-18:00"] ?? "-"}</td>
-                                      <td className="px-6 py-4 text-sm text-gray-600 border-b border-gray-100">{slabs["18:00-21:00"] ?? "-"}</td>
-                                    </tr>
-                                  ))}
+                                  {Object.entries(dates).map(
+                                    ([date, slabs]) => (
+                                      <tr
+                                        key={date}
+                                        className="transition-colors hover:bg-gray-50/50"
+                                      >
+                                        <td className="border-b border-gray-100 px-6 py-4 text-sm font-semibold text-gray-900">
+                                          {date}
+                                        </td>
+                                        <td className="border-b border-gray-100 px-6 py-4 text-sm text-gray-600">
+                                          {slabs["00:00-10:00"] ?? "-"}
+                                        </td>
+                                        <td className="border-b border-gray-100 px-6 py-4 text-sm text-gray-600">
+                                          {slabs["10:00-14:00"] ?? "-"}
+                                        </td>
+                                        <td className="border-b border-gray-100 px-6 py-4 text-sm text-gray-600">
+                                          {slabs["14:00-18:00"] ?? "-"}
+                                        </td>
+                                        <td className="border-b border-gray-100 px-6 py-4 text-sm text-gray-600">
+                                          {slabs["18:00-21:00"] ?? "-"}
+                                        </td>
+                                      </tr>
+                                    ),
+                                  )}
                                 </tbody>
                               </table>
                             </div>

@@ -82,7 +82,7 @@ export async function POST(request: Request) {
           const dist = distance(
             point([lastValidPoint.longitude, lastValidPoint.latitude]),
             point([currentPoint.longitude, currentPoint.latitude]),
-            "meters"
+            "meters",
           );
 
           // Drift Filtering: Ignore distance < 10 meters (typical GPS noise)

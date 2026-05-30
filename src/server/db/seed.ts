@@ -12,6 +12,7 @@ import {
   systemSettings,
   locationLogs,
   leaves,
+  userManagers,
 } from "./schema";
 import { sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
@@ -289,6 +290,21 @@ async function main() {
   console.log("Users seeded:", insertedUsers.length);
   const employee = insertedUsers.find((u) => u.employeeCode === "EMP001");
   const manager = insertedUsers.find((u) => u.employeeCode === "MGR001");
+  const manager2 = insertedUsers.find((u) => u.employeeCode === "MGR002");
+
+  // Assign Managers
+  const userManagersData = [];
+  for (const user of insertedUsers) {
+    if (user.role === "Employee") {
+      userManagersData.push({ userId: user.id, managerId: manager!.id });
+      // Half of them also report to manager2
+      if (Math.random() > 0.5) {
+        userManagersData.push({ userId: user.id, managerId: manager2!.id });
+      }
+    }
+  }
+  await db.insert(userManagers).values(userManagersData);
+  console.log("User-Manager relations seeded");
 
   // Seed Products
   const insertedProducts = await db
@@ -387,7 +403,7 @@ async function main() {
   for (let i = 3; i <= 22; i++) {
     bulkSales.push({
       branchId: hq.id,
-      orderNumber: `ORD-10${i < 10 ? '0'+i : i}`,
+      orderNumber: `ORD-10${i < 10 ? "0" + i : i}`,
       status: i % 2 === 0 ? "Approved" : "Pending",
       userId: employee!.id,
       managerId: manager!.id,
@@ -414,7 +430,7 @@ async function main() {
       branchId: hq.id,
       date: rDate.toISOString().split("T")[0],
       latitude: (28.6139 + Math.random() * 0.1).toFixed(4),
-      longitude: (77.2090 + Math.random() * 0.1).toFixed(4),
+      longitude: (77.209 + Math.random() * 0.1).toFixed(4),
       accuracy: 10 + Math.random() * 20,
       frequencyMap: {},
       recordedAt: rDate,

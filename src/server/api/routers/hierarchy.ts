@@ -1,6 +1,6 @@
 import { createTRPCRouter, featureProtectedProcedure } from "@/server/api/trpc";
-import { users } from "@/server/db/schema/users";
-import { eq, sql } from "drizzle-orm";
+import { users, userManagers } from "@/server/db/schema/users";
+import { eq, inArray, sql } from "drizzle-orm";
 
 export const hierarchyRouter = createTRPCRouter({
   getManagers: featureProtectedProcedure("admin").query(async ({ ctx }) => {
@@ -11,10 +11,14 @@ export const hierarchyRouter = createTRPCRouter({
 
   // Fetch immediate team members (direct reports)
   getMyTeam: featureProtectedProcedure("org-chart").query(async ({ ctx }) => {
-    // If Admin, they might not have a manager, or maybe we want to return everyone?
-    // Let's stick to strict hierarchy: team members are where managerId == ctx.dbUser.id
-    const team = await ctx.db.query.users.findMany({
-      where: eq(users.managerId, ctx.dbUser.id),
+    const teamMappings = await ctx.db.query.userManagers.findMany({
+      where: eq(userManagers.managerId, ctx.dbUser.id),
+    });
+    const teamIds = teamMappings.map((m) => m.userId);
+    if (teamIds.length === 0) return [];
+
+    return ctx.db.query.users.findMany({
+      where: inArray(users.id, teamIds),
       columns: {
         id: true,
         firstName: true,
@@ -24,8 +28,6 @@ export const hierarchyRouter = createTRPCRouter({
         employeeCode: true,
       },
     });
-
-    return team;
   }),
 
   // Fetch full N-level hierarchy tree (CTE)
@@ -42,7 +44,6 @@ export const hierarchyRouter = createTRPCRouter({
             email: true,
             role: true,
             employeeCode: true,
-            managerId: true,
           },
         });
       }
@@ -50,17 +51,19 @@ export const hierarchyRouter = createTRPCRouter({
       // CTE to get all descendants for current user
       const descendantsQuery = sql`
       WITH RECURSIVE subordinates AS (
-        SELECT id, first_name, last_name, email, role, employee_code, manager_id
-        FROM "virat-crm_user"
-        WHERE manager_id = ${ctx.dbUser.id}
+        SELECT u.id, u.first_name, u.last_name, u.email, u.role, u.employee_code
+        FROM "virat-crm_user" u
+        INNER JOIN "virat-crm_user_managers" um ON um.user_id = u.id
+        WHERE um.manager_id = ${ctx.dbUser.id}
         
         UNION
         
-        SELECT e.id, e.first_name, e.last_name, e.email, e.role, e.employee_code, e.manager_id
+        SELECT e.id, e.first_name, e.last_name, e.email, e.role, e.employee_code
         FROM "virat-crm_user" e
-        INNER JOIN subordinates s ON s.id = e.manager_id
+        INNER JOIN "virat-crm_user_managers" um ON um.user_id = e.id
+        INNER JOIN subordinates s ON s.id = um.manager_id
       )
-      SELECT * FROM subordinates;
+      SELECT DISTINCT * FROM subordinates;
     `;
 
       const rows = await ctx.db.execute(descendantsQuery);
@@ -74,9 +77,6 @@ export const hierarchyRouter = createTRPCRouter({
         role: String(row.role),
         employeeCode: row.employee_code
           ? String(row.employee_code as string | number)
-          : null,
-        managerId: row.manager_id
-          ? String(row.manager_id as string | number)
           : null,
       }));
     },

@@ -154,8 +154,8 @@ export function DesktopSidebar({ isMobile }: { isMobile?: boolean }) {
   return (
     <div
       className={cn(
-        "border-border bg-card flex flex-col h-full",
-        !isMobile && "hidden w-64 border-r md:flex"
+        "border-border bg-card flex h-full flex-col",
+        !isMobile && "hidden w-64 border-r md:flex",
       )}
     >
       <div className="border-border flex h-16 items-center border-b px-6">

@@ -1,4 +1,9 @@
-export { users, usersRelations } from "./users";
+export {
+  users,
+  usersRelations,
+  userManagers,
+  userManagersRelations,
+} from "./users";
 export { roles } from "./roles";
 export { branches, branchesRelations } from "./branches";
 export { locationLogs, locationLogsRelations } from "./locationLogs";
@@ -33,3 +38,4 @@ export { dailyReports, dailyReportsRelations } from "./daily_reports";
 export { systemSettings } from "./systemSettings";
 export { dailyMileage, dailyMileageRelations } from "./daily_mileage";
 export { customerVisits, customerVisitsRelations } from "./customer_visits";
+export { saleAssignments, saleAssignmentsRelations } from "./saleAssignments";

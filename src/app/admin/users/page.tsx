@@ -108,14 +108,17 @@ interface UserType {
   employeeCode: string | null;
   role: string | null;
   branchId: number | null;
-  managerId: string | null;
   isActive: boolean;
   branch?: { id: number; name: string } | null;
-  manager?: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-  } | null;
+  managers?:
+    | {
+        manager: {
+          id: string;
+          firstName: string | null;
+          lastName: string | null;
+        };
+      }[]
+    | null;
 }
 
 function UserList() {
@@ -163,14 +166,22 @@ function UserList() {
   });
 
   const [editUser, setEditUser] = useState<UserType | null>(null);
-  const [editForm, setEditForm] = useState({
+  const [editForm, setEditForm] = useState<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    employeeCode: string;
+    role: string;
+    branchId: string;
+    managerIds: string[];
+  }>({
     firstName: "",
     lastName: "",
     email: "",
     employeeCode: "",
     role: "",
     branchId: "none",
-    managerId: "none",
+    managerIds: [],
   });
 
   const updateUserMutation = api.users.updateUser.useMutation({
@@ -235,7 +246,7 @@ function UserList() {
       role: editForm.role,
       branchId:
         editForm.branchId === "none" ? null : parseInt(editForm.branchId, 10),
-      managerId: editForm.managerId === "none" ? null : editForm.managerId,
+      managerIds: editForm.managerIds,
     });
   };
 
@@ -444,8 +455,13 @@ function UserList() {
                         {user.branch?.name ?? "N/A"}
                       </TableCell>
                       <TableCell className="text-sm font-medium text-slate-500">
-                        {user.manager
-                          ? `${user.manager.firstName} ${user.manager.lastName}`
+                        {user.managers && user.managers.length > 0
+                          ? user.managers
+                              .map(
+                                (m) =>
+                                  `${m.manager.firstName} ${m.manager.lastName}`,
+                              )
+                              .join(", ")
                           : "-"}
                       </TableCell>
                       <TableCell>
@@ -567,7 +583,9 @@ function UserList() {
                   branchId: contextMenu.user.branchId
                     ? contextMenu.user.branchId.toString()
                     : "none",
-                  managerId: contextMenu.user.managerId ?? "none",
+                  managerIds: contextMenu.user.managers
+                    ? contextMenu.user.managers.map((m: any) => m.manager.id)
+                    : [],
                 });
                 setContextMenu(null);
               }}
@@ -795,39 +813,44 @@ function UserList() {
 
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold text-slate-700">
-                    Reporting Manager
+                    Reporting Managers
                   </Label>
-                  <Select
-                    value={editForm.managerId}
-                    onValueChange={(v) =>
-                      setEditForm({ ...editForm, managerId: v })
-                    }
-                  >
-                    <SelectTrigger className="rounded-xl border-slate-200 bg-slate-50/50">
-                      <SelectValue placeholder="Select manager" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      <SelectItem
-                        value="none"
-                        className="rounded-lg text-slate-400 italic"
-                      >
-                        No Manager (N/A)
-                      </SelectItem>
-                      {users
-                        ?.filter(
-                          (u) => u.id !== editUser?.id && u.role !== "Employee",
-                        ) // Exclude self & non-managers to keep hierarchy logical
-                        ?.map((u) => (
-                          <SelectItem
-                            key={u.id}
-                            value={u.id}
-                            className="rounded-lg"
-                          >
+                  <div className="flex max-h-40 flex-col gap-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+                    {users
+                      ?.filter(
+                        (u) => u.id !== editUser?.id && u.role !== "Employee",
+                      ) // Exclude self & non-managers to keep hierarchy logical
+                      ?.map((u) => (
+                        <label
+                          key={u.id}
+                          className="flex cursor-pointer items-center gap-2"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={editForm.managerIds.includes(u.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setEditForm({
+                                  ...editForm,
+                                  managerIds: [...editForm.managerIds, u.id],
+                                });
+                              } else {
+                                setEditForm({
+                                  ...editForm,
+                                  managerIds: editForm.managerIds.filter(
+                                    (id) => id !== u.id,
+                                  ),
+                                });
+                              }
+                            }}
+                            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600"
+                          />
+                          <span className="text-sm text-slate-700">
                             {u.firstName} {u.lastName} ({u.role})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                          </span>
+                        </label>
+                      ))}
+                  </div>
                 </div>
               </div>
 
@@ -865,7 +888,7 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
     password: "",
     role: "Employee",
     branchId: undefined as number | undefined,
-    managerId: undefined as string | undefined,
+    managerIds: [] as string[],
   });
 
   const { data: branches } = api.inventory.getBranches.useQuery();
@@ -1010,24 +1033,39 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
             </div>
 
             <div className="space-y-2">
-              <Label>Reports To</Label>
-              <Select
-                value={formData.managerId}
-                onValueChange={(v) =>
-                  setFormData({ ...formData, managerId: v })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Optional" />
-                </SelectTrigger>
-                <SelectContent>
-                  {managers?.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
+              <Label>Reporting Managers</Label>
+              <div className="flex max-h-40 flex-col gap-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+                {managers?.map((m) => (
+                  <label
+                    key={m.id}
+                    className="flex cursor-pointer items-center gap-2"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.managerIds.includes(m.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFormData({
+                            ...formData,
+                            managerIds: [...formData.managerIds, m.id],
+                          });
+                        } else {
+                          setFormData({
+                            ...formData,
+                            managerIds: formData.managerIds.filter(
+                              (id) => id !== m.id,
+                            ),
+                          });
+                        }
+                      }}
+                      className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600"
+                    />
+                    <span className="text-sm text-slate-700">
                       {m.firstName} {m.lastName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 

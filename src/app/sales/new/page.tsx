@@ -58,8 +58,46 @@ export default function NewSale() {
   const [area, setArea] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
-  const [customerName, setCustomerName] = useState("");
-  const [customerAddress, setCustomerAddress] = useState("");
+  const [orderNumber, setOrderNumber] = useState("");
+  const [transactionNumber, setTransactionNumber] = useState("");
+  const [customerId, setCustomerId] = useState("");
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [selectedManagerIds, setSelectedManagerIds] = useState<string[]>([]);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+
+  const { data: me } = api.users.getMe.useQuery();
+  const isAdmin = me?.role === "Admin";
+  const { data: allUsers = [] } = api.users.getAllUsers.useQuery(undefined, {
+    enabled: isAdmin,
+  });
+
+  const [newCustomer, setNewCustomer] = useState({
+    name: "",
+    mobile: "",
+    pincode: "",
+    village: "",
+    district: "",
+    state: "",
+    address: "",
+  });
+
+  const { data: nextInvoiceId } = api.sales.getNextInvoiceId.useQuery();
+  useEffect(() => {
+    if (nextInvoiceId && !transactionNumber)
+      setTransactionNumber(nextInvoiceId);
+  }, [nextInvoiceId, transactionNumber]);
+
+  const { data: customers = [], refetch: refetchCustomers } =
+    api.crm.getBranchCustomers.useQuery();
+
+  const addCustomerMutation = api.crm.createCustomer.useMutation({
+    onSuccess: () => {
+      toast.success("Customer created successfully");
+      setIsCustomerModalOpen(false);
+      void refetchCustomers();
+    },
+    onError: (err) => toast.error(err.message),
+  });
   const [invoiceAmount, setInvoiceAmount] = useState("");
   const [advancePaymentAmount, setAdvancePaymentAmount] = useState("");
 
@@ -125,21 +163,39 @@ export default function NewSale() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Frontend Validation
     if (!branchId) {
       toast.error("Please select a branch");
       return;
     }
-    const missingItems = items.some((item) => !item.productId || !item.quantity);
+    const missingItems = items.some(
+      (item) => !item.productId || !item.quantity,
+    );
     if (missingItems) {
       toast.error("Please select a product and quantity for all items");
       return;
     }
-    if (!customerName?.trim()) {
-      toast.error("Customer Name is required");
+    if (!orderNumber?.trim()) {
+      toast.error("Order ID is required");
       return;
     }
+    if (!customerId) {
+      toast.error("Customer selection is required");
+      return;
+    }
+
+    if (
+      isAdmin &&
+      (selectedUserIds.length === 0 || selectedManagerIds.length === 0)
+    ) {
+      toast.error(
+        "At least one Employee and Manager selection is required for Admins",
+      );
+      return;
+    }
+
+    const selectedCustomer = customers.find((c) => c.id === customerId);
     if (!pincode || !/^[1-9][0-9]{5}$/.test(pincode)) {
       toast.error("Valid 6-digit Pincode is required");
       return;
@@ -152,7 +208,7 @@ export default function NewSale() {
       toast.error("Valid Invoice Amount is required");
       return;
     }
-    
+
     const saleData = {
       branchId: parseInt(branchId),
       pincode: pincode === "" ? undefined : pincode,
@@ -161,8 +217,17 @@ export default function NewSale() {
       area: area === "" ? undefined : area,
       city: city === "" ? undefined : city,
       state: state === "" ? undefined : state,
-      customerName: customerName === "" ? undefined : customerName,
-      customerAddress: customerAddress === "" ? undefined : customerAddress,
+      orderNumber: orderNumber,
+      transactionNumber:
+        transactionNumber === "" ? undefined : transactionNumber,
+      userIds:
+        isAdmin && selectedUserIds.length > 0 ? selectedUserIds : undefined,
+      managerIds:
+        isAdmin && selectedManagerIds.length > 0
+          ? selectedManagerIds
+          : undefined,
+      customerName: selectedCustomer?.name,
+      customerAddress: selectedCustomer?.address,
       invoiceAmount: invoiceAmount === "" ? undefined : invoiceAmount,
       advancePaymentAmount:
         advancePaymentAmount === "" ? undefined : advancePaymentAmount,
@@ -307,19 +372,182 @@ export default function NewSale() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
+                      <Label htmlFor="orderNumber" className="text-xs">
+                        Order ID <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="orderNumber"
+                        value={orderNumber}
+                        onChange={(e) => setOrderNumber(e.target.value)}
+                        placeholder="ORD-XXXX"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="transactionNumber" className="text-xs">
+                        Invoice ID
+                      </Label>
+                      <Input
+                        id="transactionNumber"
+                        value={transactionNumber}
+                        onChange={(e) => setTransactionNumber(e.target.value)}
+                        placeholder="INV-XXXX"
+                      />
+                    </div>
+                  </div>
+
+                  {isAdmin && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label htmlFor="selectedUserId" className="text-xs">
+                          Employee <span className="text-destructive">*</span>
+                        </Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-full justify-between font-normal",
+                                selectedUserIds.length === 0 &&
+                                  "text-muted-foreground",
+                              )}
+                            >
+                              {selectedUserIds.length > 0
+                                ? `${selectedUserIds.length} employee(s) selected`
+                                : "Select employees..."}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-[300px] p-0"
+                            align="start"
+                          >
+                            <Command>
+                              <CommandInput placeholder="Search employee..." />
+                              <CommandList>
+                                <CommandEmpty>No employee found.</CommandEmpty>
+                                <CommandGroup>
+                                  {allUsers
+                                    .filter(
+                                      (u) =>
+                                        u.role === "Employee" ||
+                                        u.role === "Manager",
+                                    )
+                                    .map((u) => (
+                                      <CommandItem
+                                        key={u.id}
+                                        value={`${u.firstName} ${u.lastName} ${u.employeeCode}`}
+                                        onSelect={() => {
+                                          setSelectedUserIds((prev) =>
+                                            prev.includes(u.id)
+                                              ? prev.filter((id) => id !== u.id)
+                                              : [...prev, u.id],
+                                          );
+                                        }}
+                                      >
+                                        {u.firstName} {u.lastName} (
+                                        {u.employeeCode})
+                                        <Check
+                                          className={cn(
+                                            "ml-auto h-4 w-4",
+                                            selectedUserIds.includes(u.id)
+                                              ? "opacity-100"
+                                              : "opacity-0",
+                                          )}
+                                        />
+                                      </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="selectedManagerId" className="text-xs">
+                          Manager <span className="text-destructive">*</span>
+                        </Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-full justify-between font-normal",
+                                selectedManagerIds.length === 0 &&
+                                  "text-muted-foreground",
+                              )}
+                            >
+                              {selectedManagerIds.length > 0
+                                ? `${selectedManagerIds.length} manager(s) selected`
+                                : "Select managers..."}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-[300px] p-0"
+                            align="start"
+                          >
+                            <Command>
+                              <CommandInput placeholder="Search manager..." />
+                              <CommandList>
+                                <CommandEmpty>No manager found.</CommandEmpty>
+                                <CommandGroup>
+                                  {allUsers
+                                    .filter(
+                                      (u) =>
+                                        u.role === "Manager" ||
+                                        u.role === "Admin",
+                                    )
+                                    .map((u) => (
+                                      <CommandItem
+                                        key={u.id}
+                                        value={`${u.firstName} ${u.lastName} ${u.employeeCode}`}
+                                        onSelect={() => {
+                                          setSelectedManagerIds((prev) =>
+                                            prev.includes(u.id)
+                                              ? prev.filter((id) => id !== u.id)
+                                              : [...prev, u.id],
+                                          );
+                                        }}
+                                      >
+                                        {u.firstName} {u.lastName} (
+                                        {u.employeeCode})
+                                        <Check
+                                          className={cn(
+                                            "ml-auto h-4 w-4",
+                                            selectedManagerIds.includes(u.id)
+                                              ? "opacity-100"
+                                              : "opacity-0",
+                                          )}
+                                        />
+                                      </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
                       <Label htmlFor="branchId" className="text-xs">
                         Branch <span className="text-destructive">*</span>
                       </Label>
-                      <Select
-                        value={branchId}
-                        onValueChange={setBranchId}
-                      >
+                      <Select value={branchId} onValueChange={setBranchId}>
                         <SelectTrigger id="branchId">
                           <SelectValue placeholder="Select branch" />
                         </SelectTrigger>
                         <SelectContent>
                           {branches.map((branch) => (
-                            <SelectItem key={branch.id} value={branch.id.toString()}>
+                            <SelectItem
+                              key={branch.id}
+                              value={branch.id.toString()}
+                            >
                               {branch.name}
                             </SelectItem>
                           ))}
@@ -331,7 +559,9 @@ export default function NewSale() {
                         htmlFor="pincode"
                         className="flex items-center justify-between text-xs"
                       >
-                        <span>Pincode <span className="text-destructive">*</span></span>
+                        <span>
+                          Pincode <span className="text-destructive">*</span>
+                        </span>
                         {isFetchingPincode && (
                           <Loader2 className="text-primary h-3 w-3 animate-spin" />
                         )}
@@ -405,14 +635,65 @@ export default function NewSale() {
                   </div>
 
                   <div className="space-y-1">
-                    <Label htmlFor="customerName" className="text-xs">
-                      Customer Name <span className="text-destructive">*</span>
+                    <Label htmlFor="customerId" className="text-xs">
+                      Customer <span className="text-destructive">*</span>
                     </Label>
-                    <Input
-                      id="customerName"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between font-normal",
+                            !customerId && "text-muted-foreground",
+                          )}
+                        >
+                          {customerId
+                            ? customers.find((c) => c.id === customerId)?.name
+                            : "Select customer..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search customer..." />
+                          <CommandList>
+                            <CommandEmpty className="py-4 text-center text-sm">
+                              <p className="text-muted-foreground mb-2">
+                                No customer found.
+                              </p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsCustomerModalOpen(true)}
+                              >
+                                <Plus className="mr-2 h-4 w-4" /> Add New
+                                Customer
+                              </Button>
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {customers.map((customer) => (
+                                <CommandItem
+                                  key={customer.id}
+                                  value={customer.name}
+                                  onSelect={() => setCustomerId(customer.id)}
+                                >
+                                  {customer.name} - {customer.mobile}
+                                  <Check
+                                    className={cn(
+                                      "ml-auto h-4 w-4",
+                                      customerId === customer.id
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </CardContent>
               </Card>
@@ -439,7 +720,9 @@ export default function NewSale() {
                       className="flex items-end gap-2 border-b pb-4 last:border-0 last:pb-0"
                     >
                       <div className="flex-1 space-y-1">
-                        <Label className="text-xs">Product <span className="text-destructive">*</span></Label>
+                        <Label className="text-xs">
+                          Product <span className="text-destructive">*</span>
+                        </Label>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
@@ -447,16 +730,21 @@ export default function NewSale() {
                               role="combobox"
                               className={cn(
                                 "w-full justify-between font-normal",
-                                !item.productId && "text-muted-foreground"
+                                !item.productId && "text-muted-foreground",
                               )}
                             >
                               {item.productId
-                                ? products.find((p) => p.id.toString() === item.productId)?.name
+                                ? products.find(
+                                    (p) => p.id.toString() === item.productId,
+                                  )?.name
                                 : "Select product..."}
                               <ChevronsUpDown className="opacity-50" />
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-[300px] p-0" align="start">
+                          <PopoverContent
+                            className="w-[300px] p-0"
+                            align="start"
+                          >
                             <Command>
                               <CommandInput placeholder="Search product..." />
                               <CommandList>
@@ -466,13 +754,22 @@ export default function NewSale() {
                                     <CommandItem
                                       key={product.id}
                                       value={product.name}
-                                      onSelect={() => updateItem(item.id, "productId", product.id.toString())}
+                                      onSelect={() =>
+                                        updateItem(
+                                          item.id,
+                                          "productId",
+                                          product.id.toString(),
+                                        )
+                                      }
                                     >
                                       {product.name}
                                       <Check
                                         className={cn(
                                           "ml-auto",
-                                          item.productId === product.id.toString() ? "opacity-100" : "opacity-0"
+                                          item.productId ===
+                                            product.id.toString()
+                                            ? "opacity-100"
+                                            : "opacity-0",
                                         )}
                                       />
                                     </CommandItem>
@@ -484,7 +781,9 @@ export default function NewSale() {
                         </Popover>
                       </div>
                       <div className="w-20 space-y-1">
-                        <Label className="text-xs">Qty <span className="text-destructive">*</span></Label>
+                        <Label className="text-xs">
+                          Qty <span className="text-destructive">*</span>
+                        </Label>
                         <Input
                           value={item.quantity}
                           onChange={(e) =>
@@ -555,7 +854,9 @@ export default function NewSale() {
                         value={advancePaymentAmount}
                         onChange={(e) => {
                           const val = e.target.value;
-                          if (parseFloat(val) > parseFloat(invoiceAmount || "0")) {
+                          if (
+                            parseFloat(val) > parseFloat(invoiceAmount || "0")
+                          ) {
                             return; // Prevent setting advance greater than invoice
                           }
                           setAdvancePaymentAmount(val);
@@ -565,7 +866,10 @@ export default function NewSale() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="pendingAmount" className="text-xs text-muted-foreground">
+                      <Label
+                        htmlFor="pendingAmount"
+                        className="text-muted-foreground text-xs"
+                      >
                         Pending Amount
                       </Label>
                       <Input
@@ -591,6 +895,171 @@ export default function NewSale() {
           )}
         </div>
       </FeatureGate>
+
+      {/* Add Customer Modal */}
+      {isCustomerModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl duration-200 dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5 dark:border-slate-800">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                Add New Customer
+              </h3>
+              <button
+                onClick={() => setIsCustomerModalOpen(false)}
+                className="text-slate-400 transition-colors hover:text-slate-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="max-h-[70vh] space-y-4 overflow-y-auto p-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Name *
+                  </label>
+                  <input
+                    type="text"
+                    className="focus:ring-primary/20 focus:border-primary w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
+                    value={newCustomer.name}
+                    onChange={(e) =>
+                      setNewCustomer({ ...newCustomer, name: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Mobile *
+                  </label>
+                  <input
+                    type="text"
+                    className="focus:ring-primary/20 focus:border-primary w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
+                    value={newCustomer.mobile}
+                    onChange={(e) =>
+                      setNewCustomer({ ...newCustomer, mobile: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Pincode *
+                  </label>
+                  <input
+                    type="text"
+                    className="focus:ring-primary/20 focus:border-primary w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
+                    value={newCustomer.pincode}
+                    maxLength={6}
+                    onChange={(e) =>
+                      setNewCustomer({
+                        ...newCustomer,
+                        pincode: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Village
+                  </label>
+                  <input
+                    type="text"
+                    className="focus:ring-primary/20 focus:border-primary w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
+                    value={newCustomer.village}
+                    onChange={(e) =>
+                      setNewCustomer({
+                        ...newCustomer,
+                        village: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    District *
+                  </label>
+                  <input
+                    type="text"
+                    className="focus:ring-primary/20 focus:border-primary w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
+                    value={newCustomer.district}
+                    onChange={(e) =>
+                      setNewCustomer({
+                        ...newCustomer,
+                        district: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    State *
+                  </label>
+                  <input
+                    type="text"
+                    className="focus:ring-primary/20 focus:border-primary w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
+                    value={newCustomer.state}
+                    onChange={(e) =>
+                      setNewCustomer({ ...newCustomer, state: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                  Address *
+                </label>
+                <Textarea
+                  className="focus:ring-primary/20 focus:border-primary min-h-[80px] w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
+                  value={newCustomer.address}
+                  onChange={(e) =>
+                    setNewCustomer({ ...newCustomer, address: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-5 dark:border-slate-800 dark:bg-slate-900/50">
+              <button
+                onClick={() => setIsCustomerModalOpen(false)}
+                className="rounded-xl px-5 py-2.5 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (
+                    !newCustomer.name ||
+                    !newCustomer.mobile ||
+                    !newCustomer.pincode
+                  ) {
+                    toast.error("Please fill Name, Mobile, and Pincode");
+                    return;
+                  }
+                  addCustomerMutation.mutate({
+                    name: newCustomer.name,
+                    mobile: newCustomer.mobile,
+                    pincode: newCustomer.pincode,
+                    village: newCustomer.village || "Unknown",
+                    district: newCustomer.district || "Unknown",
+                    state: newCustomer.state || "Unknown",
+                    address: newCustomer.address || "Unknown",
+                    branchId: parseInt(branchId) || undefined,
+                  });
+                }}
+                disabled={addCustomerMutation.isPending}
+                className="bg-primary text-primary-foreground flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold shadow-[0_1px_3px_rgba(37,99,235,0.2)] transition-all hover:opacity-90 disabled:opacity-50"
+              >
+                {addCustomerMutation.isPending ? "Saving..." : "Save Customer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
