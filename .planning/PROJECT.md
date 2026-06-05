@@ -28,19 +28,14 @@ Secure, mobile-first operations management that ensures authenticated access and
 - ✓ Offline Sync & Isar DB Replication (M7)
 - ✓ Sovereign Overrides & Developer License Controls (M7)
 - ✓ Location-Gated Fleet Tracking & Background Interceptors (M7)
+- ✓ UI Polish, Data Entry Enhancements & Sync Hardening (M10)
 
-### Active (Milestone 10: UI Polish, Data Entry Enhancements & Sync Hardening)
+### Active (Milestone 11: Reporting Intelligence & Hierarchy Analytics)
 
-- [ ] Inventory Page Polish (Working new item button, remove transfer stock, add price column)
-- [ ] Sales Register Upgrades (Manual unique Order ID, auto-incrementing Invoice ID)
-- [ ] Sales Customer Search & Add Modal (Searchable dropdown from Customer Master, inline add modal)
-- [ ] Sales Admin Overrides (Hierarchy selection dropdowns, auto-approval for admin entries)
-- [ ] Live View Search (Pin employees by name or code)
-- [ ] Expo App Background/Foreground Sync (Perfect location tracking sync from Expo app to backend)
-- [ ] Time Sync Fix (Resolve previous time synchronization issues ensuring accurate timestamps)
-- [ ] Hardened Live Location & Routes (Maximum reliability, bug fixes, and robust historical route playback)
-- [ ] Verified Reports (Accurate historical reports with specific time slab location logs)
-- [ ] Global Codebase Audit (Scan the entire project for hard-coded values and correct them)
+- [ ] Role-Based Report Scoping (Employees see only their own reports, Managers see aggregate team reports + their own, Admins can select any employee or manager)
+- [ ] Branch-Level Reports (Group and filter reports by branch)
+- [ ] Visual Analytics (Add graphs and charts to the reports)
+- [ ] Daily Reports Fix (Fix the submission page for Daily Activity Reports)
 
 ### Out of Scope
 
@@ -58,10 +53,17 @@ Secure, mobile-first operations management that ensures authenticated access and
 - **v7: Advanced Intelligence**: Predictive modeling, Isar sync database queue, sovereign locks & licensing controls.
 - **v8: Advanced Multi-Tenant Isolation & Live Alerts**: Hardened DB boundaries, strict branch isolation, live VAPID alerts & mobile background sync.
 - **v9: Live Tracking & Location Reports**: Robust real-time tracking, historical routes, mileage reimbursement reports, and geofence analytics for field agents.
+- **v10: UI Polish & Sync Hardening**: Enhanced Inventory and Sales registers, Advance/Replacement registers, Live View Search, and graph-based M:N hierarchy tracking.
 
-### Next Milestone: M10 (UI Polish, Data Entry Enhancements & Sync Hardening)
+### Current Milestone: v11 Reporting Intelligence & Hierarchy Analytics
 
-- Goal: Improve data entry flows in Inventory and Sales, enhance the Live View tracking with search capabilities, and ensure reliable Expo mobile app sync.
+**Goal:** Enhance the reporting section with granular role-based visibility, team aggregations, branch-level metrics, and visual graphs, while fixing the daily report submission flow.
+
+**Target features:**
+- Role-Based Report Scoping (Employees see only their own reports, Managers see aggregate team reports + their own, Admins can select any employee or manager)
+- Branch-Level Reports (Group and filter reports by branch)
+- Visual Analytics (Add graphs and charts to the reports)
+- Daily Reports Fix (Fix the submission page for Daily Activity Reports)
 
 ## Constraints
 
@@ -94,4 +96,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-_Last updated: 2026-05-27 after Milestone 9 Completion_
+_Last updated: 2026-06-05 after Milestone 11 Initialization_

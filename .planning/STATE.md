@@ -1,10 +1,11 @@
 ---
-milestone: "v10"
-name: "UI Polish, Data Entry Enhancements & Sync Hardening"
+milestone: "v11"
+milestone_name: "Reporting Intelligence & Hierarchy Analytics"
 status: "planning"
 progress:
-  phases: 0
-  plans: 0
+  requirements_defined: 0
+  phases_planned: 0
+  phases_completed: 0
 ---
 
 ## Current Position
@@ -12,4 +13,4 @@ progress:
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements
-Last activity: 2026-05-30 — Milestone v10 started
+Last activity: 2026-06-05 — Milestone v11 startedd
