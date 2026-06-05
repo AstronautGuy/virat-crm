@@ -9,8 +9,9 @@ import {
   dailyMileage,
   saleAssignments,
   userManagers,
+  replacements,
 } from "@/server/db/schema";
-import { and, gte, lte, eq, sql, inArray } from "drizzle-orm";
+import { and, gte, lte, eq, sql, inArray, gt, desc } from "drizzle-orm";
 import { getDateRange } from "@/server/lib/date";
 
 export const reportsRouter = createTRPCRouter({
@@ -584,5 +585,75 @@ export const reportsRouter = createTRPCRouter({
       // A full implementation would use pdfmake here
       const dummyPDF = `%PDF-1.4\n1 0 obj\n<< /Title (Report) >>\nendobj\n`;
       return { pdfBase64: Buffer.from(dummyPDF).toString("base64") };
+    }),
+
+  getAdvanceRegister: featureProtectedProcedure("reports")
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).nullish(),
+        cursor: z.number().nullish(), // cursor is sale.id
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input?.limit ?? 50;
+      const cursor = input?.cursor;
+
+      const items = await ctx.db.query.sales.findMany({
+        where: and(
+          gt(sales.advancePaymentAmount, "0"),
+          cursor ? sql`${sales.id} < ${cursor}` : undefined,
+        ),
+        limit: limit + 1,
+        with: {
+          user: true,
+          branch: true,
+        },
+        orderBy: [desc(sales.id)],
+      });
+
+      let nextCursor: typeof cursor | undefined = undefined;
+      if (items.length > limit) {
+        const nextItem = items.pop();
+        nextCursor = nextItem!.id;
+      }
+
+      return {
+        items,
+        nextCursor,
+      };
+    }),
+
+  getReplacementRegister: featureProtectedProcedure("reports")
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).nullish(),
+        cursor: z.number().nullish(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input?.limit ?? 50;
+      const cursor = input?.cursor;
+
+      const items = await ctx.db.query.replacements.findMany({
+        where: cursor ? sql`${replacements.id} < ${cursor}` : undefined,
+        limit: limit + 1,
+        with: {
+          user: true,
+          branch: true,
+          sale: true,
+        },
+        orderBy: [desc(replacements.id)],
+      });
+
+      let nextCursor: typeof cursor | undefined = undefined;
+      if (items.length > limit) {
+        const nextItem = items.pop();
+        nextCursor = nextItem!.id;
+      }
+
+      return {
+        items,
+        nextCursor,
+      };
     }),
 });

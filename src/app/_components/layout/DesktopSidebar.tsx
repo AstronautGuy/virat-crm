@@ -16,6 +16,7 @@ import {
   Download,
   Upload,
   Sliders,
+  Wallet,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -81,6 +82,18 @@ export function DesktopSidebar({ isMobile }: { isMobile?: boolean }) {
     {
       href: "/reports/mileage",
       label: "Mileage Reports",
+      icon: FileText,
+      hidden: !getIsFeatureEnabled("reports"),
+    },
+    {
+      href: "/reports/advance-register",
+      label: "Advance Register",
+      icon: Wallet,
+      hidden: !getIsFeatureEnabled("reports"),
+    },
+    {
+      href: "/reports/replacement-register",
+      label: "Replacement Register",
       icon: FileText,
       hidden: !getIsFeatureEnabled("reports"),
     },

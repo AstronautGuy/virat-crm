@@ -7,18 +7,8 @@ import {
 import SuperJSON from "superjson";
 
 const handleGlobalError = (error: unknown) => {
-  // If the error has a "data" property with code "FORBIDDEN" or HTTP status 403
-  if (
-    error &&
-    typeof error === "object" &&
-    "data" in error &&
-    (error as { data?: { code?: string } }).data?.code === "FORBIDDEN"
-  ) {
-    if (typeof window !== "undefined") {
-      // Force redirect to branch selection on lockout
-      window.location.href = "/branch-select";
-    }
-  }
+  // Global error handler for tRPC queries and mutations
+  console.error("Global tRPC error:", error);
 };
 
 export const createQueryClient = () =>
