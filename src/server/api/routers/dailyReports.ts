@@ -21,11 +21,25 @@ export const dailyReportsRouter = createTRPCRouter({
       const { db, dbUser } = ctx;
       if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
 
+      let branchId = dbUser.branchId;
+      if (!branchId) {
+        // Fallback for global Admins without a specific branch assignment
+        const firstBranch = await db.query.branches.findFirst();
+        if (firstBranch) {
+          branchId = firstBranch.id;
+        } else {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No branches available to assign the report to.",
+          });
+        }
+      }
+
       return await db
         .insert(dailyReports)
         .values({
           userId: dbUser.id,
-          branchId: dbUser.branchId!,
+          branchId: branchId,
           reportDate: input.reportDate ?? new Date(),
           content: input.content,
           customerId: input.customerId,

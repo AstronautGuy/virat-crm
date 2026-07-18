@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 const formSchema = z.object({
   content: z.string().min(10, "Report must be at least 10 characters long"),
   reportDate: z.date(),
-  customerId: z.string().uuid().optional().or(z.literal("")),
+  customerId: z.string().uuid().optional().or(z.literal("none")),
 });
 
 interface ReportFormProps {
@@ -51,7 +51,7 @@ export function ReportForm({ onSuccess }: ReportFormProps) {
     defaultValues: {
       content: "",
       reportDate: new Date(),
-      customerId: "",
+      customerId: "none",
     },
   });
 
@@ -67,7 +67,7 @@ export function ReportForm({ onSuccess }: ReportFormProps) {
   function onSubmit(values: z.infer<typeof formSchema>) {
     submitMutation.mutate({
       ...values,
-      customerId: values.customerId === "" ? undefined : values.customerId,
+      customerId: values.customerId === "none" ? undefined : values.customerId,
     });
   }
 
@@ -137,7 +137,7 @@ export function ReportForm({ onSuccess }: ReportFormProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {customers?.map((customer) => (
                           <SelectItem key={customer.id} value={customer.id}>
                             <div className="flex items-center gap-2">

@@ -48,6 +48,10 @@ export const replacementsRelations = relations(
       fields: [replacements.userId],
       references: [users.id],
     }),
+    branch: one(branches, {
+      fields: [replacements.branchId],
+      references: [branches.id],
+    }),
     files: many(files, { relationName: "replacement_files" }),
   }),
 );

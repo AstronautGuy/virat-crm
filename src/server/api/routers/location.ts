@@ -29,6 +29,26 @@ import {
   type SQL,
 } from "drizzle-orm";
 
+interface LiveLocation {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  lastPingMs: number;
+  lastDbLogMs: number;
+}
+
+const globalForLiveLocations = globalThis as unknown as {
+  liveLocationsMap: Map<string, LiveLocation>;
+};
+
+const liveLocationsMap =
+  globalForLiveLocations.liveLocationsMap ||
+  new Map<string, LiveLocation>();
+
+if (env.NODE_ENV !== "production") {
+  globalForLiveLocations.liveLocationsMap = liveLocationsMap;
+}
+
 function getCurrentSlab(date: Date = new Date()) {
   // Use Intl.DateTimeFormat to reliably extract the hour in IST
   const formatter = new Intl.DateTimeFormat("en-US", {
@@ -244,7 +264,23 @@ export const locationRouter = createTRPCRouter({
           message: "Branch not found",
         });
 
-      // 1. Server-Side Geofencing Validation
+      // 1. In-Memory Tracking
+      const now = Date.now();
+      const existingLiveLoc = liveLocationsMap.get(user.id);
+      let lastDbLogMs = existingLiveLoc?.lastDbLogMs ?? 0;
+      
+      const timeSinceLastLog = now - lastDbLogMs;
+      const shouldLogToDb = timeSinceLastLog >= 2 * 60 * 60 * 1000;
+
+      liveLocationsMap.set(user.id, {
+        latitude: input.latitude,
+        longitude: input.longitude,
+        accuracy: input.accuracy,
+        lastPingMs: now,
+        lastDbLogMs: shouldLogToDb ? now : lastDbLogMs,
+      });
+
+      // 2. Server-Side Geofencing Validation
       const distance = haversineDistance(
         input.latitude,
         input.longitude,
@@ -505,7 +541,6 @@ export const locationRouter = createTRPCRouter({
           parseFloat(finalLng),
         );
       }
-
       if (existingSlab) {
         await ctx.db
           .update(locationLogs)
@@ -590,6 +625,39 @@ export const locationRouter = createTRPCRouter({
             parseFloat(branch.longitude),
           );
           isWithinRadius = distance <= branch.radiusMeters;
+        }
+
+        const now = Date.now();
+        const existingLiveLoc = liveLocationsMap.get(user.id);
+        let lastDbLogMs = existingLiveLoc?.lastDbLogMs ?? 0;
+        
+        const timeSinceLastLog = now - lastDbLogMs;
+        const shouldLogToDb = timeSinceLastLog >= 2 * 60 * 60 * 1000;
+        
+        liveLocationsMap.set(user.id, {
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+          accuracy: loc.accuracy,
+          lastPingMs: loc.timestamp, // use the timestamp from mobile queue
+          lastDbLogMs: shouldLogToDb ? now : lastDbLogMs,
+        });
+        
+        if (!shouldLogToDb) {
+           if (
+            "waitUntil" in ctx &&
+            typeof (ctx as any).waitUntil === "function"
+          ) {
+            (ctx as any).waitUntil(
+              trackCustomerVisit(user, loc.latitude, loc.longitude).catch(
+                console.error,
+              ),
+            );
+          } else {
+            void trackCustomerVisit(user, loc.latitude, loc.longitude).catch(
+              console.error,
+            );
+          }
+          continue;
         }
 
         if (!branch || !isWithinRadius) {
@@ -742,34 +810,44 @@ export const locationRouter = createTRPCRouter({
 
       if (visibleUserIds.length === 0) return [];
 
-      const latestBreadcrumbs = await ctx.db
-        .selectDistinctOn([breadcrumbs.userId], {
-          id: breadcrumbs.id,
-          userId: breadcrumbs.userId,
-          latitude: breadcrumbs.latitude,
-          longitude: breadcrumbs.longitude,
-          accuracy: breadcrumbs.accuracy,
-          createdAt: breadcrumbs.createdAt,
-          user: {
-            id: users.id,
-            firstName: users.firstName,
-            lastName: users.lastName,
-            email: users.email,
-            role: users.role,
-            employeeCode: users.employeeCode,
-          },
-        })
-        .from(breadcrumbs)
-        .innerJoin(users, eq(breadcrumbs.userId, users.id))
-        .where(inArray(breadcrumbs.userId, visibleUserIds))
-        .orderBy(breadcrumbs.userId, desc(breadcrumbs.createdAt));
+      const activeUsers = await ctx.db.query.users.findMany({
+        where: inArray(users.id, visibleUserIds),
+        columns: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true,
+          employeeCode: true,
+        },
+      });
 
-      return latestBreadcrumbs.map((b) => {
-        const isOnline = Date.now() - b.createdAt.getTime() < 15 * 60 * 1000;
+      return activeUsers.map((u) => {
+        const liveLoc = liveLocationsMap.get(u.id);
+        if (!liveLoc) {
+          return {
+            id: "N/A", // Not stored in DB for real-time
+            userId: u.id,
+            latitude: 0,
+            longitude: 0,
+            accuracy: 0,
+            createdAt: new Date(0),
+            user: u,
+            isOnline: false,
+          };
+        }
+
+        // Fails to ping for 10 mins (600,000 ms)
+        const isOnline = Date.now() - liveLoc.lastPingMs < 10 * 60 * 1000;
+        
         return {
-          ...b,
-          latitude: parseFloat(String(b.latitude)),
-          longitude: parseFloat(String(b.longitude)),
+          id: "IN_MEMORY",
+          userId: u.id,
+          latitude: liveLoc.latitude,
+          longitude: liveLoc.longitude,
+          accuracy: liveLoc.accuracy ?? null,
+          createdAt: new Date(liveLoc.lastPingMs),
+          user: u,
           isOnline,
         };
       });
