@@ -1,14 +1,6 @@
 "use client";
 
-import { DesktopSidebar } from "./DesktopSidebar";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetTitle,
-  SheetHeader,
-} from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
+import { Home, LogOut, Menu } from "lucide-react";
 import { useSyncManager } from "@/hooks/use-sync-manager";
 import { useLocationBreadcrumbs } from "@/hooks/use-location-breadcrumbs";
 import { RefreshCcw, WifiOff } from "lucide-react";
@@ -16,14 +8,20 @@ import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { api } from "@/trpc/react";
 import { SuspendedView } from "../dashboard/SuspendedView";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { NotificationBell } from "../notifications/NotificationBell";
 import { AlertTriangle, X } from "lucide-react";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isSyncing, pendingCount } = useSyncManager();
   const pathname = usePathname();
+  const router = useRouter();
   useLocationBreadcrumbs();
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+  };
 
   const { error } = api.users.getMe.useQuery(undefined, {
     retry: false,
@@ -70,7 +68,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="text-foreground flex min-h-screen bg-slate-50 dark:bg-slate-950">
-      <DesktopSidebar />
       <div className="flex w-full flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom,16px))] md:pb-0">
         {(pendingCount > 0 || isSyncing) && (
           <div
@@ -123,29 +120,29 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         {/* Native Top Navigation Header */}
         <header className="border-border/50 sticky top-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-top))] items-center justify-between border-b bg-white/90 px-4 pt-[env(safe-area-inset-top)] shadow-sm backdrop-blur-xl md:h-16 md:px-8 dark:bg-slate-900/90">
           <div className="flex items-center gap-3">
-            <Sheet>
-              <SheetTrigger asChild>
-                <button className="rounded-md p-2 text-slate-700 transition-colors hover:bg-slate-100 md:hidden dark:text-slate-300 dark:hover:bg-slate-800">
-                  <Menu className="h-6 w-6" />
-                </button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[280px] p-0">
-                <SheetHeader className="sr-only">
-                  <SheetTitle>Navigation Menu</SheetTitle>
-                </SheetHeader>
-                <DesktopSidebar isMobile />
-              </SheetContent>
-            </Sheet>
+            <button 
+              onClick={() => router.push("/")}
+              className="rounded-xl bg-blue-50 p-2 text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-900"
+            >
+              <Home className="h-5 w-5" />
+            </button>
             <h2 className="text-lg font-bold tracking-tight text-slate-800 dark:text-slate-100">
               {getPageTitle(pathname)}
             </h2>
           </div>
           <div className="flex items-center gap-3">
             <NotificationBell />
+            <button
+              onClick={handleLogout}
+              className="flex items-center justify-center rounded-xl bg-slate-100 p-2 text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+              title="Logout"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto overscroll-none scroll-smooth p-4 md:p-6 lg:p-8">
+        <main className="flex-1 p-4 md:p-6 lg:p-8">
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>

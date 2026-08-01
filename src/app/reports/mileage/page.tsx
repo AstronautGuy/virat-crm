@@ -11,6 +11,7 @@ export default function MileageReportsPage() {
 
   const isManager =
     user?.permissions.isManager ?? user?.permissions.isAdmin ?? false;
+  const isAdmin = user?.role === "Admin";
 
   return (
     <DashboardLayout>
@@ -37,7 +38,7 @@ export default function MileageReportsPage() {
           </div>
 
           {/* Main Content */}
-          <MileageReportList isManager={isManager} />
+          <MileageReportList isManager={isManager} isAdmin={isAdmin} />
         </div>
       </FeatureGate>
     </DashboardLayout>

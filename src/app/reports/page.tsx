@@ -15,6 +15,7 @@ export default function ReportsPage() {
 
   const isManager =
     user?.permissions.isManager ?? user?.permissions.isAdmin ?? false;
+  const isAdmin = user?.role === "Admin";
 
   return (
     <DashboardLayout>
@@ -66,7 +67,7 @@ export default function ReportsPage() {
             </div>
 
             <TabsContent value="list" className="mt-0 outline-none">
-              <ReportList isManager={isManager} />
+              <ReportList isManager={isManager} isAdmin={isAdmin} />
             </TabsContent>
 
             <TabsContent

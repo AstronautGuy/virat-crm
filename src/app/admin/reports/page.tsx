@@ -222,18 +222,11 @@ function ReportsPageContent() {
                     <Users className="h-5 w-5" />
                     <span>Target Entity</span>
                   </div>
-                  <select
-                    value={targetId ?? ""}
-                    onChange={(e) => setTargetId(e.target.value || null)}
-                    className="w-full rounded-xl border-none bg-gray-50 px-4 py-2.5 text-sm focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">Current User (Self)</option>
-                    {selectableUsers?.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.firstName} {u.lastName} ({u.role})
-                      </option>
-                    ))}
-                  </select>
+                  <TargetUserSelect
+                    targetId={targetId}
+                    setTargetId={setTargetId}
+                    selectableUsers={selectableUsers}
+                  />
                 </div>
               </div>
 
@@ -549,18 +542,11 @@ function ReportsPageContent() {
                     <Users className="h-5 w-5" />
                     <span>Target Entity</span>
                   </div>
-                  <select
-                    value={targetId ?? ""}
-                    onChange={(e) => setTargetId(e.target.value || null)}
-                    className="w-full rounded-xl border-none bg-gray-50 px-4 py-2.5 text-sm focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">Current User (Self)</option>
-                    {selectableUsers?.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.firstName} {u.lastName} ({u.role})
-                      </option>
-                    ))}
-                  </select>
+                  <TargetUserSelect
+                    targetId={targetId}
+                    setTargetId={setTargetId}
+                    selectableUsers={selectableUsers}
+                  />
                 </div>
               </div>
 
@@ -1002,6 +988,97 @@ function StatCard({
         </p>
         <p className="text-2xl font-bold text-gray-900">{value}</p>
       </div>
+    </div>
+  );
+}
+
+function TargetUserSelect({
+  targetId,
+  setTargetId,
+  selectableUsers,
+}: {
+  targetId: string | null;
+  setTargetId: (val: string | null) => void;
+  selectableUsers?: Array<{
+    id: string;
+    firstName: string;
+    lastName: string | null;
+    role: string;
+    employeeCode: string | null;
+  }>;
+}) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (targetId && !searchTerm && !isOpen) {
+    const u = selectableUsers?.find((x) => x.id === targetId);
+    if (u) {
+      setSearchTerm(`${u.firstName} ${u.lastName ?? ""}`.trim());
+    }
+  }
+
+  const filteredUsers = selectableUsers?.filter((u) => {
+    const name = `${u.firstName} ${u.lastName ?? ""}`.toLowerCase();
+    const code = u.employeeCode?.toLowerCase() ?? "";
+    const term = searchTerm.toLowerCase();
+    return name.includes(term) || code.includes(term);
+  });
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={searchTerm}
+        onChange={(e) => {
+          setSearchTerm(e.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => setIsOpen(true)}
+        placeholder="Search by name or employee code..."
+        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:ring-2 focus:ring-green-500"
+      />
+      {isOpen && (
+        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-gray-100 bg-white shadow-lg">
+          <button
+            onClick={() => {
+              setTargetId(null);
+              setSearchTerm("");
+              setIsOpen(false);
+            }}
+            className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 border-b border-gray-50"
+          >
+            <div className="font-semibold text-gray-700">Current User (Self)</div>
+          </button>
+          {filteredUsers?.length === 0 ? (
+            <div className="px-4 py-3 text-sm text-gray-500">No users found.</div>
+          ) : (
+            filteredUsers?.map((u) => (
+              <button
+                key={u.id}
+                onClick={() => {
+                  setTargetId(u.id);
+                  setSearchTerm(`${u.firstName} ${u.lastName ?? ""}`.trim());
+                  setIsOpen(false);
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 border-b border-gray-50 last:border-0"
+              >
+                <div className="font-medium text-gray-800">
+                  {u.firstName} {u.lastName} <span className="text-xs font-normal text-gray-500">({u.role})</span>
+                </div>
+                {u.employeeCode && (
+                  <div className="text-xs text-gray-400 mt-0.5">Code: {u.employeeCode}</div>
+                )}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-0" 
+          onClick={() => setIsOpen(false)} 
+        />
+      )}
     </div>
   );
 }

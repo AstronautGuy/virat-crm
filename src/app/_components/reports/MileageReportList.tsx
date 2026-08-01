@@ -12,17 +12,23 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 
-export function MileageReportList({ isManager }: { isManager: boolean }) {
+export function MileageReportList({ isManager, isAdmin }: { isManager: boolean, isAdmin?: boolean }) {
   const [preset, setPreset] = useState<
     "today" | "7d" | "30d" | "quarter" | "year" | "all"
   >("30d");
   const [scope, setScope] = useState<
     "individual" | "team" | "management" | "branch"
   >(isManager ? "team" : "individual");
+  const [branchId, setBranchId] = useState<string>("");
+
+  const { data: branches } = api.users.getPublicBranches.useQuery(undefined, {
+    enabled: isAdmin,
+  });
 
   const { data, isLoading, refetch } = api.reports.getMileageReport.useQuery({
     preset,
     scope,
+    branchId: scope === "branch" && branchId ? parseInt(branchId) : undefined,
   });
 
   const handleExportCSV = () => {
@@ -80,16 +86,33 @@ export function MileageReportList({ isManager }: { isManager: boolean }) {
           </Select>
 
           {isManager && (
-            <Select value={scope} onValueChange={(val: any) => setScope(val)}>
-              <SelectTrigger className="w-[160px] rounded-xl border-slate-200 bg-white shadow-sm">
-                <SelectValue placeholder="Scope" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="individual">My Mileage</SelectItem>
-                <SelectItem value="team">My Team</SelectItem>
-                <SelectItem value="branch">Branch Total</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-3">
+              <Select value={scope} onValueChange={(val: any) => setScope(val)}>
+                <SelectTrigger className="w-[160px] rounded-xl border-slate-200 bg-white shadow-sm">
+                  <SelectValue placeholder="Scope" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="individual">My Mileage</SelectItem>
+                  <SelectItem value="team">My Team</SelectItem>
+                  {isAdmin && <SelectItem value="branch">Branch Reports</SelectItem>}
+                </SelectContent>
+              </Select>
+              
+              {scope === "branch" && isAdmin && (
+                <Select value={branchId} onValueChange={setBranchId}>
+                  <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-white shadow-sm">
+                    <SelectValue placeholder="Select Branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches?.map((b) => (
+                      <SelectItem key={b.id} value={b.id.toString()}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           )}
 
           <button

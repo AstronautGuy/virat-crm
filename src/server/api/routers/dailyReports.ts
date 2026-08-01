@@ -4,8 +4,8 @@ import {
   featureProtectedProcedure,
   featureManagerProcedure,
 } from "@/server/api/trpc";
-import { dailyReports } from "@/server/db/schema";
-import { eq, and, desc, sql, type SQL } from "drizzle-orm";
+import { dailyReports, users, userManagers } from "@/server/db/schema";
+import { eq, and, desc, sql, inArray, type SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 export const dailyReportsRouter = createTRPCRouter({
@@ -68,6 +68,77 @@ export const dailyReportsRouter = createTRPCRouter({
         with: {
           user: {
             columns: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+          customer: {
+            columns: {
+              name: true,
+            },
+          },
+        },
+      });
+    }),
+
+  listScopedReports: featureProtectedProcedure("reports")
+    .input(
+      z.object({
+        scope: z.enum(["individual", "team", "management", "branch"]),
+        targetId: z.string().uuid().optional(),
+        branchId: z.number().optional(),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { db, dbUser } = ctx;
+      if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      let targetUserIds: string[] = [];
+      const effectiveId = input.targetId ?? dbUser.id;
+
+      if (input.scope === "individual") {
+        targetUserIds = [effectiveId];
+      } else if (input.scope === "team") {
+        const teamMappings = await db.query.userManagers.findMany({
+          where: eq(userManagers.managerId, effectiveId),
+        });
+        targetUserIds = teamMappings.map((m) => m.userId);
+      } else if (input.scope === "branch") {
+        if (dbUser.role !== "Admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const branchUsers = await db.query.users.findMany({
+          where: eq(users.branchId, input.branchId!),
+          columns: { id: true },
+        });
+        targetUserIds = branchUsers.map((u) => u.id);
+      } else if (input.scope === "management") {
+        const descendantsQuery = sql`
+          WITH RECURSIVE subordinates AS (
+            SELECT user_id as id FROM "virat-crm_user_managers" WHERE manager_id = ${effectiveId}
+            UNION
+            SELECT um.user_id as id FROM "virat-crm_user_managers" um
+            INNER JOIN subordinates s ON s.id = um.manager_id
+          )
+          SELECT id FROM subordinates;
+        `;
+        const rows = (await db.execute(descendantsQuery)) as unknown as { id: string }[];
+        targetUserIds = rows.map((r) => String(r.id));
+      }
+
+      if (targetUserIds.length === 0 && input.scope !== "individual") {
+        return [];
+      }
+
+      return await db.query.dailyReports.findMany({
+        where: inArray(dailyReports.userId, targetUserIds),
+        orderBy: [desc(dailyReports.reportDate)],
+        limit: input.limit,
+        offset: input.offset,
+        with: {
+          user: {
+            columns: {
+              id: true,
               firstName: true,
               lastName: true,
             },

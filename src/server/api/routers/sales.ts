@@ -12,8 +12,9 @@ import {
   inventoryTransactions,
   saleAssignments,
   userManagers,
+  products,
 } from "@/server/db/schema";
-import { eq, sql, and, desc, exists } from "drizzle-orm";
+import { eq, sql, and, desc, exists, or, ilike } from "drizzle-orm";
 import { sendNotificationToUser } from "@/server/lib/push";
 import { checkAndNotifyLowStock } from "@/server/lib/alerts";
 import { TRPCError } from "@trpc/server";
@@ -500,6 +501,7 @@ export const salesRouter = createTRPCRouter({
         .object({
           limit: z.number().min(1).max(100).nullish(),
           cursor: z.number().nullish(), // Use sale id as cursor for keyset pagination
+          search: z.string().optional(),
         })
         .optional(),
     )
@@ -507,12 +509,36 @@ export const salesRouter = createTRPCRouter({
       const currentUser = ctx.dbUser;
       const limit = input?.limit ?? 20;
       const cursor = input?.cursor;
+      const search = input?.search;
 
       let items;
 
+      const searchCondition = search
+        ? or(
+            ilike(sales.transactionNumber, `%${search}%`),
+            ilike(sales.customerName, `%${search}%`),
+            ilike(sales.orderNumber, `%${search}%`),
+            exists(
+              ctx.db
+                .select()
+                .from(saleItems)
+                .innerJoin(products, eq(saleItems.productId, products.id))
+                .where(
+                  and(
+                    eq(saleItems.saleId, sales.id),
+                    ilike(products.name, `%${search}%`),
+                  ),
+                ),
+            ),
+          )
+        : undefined;
+
       if (currentUser.role === "Admin" || currentUser.role === "Developer") {
         items = await ctx.db.query.sales.findMany({
-          where: cursor ? (sales, { lt }) => lt(sales.id, cursor) : undefined,
+          where: and(
+            cursor ? sql`${sales.id} < ${cursor}` : undefined,
+            searchCondition
+          ),
           limit: limit + 1,
           with: {
             user: true,
@@ -545,10 +571,12 @@ export const salesRouter = createTRPCRouter({
                     ),
                 ),
                 cursor ? sql`${sales.id} < ${cursor}` : undefined,
+                searchCondition
               )
             : and(
                 eq(sales.branchId, assignedBranchId!),
                 cursor ? sql`${sales.id} < ${cursor}` : undefined,
+                searchCondition
               );
 
         items = await ctx.db.query.sales.findMany({

@@ -21,9 +21,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Plus, Check, X, Loader2, FileText } from "lucide-react";
+import { Plus, Check, X, Loader2, FileText, Search } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
 import dynamic from "next/dynamic";
 
 const FileGallery = dynamic(
@@ -42,6 +43,15 @@ export default function SalesDashboard() {
   const [filter, setFilter] = useState<
     "All" | "Pending" | "Approved" | "Rejected"
   >("All");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [search]);
 
   const [selectedSale, setSelectedSale] = useState<
     (typeof filteredSales)[number] | null
@@ -58,7 +68,7 @@ export default function SalesDashboard() {
     isFetchingNextPage,
     refetch,
   } = api.sales.getSales.useInfiniteQuery(
-    { limit: 20 },
+    { limit: 20, search: debouncedSearch || undefined },
     { getNextPageParam: (lastPage) => lastPage.nextCursor },
   );
 
@@ -97,24 +107,35 @@ export default function SalesDashboard() {
               </Link>
             </div>
 
-            <div className="no-scrollbar flex space-x-3 overflow-x-auto pb-4">
-              {["All", "Pending", "Approved", "Rejected"].map((f) => (
-                <Button
-                  key={f}
-                  variant={filter === f ? "default" : "outline"}
-                  className={cn(
-                    "rounded-2xl px-6 transition-all",
-                    filter === f
-                      ? "shadow-md"
-                      : "border-slate-200 text-slate-600",
-                  )}
-                  onClick={() =>
-                    setFilter(f as "All" | "Pending" | "Approved" | "Rejected")
-                  }
-                >
-                  {f}
-                </Button>
-              ))}
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="no-scrollbar flex space-x-3 overflow-x-auto pb-2 md:pb-0">
+                {["All", "Pending", "Approved", "Rejected"].map((f) => (
+                  <Button
+                    key={f}
+                    variant={filter === f ? "default" : "outline"}
+                    className={cn(
+                      "rounded-2xl px-6 transition-all",
+                      filter === f
+                        ? "shadow-md"
+                        : "border-slate-200 text-slate-600",
+                    )}
+                    onClick={() =>
+                      setFilter(f as "All" | "Pending" | "Approved" | "Rejected")
+                    }
+                  >
+                    {f}
+                  </Button>
+                ))}
+              </div>
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  placeholder="Search by Invoice, Customer, Item..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="rounded-2xl pl-10 border-slate-200 bg-white shadow-sm focus-visible:ring-primary"
+                />
+              </div>
             </div>
 
             {filteredSales.length === 0 && !isLoading ? (
