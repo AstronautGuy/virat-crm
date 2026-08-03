@@ -90,7 +90,7 @@ export function CustomerList({ isManager = false }: CustomerListProps) {
             customers?.map((customer) => (
               <div
                 key={customer.id}
-                className="group relative flex flex-col justify-between gap-4 p-5 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center dark:hover:bg-slate-800/50"
+                className="group relative flex flex-col justify-between gap-4 px-4 py-2.5 transition-colors odd:bg-white even:bg-slate-100 hover:bg-slate-200/50 sm:flex-row sm:items-center dark:odd:bg-slate-900 dark:even:bg-slate-800 dark:hover:bg-slate-800/80"
               >
                 <div className="flex items-center gap-4">
                   <div className="hidden h-12 w-12 items-center justify-center rounded-xl bg-blue-50 font-bold text-blue-600 shadow-sm sm:flex dark:bg-blue-900/20 dark:text-blue-400">

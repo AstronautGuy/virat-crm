@@ -188,7 +188,7 @@ export default function InventoryPage() {
                 filteredStock?.map((item) => (
                   <div
                     key={item.productId}
-                    className="group flex flex-col justify-between gap-4 p-5 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center dark:hover:bg-slate-800/50"
+                    className="group flex flex-col justify-between gap-4 px-4 py-2.5 transition-colors odd:bg-white even:bg-slate-100 hover:bg-slate-200/50 sm:flex-row sm:items-center dark:odd:bg-slate-900 dark:even:bg-slate-800 dark:hover:bg-slate-800/80"
                   >
                     <div className="flex items-center gap-4">
                       <div className="bg-primary/10 text-primary hidden h-12 w-12 items-center justify-center rounded-xl font-bold shadow-sm sm:flex">

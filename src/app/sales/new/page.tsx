@@ -39,6 +39,7 @@ import {
   WifiOff,
   Check,
   ChevronsUpDown,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -59,7 +60,20 @@ export default function NewSale() {
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [orderNumber, setOrderNumber] = useState("");
+  const [debouncedOrderNumber, setDebouncedOrderNumber] = useState("");
   const [transactionNumber, setTransactionNumber] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedOrderNumber(orderNumber);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [orderNumber]);
+
+  const { data: orderNumberCheck } = api.sales.checkOrderNumber.useQuery(
+    { orderNumber: debouncedOrderNumber },
+    { enabled: debouncedOrderNumber.length > 0 }
+  );
   const [customerId, setCustomerId] = useState("");
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [selectedManagerIds, setSelectedManagerIds] = useState<string[]>([]);
@@ -180,6 +194,10 @@ export default function NewSale() {
       toast.error("Order ID is required");
       return;
     }
+    if (orderNumberCheck?.exists) {
+      toast.error("Order ID already exists. Please use a unique Order ID.");
+      return;
+    }
     if (!customerId) {
       toast.error("Customer selection is required");
       return;
@@ -286,7 +304,7 @@ export default function NewSale() {
   return (
     <DashboardLayout>
       <FeatureGate featureKey="sales">
-        <div className="mx-auto flex max-w-2xl flex-col space-y-4">
+        <div className="mx-auto flex max-w-4xl flex-col space-y-4">
           <div className="flex items-center space-x-2">
             <Link href="/sales">
               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -380,7 +398,11 @@ export default function NewSale() {
                         value={orderNumber}
                         onChange={(e) => setOrderNumber(e.target.value)}
                         placeholder="ORD-XXXX"
+                        className={orderNumberCheck?.exists ? "border-destructive focus-visible:ring-destructive" : ""}
                       />
+                      {orderNumberCheck?.exists && (
+                        <p className="text-xs text-destructive mt-1">This Order ID already exists.</p>
+                      )}
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="transactionNumber" className="text-xs">
@@ -398,137 +420,137 @@ export default function NewSale() {
                   {isAdmin && (
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <Label htmlFor="selectedUserId" className="text-xs">
-                          Employee <span className="text-destructive">*</span>
+                        <Label htmlFor="selectedUserId" className="text-xs flex items-center justify-between">
+                          <span>Employee <span className="text-destructive">*</span></span>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-6 px-2 text-primary">
+                                + Add
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[300px] p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder="Search employee..." />
+                                <CommandList>
+                                  <CommandEmpty>No employee found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {allUsers
+                                      .filter((u) => u.role === "Employee" || u.role === "Manager")
+                                      .map((u) => (
+                                        <CommandItem
+                                          key={u.id}
+                                          value={`${u.firstName} ${u.lastName} ${u.employeeCode}`}
+                                          onSelect={() => {
+                                            setSelectedUserIds((prev) =>
+                                              prev.includes(u.id)
+                                                ? prev.filter((id) => id !== u.id)
+                                                : [...prev, u.id],
+                                            );
+                                          }}
+                                        >
+                                          {u.firstName} {u.lastName} ({u.employeeCode})
+                                          <Check
+                                            className={cn(
+                                              "ml-auto h-4 w-4",
+                                              selectedUserIds.includes(u.id) ? "opacity-100" : "opacity-0",
+                                            )}
+                                          />
+                                        </CommandItem>
+                                      ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                         </Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              className={cn(
-                                "w-full justify-between font-normal",
-                                selectedUserIds.length === 0 &&
-                                  "text-muted-foreground",
-                              )}
-                            >
-                              {selectedUserIds.length > 0
-                                ? `${selectedUserIds.length} employee(s) selected`
-                                : "Select employees..."}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            className="w-[300px] p-0"
-                            align="start"
-                          >
-                            <Command>
-                              <CommandInput placeholder="Search employee..." />
-                              <CommandList>
-                                <CommandEmpty>No employee found.</CommandEmpty>
-                                <CommandGroup>
-                                  {allUsers
-                                    .filter(
-                                      (u) =>
-                                        u.role === "Employee" ||
-                                        u.role === "Manager",
-                                    )
-                                    .map((u) => (
-                                      <CommandItem
-                                        key={u.id}
-                                        value={`${u.firstName} ${u.lastName} ${u.employeeCode}`}
-                                        onSelect={() => {
-                                          setSelectedUserIds((prev) =>
-                                            prev.includes(u.id)
-                                              ? prev.filter((id) => id !== u.id)
-                                              : [...prev, u.id],
-                                          );
-                                        }}
-                                      >
-                                        {u.firstName} {u.lastName} (
-                                        {u.employeeCode})
-                                        <Check
-                                          className={cn(
-                                            "ml-auto h-4 w-4",
-                                            selectedUserIds.includes(u.id)
-                                              ? "opacity-100"
-                                              : "opacity-0",
-                                          )}
-                                        />
-                                      </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {selectedUserIds.length > 0 ? (
+                            selectedUserIds.map((id) => {
+                              const u = allUsers.find((user) => user.id === id);
+                              return (
+                                <div key={id} className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded flex items-center gap-1">
+                                  {u?.firstName} {u?.lastName} ({u?.employeeCode})
+                                  <button
+                                    type="button"
+                                    className="ml-1 text-secondary-foreground hover:text-destructive focus:outline-none"
+                                    onClick={() => setSelectedUserIds((prev) => prev.filter((i) => i !== id))}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="text-xs text-muted-foreground">No employees selected</div>
+                          )}
+                        </div>
                       </div>
 
                       <div className="space-y-1">
-                        <Label htmlFor="selectedManagerId" className="text-xs">
-                          Manager <span className="text-destructive">*</span>
+                        <Label htmlFor="selectedManagerId" className="text-xs flex items-center justify-between">
+                          <span>Manager <span className="text-destructive">*</span></span>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-6 px-2 text-primary">
+                                + Add
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[300px] p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder="Search manager..." />
+                                <CommandList>
+                                  <CommandEmpty>No manager found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {allUsers
+                                      .filter((u) => u.role === "Manager" || u.role === "Admin")
+                                      .map((u) => (
+                                        <CommandItem
+                                          key={u.id}
+                                          value={`${u.firstName} ${u.lastName} ${u.employeeCode}`}
+                                          onSelect={() => {
+                                            setSelectedManagerIds((prev) =>
+                                              prev.includes(u.id)
+                                                ? prev.filter((id) => id !== u.id)
+                                                : [...prev, u.id],
+                                            );
+                                          }}
+                                        >
+                                          {u.firstName} {u.lastName} ({u.employeeCode})
+                                          <Check
+                                            className={cn(
+                                              "ml-auto h-4 w-4",
+                                              selectedManagerIds.includes(u.id) ? "opacity-100" : "opacity-0",
+                                            )}
+                                          />
+                                        </CommandItem>
+                                      ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                         </Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              className={cn(
-                                "w-full justify-between font-normal",
-                                selectedManagerIds.length === 0 &&
-                                  "text-muted-foreground",
-                              )}
-                            >
-                              {selectedManagerIds.length > 0
-                                ? `${selectedManagerIds.length} manager(s) selected`
-                                : "Select managers..."}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            className="w-[300px] p-0"
-                            align="start"
-                          >
-                            <Command>
-                              <CommandInput placeholder="Search manager..." />
-                              <CommandList>
-                                <CommandEmpty>No manager found.</CommandEmpty>
-                                <CommandGroup>
-                                  {allUsers
-                                    .filter(
-                                      (u) =>
-                                        u.role === "Manager" ||
-                                        u.role === "Admin",
-                                    )
-                                    .map((u) => (
-                                      <CommandItem
-                                        key={u.id}
-                                        value={`${u.firstName} ${u.lastName} ${u.employeeCode}`}
-                                        onSelect={() => {
-                                          setSelectedManagerIds((prev) =>
-                                            prev.includes(u.id)
-                                              ? prev.filter((id) => id !== u.id)
-                                              : [...prev, u.id],
-                                          );
-                                        }}
-                                      >
-                                        {u.firstName} {u.lastName} (
-                                        {u.employeeCode})
-                                        <Check
-                                          className={cn(
-                                            "ml-auto h-4 w-4",
-                                            selectedManagerIds.includes(u.id)
-                                              ? "opacity-100"
-                                              : "opacity-0",
-                                          )}
-                                        />
-                                      </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {selectedManagerIds.length > 0 ? (
+                            selectedManagerIds.map((id) => {
+                              const u = allUsers.find((user) => user.id === id);
+                              return (
+                                <div key={id} className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded flex items-center gap-1">
+                                  {u?.firstName} {u?.lastName} ({u?.employeeCode})
+                                  <button
+                                    type="button"
+                                    className="ml-1 text-secondary-foreground hover:text-destructive focus:outline-none"
+                                    onClick={() => setSelectedManagerIds((prev) => prev.filter((i) => i !== id))}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="text-xs text-muted-foreground">No managers selected</div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -659,17 +681,9 @@ export default function NewSale() {
                           <CommandInput placeholder="Search customer..." />
                           <CommandList>
                             <CommandEmpty className="py-4 text-center text-sm">
-                              <p className="text-muted-foreground mb-2">
+                              <p className="text-muted-foreground">
                                 No customer found.
                               </p>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setIsCustomerModalOpen(true)}
-                              >
-                                <Plus className="mr-2 h-4 w-4" /> Add New
-                                Customer
-                              </Button>
                             </CommandEmpty>
                             <CommandGroup>
                               {customers.map((customer) => (
@@ -690,6 +704,16 @@ export default function NewSale() {
                                 </CommandItem>
                               ))}
                             </CommandGroup>
+                            <div className="p-2 border-t border-border">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => setIsCustomerModalOpen(true)}
+                              >
+                                <Plus className="mr-2 h-4 w-4" /> Add New Customer
+                              </Button>
+                            </div>
                           </CommandList>
                         </Command>
                       </PopoverContent>
@@ -735,8 +759,8 @@ export default function NewSale() {
                             >
                               {item.productId
                                 ? products.find(
-                                    (p) => p.id.toString() === item.productId,
-                                  )?.name
+                                  (p) => p.id.toString() === item.productId,
+                                )?.name
                                 : "Select product..."}
                               <ChevronsUpDown className="opacity-50" />
                             </Button>
@@ -961,7 +985,7 @@ export default function NewSale() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                    Village
+                    Area / Post Office
                   </label>
                   <input
                     type="text"
@@ -980,7 +1004,7 @@ export default function NewSale() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                    District *
+                    City *
                   </label>
                   <input
                     type="text"
@@ -1011,7 +1035,7 @@ export default function NewSale() {
 
               <div className="space-y-1.5">
                 <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                  Address *
+                  Address & Landmark *
                 </label>
                 <Textarea
                   className="focus:ring-primary/20 focus:border-primary min-h-[80px] w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"

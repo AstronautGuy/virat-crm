@@ -28,7 +28,10 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner"; // Assuming sonner is used, if not I'll use alert
 
 const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  firstName: z.string().optional(),
+  middleName: z.string().optional(),
+  lastName: z.string().optional(),
+  fatherName: z.string().optional(),
   mobile: z.string().min(10, "Mobile must be at least 10 digits"),
   dob: z.string().optional(),
   pincode: z.string().length(6, "Pincode must be 6 digits"),
@@ -57,7 +60,10 @@ export function CustomerForm({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      fatherName: "",
       mobile: "",
       dob: "",
       pincode: "",
@@ -158,15 +164,57 @@ export function CustomerForm({
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="middleName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Middle Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="A." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
-                name="name"
+                name="fatherName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel>Father's Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="John Doe" {...field} />
+                      <Input placeholder="Richard Doe" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -325,6 +373,21 @@ export function CustomerForm({
                 </FormItem>
               )}
             />
+
+            {/* Added By Field */}
+            <div className="mt-4">
+              <FormItem>
+                <FormLabel>Added By</FormLabel>
+                <FormControl>
+                  <Input 
+                    value={me ? `${me.firstName} ${me.lastName ?? ""}`.trim() : "Loading..."} 
+                    readOnly 
+                    disabled
+                    className="bg-gray-50 text-gray-500"
+                  />
+                </FormControl>
+              </FormItem>
+            </div>
 
             <Button
               type="submit"

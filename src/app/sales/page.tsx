@@ -1,6 +1,7 @@
 "use client";
 
 import { FeatureGate } from "@/app/_components/auth/FeatureGate";
+import { toast } from "sonner";
 
 import { DashboardLayout } from "../_components/layout/DashboardLayout";
 import { api } from "@/trpc/react";
@@ -21,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Plus, Check, X, Loader2, FileText, Search } from "lucide-react";
+import { Plus, Check, X, Loader2, FileText, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -77,6 +78,18 @@ export default function SalesDashboard() {
       onSuccess: () => refetch(),
       onError: (error) => {
         alert(`Status update failed: ${error.message}`);
+      },
+    });
+
+  const { mutate: deleteSale, isPending: isDeleting } =
+    api.sales.deleteSale.useMutation({
+      onSuccess: () => {
+        setSelectedSale(null);
+        refetch();
+        toast.success("Sale deleted successfully");
+      },
+      onError: (error) => {
+        toast.error(`Delete failed: ${error.message}`);
       },
     });
 
@@ -161,7 +174,7 @@ export default function SalesDashboard() {
                     return (
                       <div
                         key={sale?.id ?? idx}
-                        className="group flex cursor-pointer flex-col justify-between gap-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:shadow-md active:scale-[0.99] sm:flex-row sm:items-center md:p-5 dark:border-slate-800 dark:bg-slate-900"
+                        className="group flex cursor-pointer flex-col justify-between gap-3 border-b border-slate-100 py-2.5 px-4 transition-all hover:shadow-md active:scale-[0.99] sm:flex-row sm:items-center md:py-3 md:px-5 odd:bg-white even:bg-slate-100 dark:border-slate-800 dark:odd:bg-slate-900 dark:even:bg-slate-800"
                         onClick={() => sale && setSelectedSale(sale)}
                       >
                         <div className="flex items-center gap-4">
@@ -231,13 +244,27 @@ export default function SalesDashboard() {
               open={!!selectedSale}
               onOpenChange={(open) => !open && setSelectedSale(null)}
             >
-              <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+              <SheetContent className="w-full overflow-y-auto sm:max-w-2xl sm:p-10">
                 <SheetHeader className="mb-6">
-                  <SheetTitle className="text-2xl font-bold">
+                  <SheetTitle className="text-2xl font-bold flex items-center gap-3">
                     Sale Details
+                    {selectedSale && (
+                      <Badge
+                        className={cn(
+                          "rounded-lg border-none px-3 py-1 text-xs font-bold tracking-widest uppercase shadow-sm",
+                          selectedSale.status === "Approved"
+                            ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                            : selectedSale.status === "Rejected"
+                              ? "bg-rose-500 text-white hover:bg-rose-600"
+                              : "bg-amber-400 text-amber-950 hover:bg-amber-500",
+                        )}
+                      >
+                        {selectedSale.status}
+                      </Badge>
+                    )}
                   </SheetTitle>
                   <SheetDescription>
-                    {selectedSale?.orderNumber} • {selectedSale?.status}
+                    {selectedSale?.orderNumber}
                   </SheetDescription>
                 </SheetHeader>
 
@@ -299,7 +326,8 @@ export default function SalesDashboard() {
                             className="flex items-center justify-between rounded-lg border bg-slate-50 p-3"
                           >
                             <span className="font-medium text-slate-800">
-                              Product #{item.productId}
+                              {/* @ts-ignore */}
+                              {item.product?.name ?? `Product #${item.productId}`}
                             </span>
                             <span className="text-slate-600">
                               Qty: {item.quantity}{" "}
@@ -320,7 +348,7 @@ export default function SalesDashboard() {
                     </div>
 
                     {user?.role === "Admin" && (
-                      <div className="flex pt-4">
+                      <div className="flex flex-col gap-3 pt-4">
                         <Link
                           href={`/sales/${selectedSale.id}/edit`}
                           className="w-full"
@@ -333,6 +361,19 @@ export default function SalesDashboard() {
                             Edit Sale Details
                           </Button>
                         </Link>
+                        <Button
+                          variant="destructive"
+                          className="w-full"
+                          disabled={isDeleting}
+                          onClick={() => {
+                            if (confirm("Are you sure you want to delete this sale? This action cannot be undone.")) {
+                              deleteSale({ id: selectedSale.id });
+                            }
+                          }}
+                        >
+                          {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                          Delete Sale
+                        </Button>
                       </div>
                     )}
 

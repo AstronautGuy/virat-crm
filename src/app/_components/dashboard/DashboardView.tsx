@@ -17,8 +17,10 @@ import {
   Download,
   Upload,
   Sliders,
-  Wallet
+  Wallet,
+  Plus
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -273,7 +275,7 @@ export function DashboardView({
             {metrics.map((metric) => (
               <Card
                 key={metric.label}
-                className="rounded-xl border-none p-0 shadow-sm transition-transform duration-300"
+                className="rounded-xl border-none p-0 shadow-sm transition-transform duration-300 bg-slate-100 dark:bg-slate-800"
               >
                 <CardContent className="p-6">
                   <p className="text-xs font-bold tracking-wider text-slate-400 uppercase">
@@ -292,17 +294,17 @@ export function DashboardView({
             ))}
           </div>
 
-          {/* Feature Navigation Grid */}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          {/* Feature Navigation Grid (Mobile Only) */}
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:hidden">
             {links
               .filter((l) => !l.hidden)
               .map((link) => {
                 const Icon = link.icon;
                 return (
                   <Link href={link.href} key={link.href}>
-                    <Card className={`group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border-2 transition-all duration-200 hover:-translate-y-1 hover:shadow-md active:scale-95 ${link.borderColor} bg-white shadow-sm`}>
-                      <div className={`flex h-14 w-14 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 ${link.color}`}>
-                        <Icon className="h-7 w-7" />
+                    <Card className={`group flex h-36 flex-col items-center justify-center gap-3 rounded-2xl border-none transition-all duration-200 hover:-translate-y-1 hover:shadow-md active:scale-95 bg-white shadow-sm ring-1 ring-slate-100`}>
+                      <div className={`flex h-16 w-16 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 shadow-sm text-white ${link.color.replace(/bg-[a-z]+-50/, '').replace(/text-([a-z]+)-[0-9]+/, 'bg-$1-500')}`}>
+                        <Icon className="h-8 w-8" />
                       </div>
                       <span className="text-center text-sm font-bold tracking-tight text-slate-700 group-hover:text-slate-900 px-2 line-clamp-1">
                         {link.label}
@@ -311,6 +313,56 @@ export function DashboardView({
                   </Link>
                 );
               })}
+          </div>
+
+          {/* Desktop Dashboard View (Desktop Only) */}
+          <div className="hidden md:grid gap-6 md:grid-cols-7">
+            <Card className="rounded-xl border-none shadow-sm md:col-span-4">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold text-slate-800">
+                  Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div
+                      key={i}
+                      className="group -mx-2 flex cursor-pointer items-center gap-4 border-b border-slate-100 py-2 px-3 transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] odd:bg-white even:bg-slate-100 dark:border-slate-800 dark:odd:bg-slate-900 dark:even:bg-slate-800"
+                    >
+                      <div className="text-primary group-hover:bg-primary flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 font-bold shadow-sm transition-all duration-300 group-hover:text-white">
+                        {i}
+                      </div>
+                      <div className="flex-1">
+                        <p className="group-hover:text-primary font-semibold text-slate-800 transition-colors">
+                          Sale Approved - ORD-{1000 + i}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          2 hours ago • Verified by Admin
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-green-600 to-emerald-700 flex flex-col items-center justify-center rounded-2xl border-none p-8 text-center shadow-lg md:col-span-3">
+              <div className="shadow-premium mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 transition-transform hover:scale-110 backdrop-blur-sm">
+                <Plus className="text-white h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-bold text-white tracking-tight">
+                Quick Actions
+              </h3>
+              <p className="mb-6 max-w-[220px] text-sm text-green-50 font-medium mt-1">
+                Create new sales, documents or manage workforce instantly.
+              </p>
+              <Link href="/sales/new" className="w-full">
+                <Button size="lg" className="w-full rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-md shadow-md border-0">
+                  New Sale
+                </Button>
+              </Link>
+            </Card>
           </div>
         </div>
       </FeatureGate>

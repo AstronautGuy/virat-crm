@@ -22,6 +22,10 @@ export const customers = createTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     name: varchar("name", { length: 256 }).notNull(),
+    firstName: varchar("first_name", { length: 100 }),
+    middleName: varchar("middle_name", { length: 100 }),
+    lastName: varchar("last_name", { length: 100 }),
+    fatherName: varchar("father_name", { length: 100 }),
     mobile: varchar("mobile", { length: 20 }).notNull().unique(),
     dob: timestamp("dob", { withTimezone: true }),
     pincode: varchar("pincode", { length: 10 }).notNull(),

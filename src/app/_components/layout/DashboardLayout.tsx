@@ -1,6 +1,7 @@
 "use client";
 
 import { Home, LogOut, Menu } from "lucide-react";
+import { DesktopSidebar } from "./DesktopSidebar";
 import { useSyncManager } from "@/hooks/use-sync-manager";
 import { useLocationBreadcrumbs } from "@/hooks/use-location-breadcrumbs";
 import { RefreshCcw, WifiOff } from "lucide-react";
@@ -67,7 +68,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="text-foreground flex min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="text-foreground flex min-h-screen bg-emerald-50/30 dark:bg-slate-950">
+      <DesktopSidebar />
       <div className="flex w-full flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom,16px))] md:pb-0">
         {(pendingCount > 0 || isSyncing) && (
           <div
@@ -118,15 +120,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         )}
 
         {/* Native Top Navigation Header */}
-        <header className="border-border/50 sticky top-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-top))] items-center justify-between border-b bg-white/90 px-4 pt-[env(safe-area-inset-top)] shadow-sm backdrop-blur-xl md:h-16 md:px-8 dark:bg-slate-900/90">
+        <header className="sticky top-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-top))] items-center justify-between border-b border-transparent bg-gradient-to-r from-green-600 via-emerald-500 to-orange-500 px-4 pt-[env(safe-area-inset-top)] shadow-md md:h-16 md:px-8 dark:from-green-900 dark:via-emerald-900 dark:to-orange-900">
           <div className="flex items-center gap-3">
             <button 
               onClick={() => router.push("/")}
-              className="rounded-xl bg-blue-50 p-2 text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-900"
+              className="rounded-xl bg-white/20 p-2 text-white transition-colors hover:bg-white/30"
             >
               <Home className="h-5 w-5" />
             </button>
-            <h2 className="text-lg font-bold tracking-tight text-slate-800 dark:text-slate-100">
+            <h2 className="text-lg font-bold tracking-tight text-white shadow-sm">
               {getPageTitle(pathname)}
             </h2>
           </div>
@@ -134,7 +136,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <NotificationBell />
             <button
               onClick={handleLogout}
-              className="flex items-center justify-center rounded-xl bg-slate-100 p-2 text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+              className="flex items-center justify-center rounded-xl bg-white/20 p-2 text-white transition-colors hover:bg-red-500"
               title="Logout"
             >
               <LogOut className="h-5 w-5" />

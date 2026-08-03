@@ -141,14 +141,14 @@ export function ReportList({ isManager = false, isAdmin = false }: ReportListPro
             return (
               <Card
                 key={report.id}
-                className={`group overflow-hidden rounded-2xl border-2 transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_0_0_rgba(191,219,254,1)] shadow-[0_4px_0_0_rgba(226,232,240,1)] ${
-                  scope === "management" || scope === "branch" ? "border-indigo-200 bg-indigo-50/30" : "border-slate-200 bg-white"
+                className={`group overflow-hidden rounded-2xl border-2 transition-all duration-200 hover:-translate-y-1 hover:shadow-md odd:bg-white even:bg-slate-50 dark:odd:bg-slate-900 dark:even:bg-slate-800/50 ${
+                  scope === "management" || scope === "branch" ? "border-indigo-200" : "border-slate-200"
                 }`}
               >
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row">
                     {/* Left: Metadata */}
-                    <div className="flex flex-col justify-between border-b-2 border-slate-100 p-5 md:w-64 md:border-r-2 md:border-b-0 bg-white">
+                    <div className="flex flex-col justify-between border-b-2 border-slate-100 p-5 md:w-64 md:border-r-2 md:border-b-0">
                       <div className="space-y-4">
                         <div className="flex items-center gap-2 text-sm font-black text-slate-800">
                           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600">

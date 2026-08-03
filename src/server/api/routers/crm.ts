@@ -158,7 +158,11 @@ export const crmRouter = createTRPCRouter({
     })
     .input(
       z.object({
-        name: z.string().min(2),
+        name: z.string().optional(),
+        firstName: z.string().optional(),
+        middleName: z.string().optional(),
+        lastName: z.string().optional(),
+        fatherName: z.string().optional(),
         mobile: z.string().min(10),
         dob: z.date().optional(),
         pincode: z.string().length(6),
@@ -185,12 +189,18 @@ export const crmRouter = createTRPCRouter({
         });
       }
 
-      const { branchId: _branchId, ...rest } = input;
+      const { branchId: _branchId, name, firstName, middleName, lastName, fatherName, ...rest } = input;
+      const fullName = name || [firstName, middleName, lastName].filter(Boolean).join(" ") || "Unknown";
 
       return await db
         .insert(customers)
         .values({
           ...rest,
+          name: fullName,
+          firstName,
+          middleName,
+          lastName,
+          fatherName,
           branchId: targetBranchId,
           status: "Approved", // Managers/Admins create approved customers
           createdBy: dbUser.id,
@@ -209,7 +219,11 @@ export const crmRouter = createTRPCRouter({
     })
     .input(
       z.object({
-        name: z.string().min(2),
+        name: z.string().optional(),
+        firstName: z.string().optional(),
+        middleName: z.string().optional(),
+        lastName: z.string().optional(),
+        fatherName: z.string().optional(),
         mobile: z.string().min(10),
         dob: z.date().optional(),
         pincode: z.string().length(6),
@@ -236,12 +250,18 @@ export const crmRouter = createTRPCRouter({
         });
       }
 
-      const { branchId: _branchId, ...rest } = input;
+      const { branchId: _branchId, name, firstName, middleName, lastName, fatherName, ...rest } = input;
+      const fullName = name || [firstName, middleName, lastName].filter(Boolean).join(" ") || "Unknown";
 
       return await db
         .insert(customers)
         .values({
           ...rest,
+          name: fullName,
+          firstName,
+          middleName,
+          lastName,
+          fatherName,
           branchId: targetBranchId,
           status: "Draft", // Employees create draft customers
           createdBy: dbUser.id,

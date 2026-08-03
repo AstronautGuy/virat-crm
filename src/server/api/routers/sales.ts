@@ -24,7 +24,7 @@ export const salesRouter = createTRPCRouter({
     async ({ ctx }) => {
       const lastSale = await ctx.db.query.sales.findFirst({
         where: sql`${sales.transactionNumber} IS NOT NULL`,
-        orderBy: [desc(sales.createdAt)],
+        orderBy: [desc(sales.id)],
       });
 
       if (!lastSale || !lastSale.transactionNumber) {
@@ -41,6 +41,16 @@ export const salesRouter = createTRPCRouter({
       return `${lastSale.transactionNumber}-1`;
     },
   ),
+
+  checkOrderNumber: featureProtectedProcedure("sales")
+    .input(z.object({ orderNumber: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const existing = await ctx.db.query.sales.findFirst({
+        where: eq(sales.orderNumber, input.orderNumber),
+        columns: { id: true },
+      });
+      return { exists: !!existing };
+    }),
 
   createSale: featureProtectedProcedure("sales")
     .meta({
@@ -166,7 +176,7 @@ export const salesRouter = createTRPCRouter({
         const balanceAmt = invoiceAmt - advanceAmt - receivedAmt;
 
         const orderNumber = input.orderNumber;
-        const transactionNumber = input.transactionNumber ?? null;
+        const transactionNumber = input.transactionNumber || null;
 
         const finalUserIds =
           ctx.dbUser.role === "Admin" && input.userIds?.length
@@ -222,9 +232,10 @@ export const salesRouter = createTRPCRouter({
             error.message?.includes("23505") ||
             error.message?.includes("unique constraint")
           ) {
+            const isInvoice = error.message?.includes("transaction_number") || error.message?.includes("transactionNumber") || error.message?.includes("invoice");
             throw new TRPCError({
               code: "CONFLICT",
-              message: "Order ID already exists. Please use a unique Order ID.",
+              message: isInvoice ? "Invoice ID already exists. Please use a unique Invoice ID." : "Order ID already exists. Please use a unique Order ID.",
             });
           }
           throw error;
@@ -544,7 +555,7 @@ export const salesRouter = createTRPCRouter({
             user: true,
             manager: true,
             branch: true,
-            items: true,
+            items: { with: { product: true } },
             assignments: { with: { user: true } },
             files: {
               where: (files, { eq }) => eq(files.entityType, "sale"),
@@ -586,7 +597,7 @@ export const salesRouter = createTRPCRouter({
             user: true,
             manager: true,
             branch: true,
-            items: true,
+            items: { with: { product: true } },
             assignments: { with: { user: true } },
             files: {
               where: (files, { eq }) => eq(files.entityType, "sale"),
@@ -614,7 +625,7 @@ export const salesRouter = createTRPCRouter({
       const sale = await ctx.db.query.sales.findFirst({
         where: eq(sales.id, input.id),
         with: {
-          items: true,
+          items: { with: { product: true } },
           user: true,
         },
       });
@@ -750,6 +761,59 @@ export const salesRouter = createTRPCRouter({
         }
 
         return updated;
+      });
+    }),
+
+  deleteSale: featureProtectedProcedure("sales")
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.dbUser.role !== "Admin") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only Admins can delete sales.",
+        });
+      }
+
+      return await ctx.db.transaction(async (tx) => {
+        const targetSale = await tx.query.sales.findFirst({
+          where: eq(sales.id, input.id),
+          with: { items: true },
+        });
+
+        if (!targetSale) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Sale not found" });
+        }
+
+        if (targetSale.status !== "Rejected") {
+          for (const item of targetSale.items) {
+            await tx
+              .insert(inventory)
+              .values({
+                productId: item.productId,
+                branchId: targetSale.branchId,
+                quantity: item.quantity,
+              })
+              .onConflictDoUpdate({
+                target: [inventory.productId, inventory.branchId],
+                set: {
+                  quantity: sql`${inventory.quantity} + ${item.quantity}`,
+                },
+              });
+
+            await tx.insert(inventoryTransactions).values({
+              productId: item.productId,
+              branchId: targetSale.branchId,
+              userId: ctx.dbUser.id,
+              type: "Adjustment",
+              quantity: item.quantity,
+              reason: `Sale ${targetSale.orderNumber} Deleted - Stock Reclaimed`,
+              referenceId: targetSale.id.toString(),
+            });
+          }
+        }
+
+        await tx.delete(sales).where(eq(sales.id, input.id));
+        return { success: true };
       });
     }),
 });
