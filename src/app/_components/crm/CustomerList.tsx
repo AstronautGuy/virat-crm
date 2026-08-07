@@ -168,13 +168,15 @@ export function CustomerList({ isManager = false }: CustomerListProps) {
                         </Button>
                       )}
                       {isManager && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-3 text-[10px] font-bold tracking-wider text-blue-600 uppercase hover:bg-blue-50"
-                        >
-                          Edit
-                        </Button>
+                        <Link href={`/crm/${customer.id}/edit`}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-3 text-[10px] font-bold tracking-wider text-blue-600 uppercase hover:bg-blue-50"
+                          >
+                            Edit
+                          </Button>
+                        </Link>
                       )}
                     </div>
                   </div>

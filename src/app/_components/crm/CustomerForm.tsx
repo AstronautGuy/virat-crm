@@ -59,7 +59,20 @@ export function CustomerForm({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData ? {
+      firstName: initialData.name?.split(" ")[0] || "",
+      middleName: "",
+      lastName: initialData.name?.split(" ").slice(1).join(" ") || "",
+      fatherName: initialData.fatherName || "",
+      mobile: initialData.mobile || "",
+      dob: initialData.dob ? new Date(initialData.dob).toISOString().split('T')[0] : "",
+      pincode: initialData.pincode || "",
+      village: initialData.village || "",
+      district: initialData.district || "",
+      state: initialData.state || "",
+      address: initialData.address || "",
+      branchId: initialData.branchId?.toString() || "",
+    } : {
       firstName: "",
       middleName: "",
       lastName: "",
@@ -122,6 +135,14 @@ export function CustomerForm({
     }
   }, [pincode, form]);
 
+  const updateMutation = api.crm.updateCustomer.useMutation({
+    onSuccess: () => {
+      toast.success("Customer updated successfully");
+      onSuccess?.();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const proposeMutation = api.crm.proposeCustomer.useMutation({
     onSuccess: () => {
       toast.success("Customer proposed successfully (Draft status)");
@@ -158,7 +179,7 @@ export function CustomerForm({
     <Card className="w-full">
       <CardHeader>
         <CardTitle>
-          {isManager ? "Add Approved Customer" : "Propose New Customer"}
+          {initialData ? "Edit Customer" : (isManager ? "Add Approved Customer" : "Propose New Customer")}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -392,12 +413,12 @@ export function CustomerForm({
             <Button
               type="submit"
               className="w-full"
-              disabled={proposeMutation.isPending || createMutation.isPending}
+              disabled={proposeMutation.isPending || createMutation.isPending || updateMutation.isPending}
             >
-              {(proposeMutation.isPending || createMutation.isPending) && (
+              {(proposeMutation.isPending || createMutation.isPending || updateMutation.isPending) && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              {isManager ? "Create Customer" : "Propose Customer"}
+              {initialData ? "Update Customer" : (isManager ? "Create Customer" : "Propose Customer")}
             </Button>
           </form>
         </Form>

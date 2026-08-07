@@ -190,14 +190,14 @@ export const salesRouter = createTRPCRouter({
         const transactionNumber = input.transactionNumber || null;
 
         const finalUserIds =
-          ctx.dbUser.role === "Admin" && input.userIds?.length
+          input.userIds?.length
             ? input.userIds
             : [ctx.dbUser.id];
         const userManagersList = await tx.query.userManagers.findMany({
           where: eq(userManagers.userId, ctx.dbUser.id),
         });
         const finalManagerIds =
-          ctx.dbUser.role === "Admin" && input.managerIds?.length
+          input.managerIds?.length
             ? input.managerIds
             : userManagersList.map((m) => m.managerId);
         const finalStatus =
@@ -375,6 +375,8 @@ export const salesRouter = createTRPCRouter({
         state: z.string().optional(),
         customerName: z.string().optional(),
         customerAddress: z.string().optional(),
+        userIds: z.array(z.string()).optional(),
+        managerIds: z.array(z.string()).optional(),
         invoiceAmount: z.string().optional(),
         advancePaymentAmount: z.string().optional(),
         receivedAmount: z.string().optional(),
@@ -699,6 +701,7 @@ export const salesRouter = createTRPCRouter({
         with: {
           items: { with: { product: true } },
           user: true,
+          assignments: { with: { user: true } },
         },
       });
 

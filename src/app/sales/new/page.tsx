@@ -19,6 +19,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { FileUploader } from "@/app/_components/ui/FileUploader";
+import { MultiSelectInput } from "@/app/_components/ui/MultiSelectInput";
 
 export default function NewSale() {
   const router = useRouter();
@@ -34,8 +35,8 @@ export default function NewSale() {
   const [cmrId, setCmrId] = useState("");
   const [tmNo, setTmNo] = useState("");
   const [docMonth, setDocMonth] = useState("");
-  const [ecode, setEcode] = useState("");
-  const [fieldSuppBy, setFieldSuppBy] = useState("");
+  const [userIds, setUserIds] = useState<string[]>([]);
+  const [managerIds, setManagerIds] = useState<string[]>([]);
   const [saleType, setSaleType] = useState("Direct to Customer from PU"); // Radio button
 
   const [customerId, setCustomerId] = useState("");
@@ -72,6 +73,18 @@ export default function NewSale() {
   const { data: customers = [], refetch: refetchCustomers } =
     api.crm.getBranchCustomers.useQuery();
 
+  const { data: orgUsers = [] } = api.users.getUsersForDropdown.useQuery();
+  const allUsersOptions = orgUsers.map((u) => ({
+    id: u.id,
+    label: u.employeeCode ? `${u.employeeCode} - ${u.firstName} ${u.lastName || ""}` : `${u.firstName} ${u.lastName || ""}`
+  }));
+  const managerOptions = orgUsers
+    .filter((u) => u.role === "Manager")
+    .map((u) => ({
+      id: u.id,
+      label: u.employeeCode ? `${u.employeeCode} - ${u.firstName} ${u.lastName || ""}` : `${u.firstName} ${u.lastName || ""}`
+    }));
+
   // Populate customer fields on change
   useEffect(() => {
     if (customerId) {
@@ -85,6 +98,7 @@ export default function NewSale() {
         setDistrict(c.district || "");
         setState(c.state || "");
         setHouseNo(String(c.address || ""));
+        setSo(String(c.fatherName || ""));
         if (c.dob) setDob(new Date(c.dob as string | number | Date).toISOString().split("T")[0] || "");
         if (c.marriageDate) setMarriageDate(new Date(c.marriageDate as string | number | Date).toISOString().split("T")[0] || "");
       }
@@ -201,6 +215,8 @@ export default function NewSale() {
       cgst: "0",
       sgst: "0",
       igst: "0",
+      userIds,
+      managerIds,
       items: allItems,
     };
 
@@ -228,8 +244,8 @@ export default function NewSale() {
     setCmrId("");
     setTmNo("");
     setDocMonth("");
-    setEcode("");
-    setFieldSuppBy("");
+    setUserIds([]);
+    setManagerIds([]);
     setSaleType("Direct to Customer from PU");
     setCustomerId("");
     setCustomerSearch("");
@@ -342,7 +358,7 @@ export default function NewSale() {
                 </div>
                 <div className="col-span-1 text-right mt-1">Ecode</div>
                 <div className="col-span-4">
-                  <input type="text" value={ecode} onChange={e=>setEcode(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs" placeholder="e.g. 39957-SHIVAM (GL)"/>
+                  <MultiSelectInput options={allUsersOptions} selectedIds={userIds} onChange={setUserIds} placeholder="Select Ecode..." />
                 </div>
                 <div className="col-span-2"></div>
 
@@ -356,7 +372,7 @@ export default function NewSale() {
                 </div>
                 <div className="col-span-1 text-right mt-1 whitespace-nowrap">Field SupP By</div>
                 <div className="col-span-4">
-                  <input type="text" value={fieldSuppBy} onChange={e=>setFieldSuppBy(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs"/>
+                  <MultiSelectInput options={managerOptions} selectedIds={managerIds} onChange={setManagerIds} placeholder="Select Field Support..." />
                 </div>
                 <div className="col-span-2"></div>
               </div>
@@ -364,11 +380,11 @@ export default function NewSale() {
               {/* RADIO BUTTONS */}
               <div className="flex gap-12 ml-16 py-1">
                 <label className="flex items-center gap-1 cursor-pointer">
-                  <input type="radio" name="saleType" checked={saleType === "Direct to Customer from PU"} onChange={() => setSaleType("Direct to Customer from PU")} />
+                  <input type="radio" className="w-3 h-3" name="saleType" checked={saleType === "Direct to Customer from PU"} onChange={() => setSaleType("Direct to Customer from PU")} />
                   Direct to Customer from PU
                 </label>
                 <label className="flex items-center gap-1 cursor-pointer">
-                  <input type="radio" name="saleType" checked={saleType === "Against DC from GL"} onChange={() => setSaleType("Against DC from GL")} />
+                  <input type="radio" className="w-3 h-3" name="saleType" checked={saleType === "Against DC from GL"} onChange={() => setSaleType("Against DC from GL")} />
                   Against DC from GL
                 </label>
               </div>
@@ -384,7 +400,7 @@ export default function NewSale() {
                 <div className="col-span-3">
                   <select value={customerId} onChange={e=>setCustomerId(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs">
                     <option value="">Select Existing Customer</option>
-                    {customers.map(c=><option key={c.id} value={c.id}>{c.name} - {c.mobile}</option>)}
+                    {customers.filter(c => !villageSearch || (c.village && c.village.toLowerCase().includes(villageSearch.toLowerCase()))).map(c=><option key={c.id} value={c.id}>{c.name} - {c.mobile}</option>)}
                   </select>
                 </div>
                 <div className="col-span-2">

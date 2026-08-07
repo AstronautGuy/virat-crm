@@ -77,6 +77,19 @@ export const usersRouter = createTRPCRouter({
     return ctx.db.query.branches.findMany();
   }),
 
+  getUsersForDropdown: protectedProcedure.query(async ({ ctx }) => {
+    return ctx.db.query.users.findMany({
+      columns: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        employeeCode: true,
+        role: true,
+      },
+      where: eq(users.isActive, true),
+    });
+  }),
+
   getMe: protectedProcedure.query(async ({ ctx }) => {
     // In our new system, ctx.dbUser is already fetched in the context
     // We can just return it with calculated permissions
