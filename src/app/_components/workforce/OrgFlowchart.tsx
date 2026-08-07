@@ -1,227 +1,198 @@
 "use client";
 
-import React, { useMemo, useEffect, useCallback } from "react";
-import ReactFlow, {
-  Background,
-  Controls,
-  Handle,
-  Position,
-  type Node,
-  type Edge,
-  useNodesState,
-  useEdgesState,
-  ConnectionLineType,
-} from "reactflow";
-import "reactflow/dist/style.css";
+import React, { useRef, useState, type MouseEvent } from "react";
 import { api } from "@/trpc/react";
-import { Shield, Users, User, MapPin } from "lucide-react";
 import Link from "next/link";
-import dagre from "dagre";
+import { Loader2 } from "lucide-react";
 
-const NodeStyles = {
-  Admin:
-    "border-purple-200 bg-purple-50 text-purple-700 hover:border-purple-300",
-  Manager: "border-blue-200 bg-blue-50 text-blue-700 hover:border-blue-300",
-  Employee: "border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300",
-};
-
-interface NodeData {
+type OrgNode = {
   id: string;
   name: string;
-  role: "Admin" | "Manager" | "Employee";
-}
+  role: string | null;
+  employeeCode: string | null;
+  children?: OrgNode[];
+};
 
-const CustomNode = ({ data }: { data: NodeData }) => {
-  const Icon =
-    data.role === "Admin" ? Shield : data.role === "Manager" ? Users : User;
+const bgColors = [
+  "bg-emerald-900", // Depth 0
+  "bg-emerald-800", // Depth 1
+  "bg-emerald-700", // Depth 2
+  "bg-emerald-600", // Depth 3
+  "bg-emerald-500", // Depth 4
+  "bg-emerald-400", // Depth 5
+  "bg-emerald-300", // Depth 6
+];
+
+const OrgNodeComponent = ({
+  node,
+  depth = 0,
+}: {
+  node: OrgNode;
+  depth?: number;
+}) => {
+  const hasChildren = node.children && node.children.length > 0;
+  const bgColor = bgColors[Math.min(depth, bgColors.length - 1)];
 
   return (
-    <div
-      className={`group min-w-[220px] rounded-2xl border-2 bg-white px-5 py-4 shadow-lg transition-all duration-300 ${NodeStyles[data.role]}`}
-    >
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="!h-3 !w-3 !border-2 !border-white !bg-gray-300"
-      />
-      <div className="flex items-center gap-4">
+    <div className="flex flex-col items-stretch mx-1 sm:mx-2">
+      {/* Node Content */}
+      {hasChildren ? (
         <div
-          className={`rounded-xl p-3 transition-colors ${NodeStyles[data.role]}`}
+          className={`relative border border-emerald-950 flex flex-col items-center justify-center text-center font-bold text-white px-2 sm:px-4 py-1.5 shadow-sm ${bgColor}`}
         >
-          <Icon className="h-6 w-6" />
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/admin/live-map?userId=${node.id}`}
+              className="hover:underline uppercase text-[10px] sm:text-xs tracking-wide whitespace-nowrap"
+            >
+              {node.name}
+            </Link>
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="mb-0.5 text-[10px] font-black tracking-widest uppercase opacity-60">
-            {data.role}
-          </p>
-          <p className="truncate text-sm font-bold text-gray-900">
-            {data.name}
-          </p>
+      ) : (
+        <div className="flex flex-col border-2 border-emerald-700 w-28 sm:w-32 bg-white shadow-sm shrink-0">
+          <div className="flex text-[8px] sm:text-[9px] font-bold text-center border-b-2 border-emerald-700 bg-emerald-100 text-emerald-900">
+            <div className="flex-1 border-r-2 border-emerald-700 p-1">
+              E/A CODE
+            </div>
+            <div className="flex-[2] p-1">NAME</div>
+          </div>
+          <div className="flex text-[9px] sm:text-[10px] text-center font-bold text-emerald-900 h-8 items-center bg-white">
+            <div
+              className="flex-1 border-r-2 border-emerald-700 p-1 truncate"
+              title={node.employeeCode || "-"}
+            >
+              {node.employeeCode || "-"}
+            </div>
+            <div className="flex-[2] p-1 truncate" title={node.name}>
+              <Link
+                href={`/admin/live-map?userId=${node.id}`}
+                className="hover:underline"
+              >
+                {node.name}
+              </Link>
+            </div>
+          </div>
         </div>
-        <Link
-          href={`/admin/live-map?userId=${data.id}`}
-          className="translate-x-2 transform rounded-xl p-2 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100 hover:bg-white/80"
-        >
-          <MapPin className="h-5 w-5 text-blue-600" />
-        </Link>
-      </div>
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="!h-3 !w-3 !border-2 !border-white !bg-gray-300"
-      />
+      )}
+
+      {/* Children */}
+      {hasChildren && (
+        <div className="flex flex-col items-stretch">
+          {/* Vertical line from parent down to the horizontal line */}
+          <div className="h-4 sm:h-6 w-0.5 bg-emerald-700 mx-auto" />
+
+          {/* Children container */}
+          <div className="flex flex-row justify-center">
+            {node.children!.map((child, idx) => {
+              const isFirst = idx === 0;
+              const isLast = idx === node.children!.length - 1;
+              const isOnly = node.children!.length === 1;
+
+              return (
+                <div
+                  key={child.id}
+                  className="relative flex flex-col items-center"
+                >
+                  {/* Horizontal line */}
+                  {!isOnly && (
+                    <div
+                      className={`absolute top-0 h-0.5 bg-emerald-700 ${
+                        isFirst
+                          ? "left-1/2 right-0"
+                          : isLast
+                            ? "left-0 right-1/2"
+                            : "inset-x-0"
+                      }`}
+                    />
+                  )}
+                  {/* Vertical line down to the child */}
+                  <div className="h-4 sm:h-6 w-0.5 bg-emerald-700" />
+
+                  {/* Render the child */}
+                  <div className="pt-0">
+                    <OrgNodeComponent node={child} depth={depth + 1} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-const nodeTypes = {
-  custom: CustomNode,
-};
-
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
-
-const nodeWidth = 260;
-const nodeHeight = 100;
-
-const getLayoutedElements = (
-  nodes: Node[],
-  edges: Edge[],
-  direction = "TB",
-) => {
-  const isHorizontal = direction === "LR";
-  dagreGraph.setGraph({ rankdir: direction, nodesep: 100, ranksep: 120 });
-
-  nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
-  });
-
-  edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
-  });
-
-  dagre.layout(dagreGraph);
-
-  nodes.forEach((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    node.targetPosition = isHorizontal ? Position.Left : Position.Top;
-    node.sourcePosition = isHorizontal ? Position.Right : Position.Bottom;
-
-    // We are shifting the dagre node position (which is center-based) to top-left-based
-    node.position = {
-      x: nodeWithPosition.x - nodeWidth / 2,
-      y: nodeWithPosition.y - nodeHeight / 2,
-    };
-
-    return node;
-  });
-
-  return { nodes, edges };
-};
-
 export function OrgFlowchart() {
   const { data: roots, isLoading } = api.users.getOrgTree.useQuery();
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startY, setStartY] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [scrollTop, setScrollTop] = useState(0);
 
-  const onLayout = useCallback(
-    (direction: string) => {
-      const { nodes: layoutedNodes, edges: layoutedEdges } =
-        getLayoutedElements(nodes, edges, direction);
+  const handleMouseDown = (e: MouseEvent) => {
+    if (!containerRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - containerRef.current.offsetLeft);
+    setStartY(e.pageY - containerRef.current.offsetTop);
+    setScrollLeft(containerRef.current.scrollLeft);
+    setScrollTop(containerRef.current.scrollTop);
+  };
 
-      setNodes([...layoutedNodes]);
-      setEdges([...layoutedEdges]);
-    },
-    [nodes, edges],
-  );
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
 
-  useEffect(() => {
-    if (!roots) return;
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
 
-    const initialNodes: Node[] = [];
-    const initialEdges: Edge[] = [];
-
-    type OrgNode = {
-      id: string;
-      name: string;
-      role: string | null;
-      children?: OrgNode[];
-    };
-
-    const traverse = (node: OrgNode, parentId: string | null = null) => {
-      const id = node.id;
-
-      initialNodes.push({
-        id,
-        type: "custom",
-        data: {
-          name: node.name,
-          role: (node.role ?? "Employee") as "Admin" | "Manager" | "Employee",
-          id: node.id,
-        },
-        position: { x: 0, y: 0 }, // Positioned by dagre
-      });
-
-      if (parentId) {
-        initialEdges.push({
-          id: `e-${parentId}-${id}`,
-          source: parentId,
-          target: id,
-          type: ConnectionLineType.SmoothStep,
-          animated: true,
-          style: { stroke: "#94a3b8", strokeWidth: 2 },
-        });
-      }
-
-      if (node.children) {
-        node.children.forEach((child) => traverse(child, id));
-      }
-    };
-
-    (roots as OrgNode[]).forEach((root) => traverse(root));
-
-    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
-      initialNodes,
-      initialEdges,
-    );
-
-    setNodes(layoutedNodes);
-    setEdges(layoutedEdges);
-  }, [roots]);
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging || !containerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - containerRef.current.offsetLeft;
+    const y = e.pageY - containerRef.current.offsetTop;
+    const walkX = (x - startX) * 1.5; // Scroll-fast
+    const walkY = (y - startY) * 1.5;
+    containerRef.current.scrollLeft = scrollLeft - walkX;
+    containerRef.current.scrollTop = scrollTop - walkY;
+  };
 
   if (isLoading)
-    return <div className="h-[700px] animate-pulse rounded-3xl bg-gray-50" />;
+    return (
+      <div className="flex h-[700px] items-center justify-center rounded-3xl bg-slate-50 border border-gray-100">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+      </div>
+    );
+
+  if (!roots || roots.length === 0) {
+    return (
+      <div className="flex h-[700px] items-center justify-center rounded-3xl bg-slate-50 border border-gray-100">
+        <p className="text-gray-500 font-medium">No organizational data found.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative h-[800px] w-full overflow-hidden rounded-3xl border border-gray-100 bg-slate-50 shadow-inner">
-      <div className="absolute top-6 left-6 z-10 flex gap-2">
-        <button
-          onClick={() => onLayout("TB")}
-          className="rounded-xl border border-gray-100 bg-white px-4 py-2 text-xs font-bold shadow-sm transition-colors hover:bg-gray-50"
-        >
-          Vertical
-        </button>
-        <button
-          onClick={() => onLayout("LR")}
-          className="rounded-xl border border-gray-100 bg-white px-4 py-2 text-xs font-bold shadow-sm transition-colors hover:bg-gray-50"
-        >
-          Horizontal
-        </button>
+    <div
+      ref={containerRef}
+      onMouseDown={handleMouseDown}
+      onMouseLeave={handleMouseLeave}
+      onMouseUp={handleMouseUp}
+      onMouseMove={handleMouseMove}
+      className={`h-[700px] w-full overflow-auto rounded-3xl border border-gray-100 bg-slate-50 shadow-inner p-8 ${
+        isDragging ? "cursor-grabbing" : "cursor-grab"
+      }`}
+    >
+      <div className="min-w-max flex flex-col items-center pb-20">
+        <div className="flex flex-row justify-center gap-12">
+          {(roots as OrgNode[]).map((root) => (
+            <OrgNodeComponent key={root.id} node={root} depth={0} />
+          ))}
+        </div>
       </div>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        nodeTypes={nodeTypes}
-        connectionLineType={ConnectionLineType.SmoothStep}
-        fitView
-        minZoom={0.1}
-        maxZoom={1.5}
-      >
-        <Background color="#cbd5e1" gap={25} />
-        <Controls />
-      </ReactFlow>
     </div>
   );
 }

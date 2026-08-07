@@ -65,6 +65,9 @@ export const salesRouter = createTRPCRouter({
       z.object({
         orderNumber: z.string().min(1, "Order Number is required"),
         transactionNumber: z.string().optional(),
+        cmrId: z.string().optional(),
+        tmNo: z.string().optional(),
+        saleType: z.string().optional(),
         branchId: z.number().optional(),
         pincode: z
           .string()
@@ -82,11 +85,19 @@ export const salesRouter = createTRPCRouter({
         invoiceAmount: z.string().optional(),
         advancePaymentAmount: z.string().optional(),
         receivedAmount: z.string().optional(),
+        tradeDiscount: z.string().optional(),
+        basicInvoiceValue: z.string().optional(),
+        cgst: z.string().optional(),
+        sgst: z.string().optional(),
+        igst: z.string().optional(),
         items: z.array(
           z.object({
             productId: z.number(),
             quantity: z.number().min(1),
             isFree: z.boolean().default(false),
+            ptsPerQty: z.string().optional(),
+            totalPts: z.string().optional(),
+            offerNumber: z.string().optional(),
           }),
         ),
       }),
@@ -207,6 +218,9 @@ export const salesRouter = createTRPCRouter({
               status: finalStatus as any,
               orderNumber,
               transactionNumber,
+              cmrId: input.cmrId,
+              tmNo: input.tmNo,
+              saleType: input.saleType,
               pincode: input.pincode,
               addressLine1: input.addressLine1,
               landmark: input.landmark,
@@ -223,6 +237,11 @@ export const salesRouter = createTRPCRouter({
               advancePaymentAmount: advanceAmt.toString(),
               receivedAmount: receivedAmt.toString(),
               balanceAmount: balanceAmt.toString(),
+              tradeDiscount: input.tradeDiscount || "0",
+              basicInvoiceValue: input.basicInvoiceValue || "0",
+              cgst: input.cgst || "0",
+              sgst: input.sgst || "0",
+              igst: input.igst || "0",
             })
             .returning();
           newSale = insertedSale;
@@ -274,13 +293,30 @@ export const salesRouter = createTRPCRouter({
 
         // 4. Insert Sale Items & Transactions
         if (input.items.length > 0) {
+          const productIds = input.items.map(i => i.productId);
+          const productsList = await tx.query.products.findMany({
+            where: (products, { inArray }) => inArray(products.id, productIds),
+          });
+          const productMap = new Map(productsList.map(p => [p.id, p]));
+
           await tx.insert(saleItems).values(
-            input.items.map((item) => ({
-              saleId: newSale.id,
-              productId: item.productId,
-              quantity: item.quantity,
-              isFree: item.isFree,
-            })),
+            input.items.map((item) => {
+              const product = productMap.get(item.productId);
+              const rate = parseFloat(product?.price?.toString() || "0");
+              const totalAmount = item.isFree ? 0 : rate * item.quantity;
+              
+              return {
+                saleId: newSale.id,
+                productId: item.productId,
+                quantity: item.quantity,
+                rate: rate.toString(),
+                totalAmount: totalAmount.toString(),
+                ptsPerQty: item.ptsPerQty,
+                totalPts: item.totalPts,
+                offerNumber: item.offerNumber,
+                isFree: item.isFree,
+              };
+            }),
           );
 
           await tx.insert(inventoryTransactions).values(
@@ -325,6 +361,9 @@ export const salesRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.number(),
+        cmrId: z.string().optional(),
+        tmNo: z.string().optional(),
+        saleType: z.string().optional(),
         pincode: z
           .string()
           .regex(/^[1-9][0-9]{5}$/, "Invalid Pincode")
@@ -339,11 +378,19 @@ export const salesRouter = createTRPCRouter({
         invoiceAmount: z.string().optional(),
         advancePaymentAmount: z.string().optional(),
         receivedAmount: z.string().optional(),
+        tradeDiscount: z.string().optional(),
+        basicInvoiceValue: z.string().optional(),
+        cgst: z.string().optional(),
+        sgst: z.string().optional(),
+        igst: z.string().optional(),
         items: z.array(
           z.object({
             productId: z.number(),
             quantity: z.number().min(1),
             isFree: z.boolean().default(false),
+            ptsPerQty: z.string().optional(),
+            totalPts: z.string().optional(),
+            offerNumber: z.string().optional(),
           }),
         ),
       }),
@@ -464,6 +511,9 @@ export const salesRouter = createTRPCRouter({
           .update(sales)
           .set({
             pincode: input.pincode,
+            cmrId: input.cmrId,
+            tmNo: input.tmNo,
+            saleType: input.saleType,
             addressLine1: input.addressLine1,
             landmark: input.landmark,
             area: input.area,
@@ -479,6 +529,11 @@ export const salesRouter = createTRPCRouter({
             advancePaymentAmount: advanceAmt.toString(),
             receivedAmount: receivedAmt.toString(),
             balanceAmount: balanceAmt.toString(),
+            tradeDiscount: input.tradeDiscount || "0",
+            basicInvoiceValue: input.basicInvoiceValue || "0",
+            cgst: input.cgst || "0",
+            sgst: input.sgst || "0",
+            igst: input.igst || "0",
           })
           .where(eq(sales.id, input.id))
           .returning();
@@ -492,13 +547,30 @@ export const salesRouter = createTRPCRouter({
 
         // Insert new items
         if (input.items.length > 0) {
+          const productIds = input.items.map(i => i.productId);
+          const productsList = await tx.query.products.findMany({
+            where: (products, { inArray }) => inArray(products.id, productIds),
+          });
+          const productMap = new Map(productsList.map(p => [p.id, p]));
+
           await tx.insert(saleItems).values(
-            input.items.map((item) => ({
-              saleId: updatedSale.id,
-              productId: item.productId,
-              quantity: item.quantity,
-              isFree: item.isFree,
-            })),
+            input.items.map((item) => {
+              const product = productMap.get(item.productId);
+              const rate = parseFloat(product?.price?.toString() || "0");
+              const totalAmount = item.isFree ? 0 : rate * item.quantity;
+              
+              return {
+                saleId: updatedSale.id,
+                productId: item.productId,
+                quantity: item.quantity,
+                rate: rate.toString(),
+                totalAmount: totalAmount.toString(),
+                ptsPerQty: item.ptsPerQty,
+                totalPts: item.totalPts,
+                offerNumber: item.offerNumber,
+                isFree: item.isFree,
+              };
+            }),
           );
         }
 

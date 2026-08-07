@@ -13,6 +13,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -36,6 +37,8 @@ import { cn } from "@/lib/utils";
 const formSchema = z.object({
   content: z.string().min(10, "Report must be at least 10 characters long"),
   reportDate: z.date(),
+  timeFrom: z.string().optional(),
+  timeTo: z.string().optional(),
   customerId: z.string().uuid().optional().or(z.literal("none")),
 });
 
@@ -51,6 +54,8 @@ export function ReportForm({ onSuccess }: ReportFormProps) {
     defaultValues: {
       content: "",
       reportDate: new Date(),
+      timeFrom: "",
+      timeTo: "",
       customerId: "none",
     },
   });
@@ -123,6 +128,35 @@ export function ReportForm({ onSuccess }: ReportFormProps) {
                   </FormItem>
                 )}
               />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="timeFrom"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Time From (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="time" className="border-slate-200 hover:bg-slate-50" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="timeTo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Time To (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="time" className="border-slate-200 hover:bg-slate-50" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}

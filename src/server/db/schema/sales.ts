@@ -35,6 +35,9 @@ export const sales = createTable(
       .notNull(),
     orderNumber: varchar("order_number", { length: 100 }).notNull().unique(),
     transactionNumber: varchar("transaction_number", { length: 100 }).unique(),
+    cmrId: varchar("cmr_id", { length: 100 }),
+    tmNo: varchar("tm_no", { length: 100 }),
+    saleType: varchar("sale_type", { length: 100 }).default("Direct to Customer from PU"),
     status: varchar("status", { length: 50 }).notNull().default("Pending"), // Pending, Approved, Rejected
     userId: uuid("user_id")
       .references(() => users.id, { onDelete: "cascade" })
@@ -56,6 +59,12 @@ export const sales = createTable(
     mainQty: integer("main_qty").notNull().default(0),
     freeQty: integer("free_qty").notNull().default(0),
     totalQty: integer("total_qty").notNull().default(0),
+
+    tradeDiscount: numeric("trade_discount", { precision: 12, scale: 2 }).notNull().default("0"),
+    basicInvoiceValue: numeric("basic_invoice_value", { precision: 12, scale: 2 }).notNull().default("0"),
+    cgst: numeric("cgst", { precision: 12, scale: 2 }).notNull().default("0"),
+    sgst: numeric("sgst", { precision: 12, scale: 2 }).notNull().default("0"),
+    igst: numeric("igst", { precision: 12, scale: 2 }).notNull().default("0"),
 
     invoiceAmount: numeric("invoice_amount", { precision: 12, scale: 2 })
       .notNull()

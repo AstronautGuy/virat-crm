@@ -354,6 +354,9 @@ export const inventoryRouter = createTRPCRouter({
         name: z.string().min(1),
         sku: z.string().min(1),
         price: z.number().min(0),
+        category: z.string().optional(),
+        brand: z.string().optional(),
+        hsnCode: z.string().optional(),
         minThreshold: z.number().min(0).optional(),
       }),
     )
@@ -373,6 +376,9 @@ export const inventoryRouter = createTRPCRouter({
           name: input.name,
           sku: input.sku,
           price: input.price.toString(),
+          category: input.category,
+          brand: input.brand,
+          hsnCode: input.hsnCode,
           minThreshold: input.minThreshold ?? 10,
         })
         .returning();

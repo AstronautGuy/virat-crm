@@ -31,13 +31,15 @@ export default function InventoryPage() {
     name: "",
     sku: "",
     price: "",
+    category: "",
+    hsnCode: "",
   });
 
   const addProductMutation = api.inventory.addProduct.useMutation({
     onSuccess: () => {
       toast.success("Product added successfully");
       setIsAddModalOpen(false);
-      setNewProduct({ name: "", sku: "", price: "" });
+      setNewProduct({ name: "", sku: "", price: "", category: "", hsnCode: "" });
       void refetch();
     },
     onError: (err) => {
@@ -54,6 +56,8 @@ export default function InventoryPage() {
       name: newProduct.name,
       sku: newProduct.sku,
       price: parseFloat(newProduct.price),
+      category: newProduct.category || undefined,
+      hsnCode: newProduct.hsnCode || undefined,
     });
   };
 
@@ -319,6 +323,36 @@ export default function InventoryPage() {
                     value={newProduct.price}
                     onChange={(e) =>
                       setNewProduct({ ...newProduct, price: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Category
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Fertilizer"
+                    className="focus:ring-primary/20 focus:border-primary w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
+                    value={newProduct.category}
+                    onChange={(e) =>
+                      setNewProduct({ ...newProduct, category: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    HSN Code
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 00005"
+                    className="focus:ring-primary/20 focus:border-primary w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
+                    value={newProduct.hsnCode}
+                    onChange={(e) =>
+                      setNewProduct({ ...newProduct, hsnCode: e.target.value })
                     }
                   />
                 </div>

@@ -22,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Plus, Check, X, Loader2, FileText, Search, Trash2 } from "lucide-react";
+import { Plus, Check, X, Loader2, FileText, Search, Trash2, Printer } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -345,6 +345,18 @@ export default function SalesDashboard() {
                           </p>
                         )}
                       </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <Button
+                        className="w-full bg-slate-800 hover:bg-slate-700 text-white"
+                        onClick={() => {
+                          window.open(`/sales/print/${selectedSale.id}`, "_blank");
+                        }}
+                      >
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print Invoice
+                      </Button>
                     </div>
 
                     {user?.role === "Admin" && (

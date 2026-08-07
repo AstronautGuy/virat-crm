@@ -14,6 +14,8 @@ export const dailyReportsRouter = createTRPCRouter({
       z.object({
         content: z.string().min(10, "Report content too short"),
         reportDate: z.date().optional(),
+        timeFrom: z.string().optional(),
+        timeTo: z.string().optional(),
         customerId: z.string().uuid().optional(),
       }),
     )
@@ -41,6 +43,8 @@ export const dailyReportsRouter = createTRPCRouter({
           userId: dbUser.id,
           branchId: branchId,
           reportDate: input.reportDate ?? new Date(),
+          timeFrom: input.timeFrom,
+          timeTo: input.timeTo,
           content: input.content,
           customerId: input.customerId,
         })

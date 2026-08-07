@@ -48,7 +48,13 @@ const FEATURES = [
     key: "workforce",
     label: "Workforce",
     icon: Users,
-    description: "Attendance, leave, and field visit logs",
+    description: "Manage employee attendance and leaves",
+  },
+  {
+    key: "field-support",
+    label: "Field Support Reports",
+    icon: FileText,
+    description: "Submit and review field support records",
   },
   {
     key: "live-map",

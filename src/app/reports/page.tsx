@@ -6,7 +6,8 @@ import { ReportForm } from "@/app/_components/reports/ReportForm";
 import { ReportList } from "@/app/_components/reports/ReportList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/trpc/react";
-import { FileText, Plus, List } from "lucide-react";
+import { FileText, Plus, List, Printer } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 export default function ReportsPage() {
@@ -64,6 +65,14 @@ export default function ReportsPage() {
                   Submit Report
                 </TabsTrigger>
               </TabsList>
+              <Link
+                href="/reports/print"
+                target="_blank"
+                className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800"
+              >
+                <Printer className="h-4 w-4" />
+                Print Today's Report
+              </Link>
             </div>
 
             <TabsContent value="list" className="mt-0 outline-none">

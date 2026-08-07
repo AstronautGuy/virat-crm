@@ -46,7 +46,7 @@ export default function OrgChartPage() {
               }`}
             >
               <GitBranch className="h-4 w-4" />
-              Flowchart View
+              Map View
             </button>
           </div>
 

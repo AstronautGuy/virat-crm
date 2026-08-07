@@ -1,0 +1,605 @@
+            <form onSubmit={handleSubmit} className="space-y-6 pb-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-muted-foreground text-sm font-semibold uppercase">
+                    Customer & Location
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="orderNumber" className="text-xs">
+                        Order ID <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="orderNumber"
+                        value={orderNumber}
+                        onChange={(e) => setOrderNumber(e.target.value)}
+                        placeholder="ORD-XXXX"
+                        className={orderNumberCheck?.exists ? "border-destructive focus-visible:ring-destructive" : ""}
+                      />
+                      {orderNumberCheck?.exists && (
+                        <p className="text-xs text-destructive mt-1">This Order ID already exists.</p>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="transactionNumber" className="text-xs">
+                        Invoice ID
+                      </Label>
+                      <Input
+                        id="transactionNumber"
+                        value={transactionNumber}
+                        onChange={(e) => setTransactionNumber(e.target.value)}
+                        placeholder="INV-XXXX"
+                      />
+                    </div>
+                  </div>
+
+                  {isAdmin && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label htmlFor="selectedUserId" className="text-xs flex items-center justify-between">
+                          <span>Employee <span className="text-destructive">*</span></span>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-6 px-2 text-primary">
+                                + Add
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[300px] p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder="Search employee..." />
+                                <CommandList>
+                                  <CommandEmpty>No employee found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {allUsers
+                                      .filter((u) => u.role === "Employee" || u.role === "Manager")
+                                      .map((u) => (
+                                        <CommandItem
+                                          key={u.id}
+                                          value={`${u.firstName} ${u.lastName} ${u.employeeCode}`}
+                                          onSelect={() => {
+                                            setSelectedUserIds((prev) =>
+                                              prev.includes(u.id)
+                                                ? prev.filter((id) => id !== u.id)
+                                                : [...prev, u.id],
+                                            );
+                                          }}
+                                        >
+                                          {u.firstName} {u.lastName} ({u.employeeCode})
+                                          <Check
+                                            className={cn(
+                                              "ml-auto h-4 w-4",
+                                              selectedUserIds.includes(u.id) ? "opacity-100" : "opacity-0",
+                                            )}
+                                          />
+                                        </CommandItem>
+                                      ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </Label>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {selectedUserIds.length > 0 ? (
+                            selectedUserIds.map((id) => {
+                              const u = allUsers.find((user) => user.id === id);
+                              return (
+                                <div key={id} className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded flex items-center gap-1">
+                                  {u?.firstName} {u?.lastName} ({u?.employeeCode})
+                                  <button
+                                    type="button"
+                                    className="ml-1 text-secondary-foreground hover:text-destructive focus:outline-none"
+                                    onClick={() => setSelectedUserIds((prev) => prev.filter((i) => i !== id))}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="text-xs text-muted-foreground">No employees selected</div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="selectedManagerId" className="text-xs flex items-center justify-between">
+                          <span>Manager <span className="text-destructive">*</span></span>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-6 px-2 text-primary">
+                                + Add
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[300px] p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder="Search manager..." />
+                                <CommandList>
+                                  <CommandEmpty>No manager found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {allUsers
+                                      .filter((u) => u.role === "Manager" || u.role === "Admin")
+                                      .map((u) => (
+                                        <CommandItem
+                                          key={u.id}
+                                          value={`${u.firstName} ${u.lastName} ${u.employeeCode}`}
+                                          onSelect={() => {
+                                            setSelectedManagerIds((prev) =>
+                                              prev.includes(u.id)
+                                                ? prev.filter((id) => id !== u.id)
+                                                : [...prev, u.id],
+                                            );
+                                          }}
+                                        >
+                                          {u.firstName} {u.lastName} ({u.employeeCode})
+                                          <Check
+                                            className={cn(
+                                              "ml-auto h-4 w-4",
+                                              selectedManagerIds.includes(u.id) ? "opacity-100" : "opacity-0",
+                                            )}
+                                          />
+                                        </CommandItem>
+                                      ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </Label>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {selectedManagerIds.length > 0 ? (
+                            selectedManagerIds.map((id) => {
+                              const u = allUsers.find((user) => user.id === id);
+                              return (
+                                <div key={id} className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded flex items-center gap-1">
+                                  {u?.firstName} {u?.lastName} ({u?.employeeCode})
+                                  <button
+                                    type="button"
+                                    className="ml-1 text-secondary-foreground hover:text-destructive focus:outline-none"
+                                    onClick={() => setSelectedManagerIds((prev) => prev.filter((i) => i !== id))}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="text-xs text-muted-foreground">No managers selected</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="branchId" className="text-xs">
+                        Branch <span className="text-destructive">*</span>
+                      </Label>
+                      <Select value={branchId} onValueChange={setBranchId}>
+                        <SelectTrigger id="branchId">
+                          <SelectValue placeholder="Select branch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {branches.map((branch) => (
+                            <SelectItem
+                              key={branch.id}
+                              value={branch.id.toString()}
+                            >
+                              {branch.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label
+                        htmlFor="pincode"
+                        className="flex items-center justify-between text-xs"
+                      >
+                        <span>
+                          Pincode <span className="text-destructive">*</span>
+                        </span>
+                        {isFetchingPincode && (
+                          <Loader2 className="text-primary h-3 w-3 animate-spin" />
+                        )}
+                      </Label>
+                      <Input
+                        id="pincode"
+                        value={pincode}
+                        onChange={(e) => setPincode(e.target.value)}
+                        placeholder="e.g. 110001"
+                        maxLength={6}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="city" className="text-xs">
+                        City <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="city"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="state" className="text-xs">
+                        State <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="state"
+                        value={state}
+                        onChange={(e) => setState(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="area" className="text-xs">
+                      Area / Post Office
+                    </Label>
+                    <Input
+                      id="area"
+                      value={area}
+                      onChange={(e) => setArea(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="addressLine1" className="text-xs">
+                      Address Line 1 <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="addressLine1"
+                      value={addressLine1}
+                      onChange={(e) => setAddressLine1(e.target.value)}
+                      placeholder="House No, Street, etc."
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="landmark" className="text-xs">
+                      Landmark
+                    </Label>
+                    <Input
+                      id="landmark"
+                      value={landmark}
+                      onChange={(e) => setLandmark(e.target.value)}
+                      placeholder="Near XYZ..."
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="customerId" className="text-xs">
+                      Customer <span className="text-destructive">*</span>
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between font-normal",
+                            !customerId && "text-muted-foreground",
+                          )}
+                        >
+                          {customerId
+                            ? customers.find((c) => c.id === customerId)?.name
+                            : "Select customer..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search customer..." />
+                          <CommandList>
+                            <CommandEmpty className="py-4 text-center text-sm">
+                              <p className="text-muted-foreground">
+                                No customer found.
+                              </p>
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {customers.map((customer) => (
+                                <CommandItem
+                                  key={customer.id}
+                                  value={customer.name}
+                                  onSelect={() => setCustomerId(customer.id)}
+                                >
+                                  {customer.name} - {customer.mobile}
+                                  <Check
+                                    className={cn(
+                                      "ml-auto h-4 w-4",
+                                      customerId === customer.id
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                            <div className="p-2 border-t border-border">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => setIsCustomerModalOpen(true)}
+                              >
+                                <Plus className="mr-2 h-4 w-4" /> Add New Customer
+                              </Button>
+                            </div>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-3">
+                  <CardTitle className="text-muted-foreground text-sm font-semibold uppercase">
+                    Products
+                  </CardTitle>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={addItem}
+                  >
+                    <Plus className="mr-1 h-3 w-3" /> Add Item
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-end gap-2 border-b pb-4 last:border-0 last:pb-0"
+                    >
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-xs">
+                          Product <span className="text-destructive">*</span>
+                        </Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-full justify-between font-normal",
+                                !item.productId && "text-muted-foreground",
+                              )}
+                            >
+                              {item.productId
+                                ? products.find(
+                                  (p) => p.id.toString() === item.productId,
+                                )?.name
+                                : "Select product..."}
+                              <ChevronsUpDown className="opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-[300px] p-0"
+                            align="start"
+                          >
+                            <Command>
+                              <CommandInput placeholder="Search product..." />
+                              <CommandList>
+                                <CommandEmpty>No product found.</CommandEmpty>
+                                <CommandGroup>
+                                  {products.map((product) => (
+                                    <CommandItem
+                                      key={product.id}
+                                      value={product.name}
+                                      onSelect={() =>
+                                        updateItem(
+                                          item.id,
+                                          "productId",
+                                          product.id.toString(),
+                                        )
+                                      }
+                                    >
+                                      {product.name}
+                                      <Check
+                                        className={cn(
+                                          "ml-auto",
+                                          item.productId ===
+                                            product.id.toString()
+                                            ? "opacity-100"
+                                            : "opacity-0",
+                                        )}
+                                      />
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <div className="w-20 space-y-1">
+                        <Label className="text-xs">
+                          Qty <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          value={item.quantity}
+                          onChange={(e) =>
+                            updateItem(item.id, "quantity", e.target.value)
+                          }
+                          type="number"
+                          min="1"
+                        />
+                      </div>
+                      <div className="flex h-10 items-center space-x-2 rounded-md border px-2">
+                        <input
+                          type="checkbox"
+                          id={`free-${item.id}`}
+                          checked={item.isFree}
+                          onChange={(e) =>
+                            updateItem(item.id, "isFree", e.target.checked)
+                          }
+                          className="accent-primary h-4 w-4"
+                        />
+                        <label
+                          htmlFor={`free-${item.id}`}
+                          className="cursor-pointer text-xs"
+                        >
+                          Free
+                        </label>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive h-10 w-10"
+                        onClick={() => removeItem(item.id)}
+                        disabled={items.length === 1}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-muted-foreground text-sm font-semibold uppercase">
+                    Financials (₹)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="invoiceAmount" className="text-xs">
+                      Invoice Amount <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="invoiceAmount"
+                      value={invoiceAmount}
+                      onChange={(e) => setInvoiceAmount(e.target.value)}
+                      type="number"
+                      step="0.01"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="advancePaymentAmount" className="text-xs">
+                        Advance Amount
+                      </Label>
+                      <Input
+                        id="advancePaymentAmount"
+                        value={advancePaymentAmount}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (
+                            parseFloat(val) > parseFloat(invoiceAmount || "0")
+                          ) {
+                            return; // Prevent setting advance greater than invoice
+                          }
+                          setAdvancePaymentAmount(val);
+                        }}
+                        type="number"
+                        step="0.01"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label
+                        htmlFor="pendingAmount"
+                        className="text-muted-foreground text-xs"
+                      >
+                        Pending Amount
+                      </Label>
+                      <Input
+                        id="pendingAmount"
+                        value={pendingAmount > 0 ? pendingAmount : 0}
+                        readOnly
+                        disabled
+                        type="number"
+                        className="bg-muted/50"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="tradeDiscount" className="text-xs">
+                        Trade Discount
+                      </Label>
+                      <Input
+                        id="tradeDiscount"
+                        value={tradeDiscount}
+                        onChange={(e) => setTradeDiscount(e.target.value)}
+                        type="number"
+                        step="0.01"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="basicInvoiceValue" className="text-xs">
+                        Basic Invoice Value
+                      </Label>
+                      <Input
+                        id="basicInvoiceValue"
+                        value={basicInvoiceValue}
+                        onChange={(e) => setBasicInvoiceValue(e.target.value)}
+                        type="number"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="cgst" className="text-xs">
+                        CGST
+                      </Label>
+                      <Input
+                        id="cgst"
+                        value={cgst}
+                        onChange={(e) => setCgst(e.target.value)}
+                        type="number"
+                        step="0.01"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="sgst" className="text-xs">
+                        SGST
+                      </Label>
+                      <Input
+                        id="sgst"
+                        value={sgst}
+                        onChange={(e) => setSgst(e.target.value)}
+                        type="number"
+                        step="0.01"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="igst" className="text-xs">
+                        IGST
+                      </Label>
+                      <Input
+                        id="igst"
+                        value={igst}
+                        onChange={(e) => setIgst(e.target.value)}
+                        type="number"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Log Sale
+              </Button>
+            </form>
+          )}
+        </div>
+      </FeatureGate>
+
+      {/* Add Customer Modal */}

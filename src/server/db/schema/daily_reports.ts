@@ -1,4 +1,4 @@
-import { uuid, integer, timestamp, text, serial } from "drizzle-orm/pg-core";
+import { uuid, integer, timestamp, text, serial, varchar } from "drizzle-orm/pg-core";
 import { createTable, users } from "./users";
 import { branches } from "./branches";
 import { customers } from "./customers";
@@ -15,6 +15,8 @@ export const dailyReports = createTable("daily_report", {
   reportDate: timestamp("report_date", { withTimezone: true })
     .defaultNow()
     .notNull(),
+  timeFrom: varchar("time_from", { length: 32 }),
+  timeTo: varchar("time_to", { length: 32 }),
   content: text("content").notNull(),
   customerId: uuid("customer_id").references(() => customers.id),
   createdAt: timestamp("created_at", { withTimezone: true })
