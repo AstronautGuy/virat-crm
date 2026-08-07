@@ -4,7 +4,7 @@ const DB_VERSION = 1;
 
 export interface PendingOp {
   id?: number;
-  type: "createSale" | "createReplacement";
+  type: "createSale" | "createReplacement" | "updateSale";
   data: unknown;
   createdAt: number;
 }

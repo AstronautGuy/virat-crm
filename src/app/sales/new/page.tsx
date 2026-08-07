@@ -1,45 +1,18 @@
 "use client";
 import { env } from "@/env";
 import { FeatureGate } from "@/app/_components/auth/FeatureGate";
-
 import { DashboardLayout } from "../../_components/layout/DashboardLayout";
 import { api } from "@/trpc/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
-  Plus,
-  Trash2,
   Loader2,
   CheckCircle,
   WifiOff,
-  Check,
-  ChevronsUpDown,
+  Search,
   X,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -53,55 +26,43 @@ export default function NewSale() {
   const [branchId, setBranchId] = useState("");
   const [success, setSuccess] = useState(false);
   const [newSaleId, setNewSaleId] = useState<number | null>(null);
-  const [pincode, setPincode] = useState("");
-  const [addressLine1, setAddressLine1] = useState("");
-  const [landmark, setLandmark] = useState("");
-  const [area, setArea] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
   const [orderNumber, setOrderNumber] = useState("");
-  const [debouncedOrderNumber, setDebouncedOrderNumber] = useState("");
+  const [orderDate, setOrderDate] = useState("");
   const [transactionNumber, setTransactionNumber] = useState("");
+  const [invDate, setInvDate] = useState("");
   
   const [cmrId, setCmrId] = useState("");
   const [tmNo, setTmNo] = useState("");
-  const [saleType, setSaleType] = useState("Retail");
+  const [docMonth, setDocMonth] = useState("");
+  const [ecode, setEcode] = useState("");
+  const [fieldSuppBy, setFieldSuppBy] = useState("");
+  const [saleType, setSaleType] = useState("Direct to Customer from PU"); // Radio button
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedOrderNumber(orderNumber);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [orderNumber]);
-
-  const { data: orderNumberCheck } = api.sales.checkOrderNumber.useQuery(
-    { orderNumber: debouncedOrderNumber },
-    { enabled: debouncedOrderNumber.length > 0 }
-  );
   const [customerId, setCustomerId] = useState("");
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-  const [selectedManagerIds, setSelectedManagerIds] = useState<string[]>([]);
-  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
+  
+  // Customer details
+  const [villageSearch, setVillageSearch] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [so, setSo] = useState("");
+  const [village, setVillage] = useState("");
+  const [mandal, setMandal] = useState("");
+  const [district, setDistrict] = useState("");
+  const [state, setState] = useState("");
+  const [pin, setPin] = useState("");
+  const [houseNo, setHouseNo] = useState("");
+  const [landMark, setLandMark] = useState("");
+  const [mobileNo, setMobileNo] = useState("");
+  const [landLineNo, setLandLineNo] = useState("");
+  const [dob, setDob] = useState("");
+  const [marriageDate, setMarriageDate] = useState("");
 
   const { data: me } = api.users.getMe.useQuery();
   const isAdmin = me?.role === "Admin";
-  const { data: allUsers = [] } = api.users.getAllUsers.useQuery(undefined, {
-    enabled: isAdmin,
-  });
-
-  const [newCustomer, setNewCustomer] = useState({
-    name: "",
-    mobile: "",
-    landlineNo: "",
-    dob: undefined as Date | undefined,
-    marriageDate: undefined as Date | undefined,
-    pincode: "",
-    village: "",
-    district: "",
-    state: "",
-    address: "",
-  });
-
+  
+  const { data: branches = [] } = api.inventory.getBranches.useQuery();
+  const { data: products = [] } = api.inventory.getProducts.useQuery();
+  
   const { data: nextInvoiceId } = api.sales.getNextInvoiceId.useQuery();
   useEffect(() => {
     if (nextInvoiceId && !transactionNumber)
@@ -111,70 +72,50 @@ export default function NewSale() {
   const { data: customers = [], refetch: refetchCustomers } =
     api.crm.getBranchCustomers.useQuery();
 
-  const addCustomerMutation = api.crm.createCustomer.useMutation({
-    onSuccess: () => {
-      toast.success("Customer created successfully");
-      setIsCustomerModalOpen(false);
-      void refetchCustomers();
-    },
-    onError: (err) => toast.error(err.message),
-  });
-  const [invoiceAmount, setInvoiceAmount] = useState("");
-  const [advancePaymentAmount, setAdvancePaymentAmount] = useState("");
-  const [tradeDiscount, setTradeDiscount] = useState("0");
-  const [basicInvoiceValue, setBasicInvoiceValue] = useState("0");
-  const [cgst, setCgst] = useState("0");
-  const [sgst, setSgst] = useState("0");
-  const [igst, setIgst] = useState("0");
+  // Populate customer fields on change
+  useEffect(() => {
+    if (customerId) {
+      const c: any = customers.find(x => x.id === customerId);
+      if (c) {
+        setCustomerName(c.name || "");
+        setMobileNo(c.mobile || "");
+        setLandLineNo(c.landlineNo || "");
+        setPin(c.pincode || "");
+        setVillage(c.village || "");
+        setDistrict(c.district || "");
+        setState(c.state || "");
+        setHouseNo(String(c.address || ""));
+        if (c.dob) setDob(new Date(c.dob as string | number | Date).toISOString().split("T")[0] || "");
+        if (c.marriageDate) setMarriageDate(new Date(c.marriageDate as string | number | Date).toISOString().split("T")[0] || "");
+      }
+    } else {
+        setCustomerName("");
+        setMobileNo("");
+        setLandLineNo("");
+        setPin("");
+        setVillage("");
+        setDistrict("");
+        setState("");
+        setHouseNo("");
+        setDob("");
+        setMarriageDate("");
+    }
+  }, [customerId, customers]);
 
-  const pendingAmount =
-    parseFloat(invoiceAmount || "0") - parseFloat(advancePaymentAmount || "0");
-
-  const [items, setItems] = useState([
-    { id: Date.now(), productId: "", quantity: "1", isFree: false, ptsPerQty: "", totalPts: "", offerNumber: "" },
+  // Product grids
+  const [saleItems, setSaleItems] = useState([
+    { id: Date.now(), productId: "", quantity: "1", rate: "", amount: "", ptsPerQty: "", totalPts: "" },
   ]);
 
-  const { data: branches = [] } = api.inventory.getBranches.useQuery();
-  const { data: products = [] } = api.inventory.getProducts.useQuery();
+  const [freeItems, setFreeItems] = useState([
+    { id: Date.now() + 1, productId: "", offerNumber: "", freeProduct: "", freeQty: "" },
+  ]);
 
-  // Pincode Auto-fill Effect
-  const [isFetchingPincode, setIsFetchingPincode] = useState(false);
-  useEffect(() => {
-    if (pincode.length === 6 && /^[1-9][0-9]{5}$/.test(pincode)) {
-      const fetchDetails = async () => {
-        setIsFetchingPincode(true);
-        try {
-          const res = await fetch(
-            `${env.NEXT_PUBLIC_PINCODE_API_URL}/${pincode}`,
-          );
-          interface PincodeResponse {
-            PostOffice: Array<{
-              Name: string;
-              District: string;
-              State: string;
-            }>;
-            Status: string;
-          }
-          const data = (await res.json()) as PincodeResponse[];
-          if (Array.isArray(data) && data[0]?.Status === "Success") {
-            const postOffice = data[0].PostOffice?.[0];
-            if (postOffice) {
-              setCity(postOffice.District ?? "");
-              setState(postOffice.State ?? "");
-              setArea(postOffice.Name ?? "");
-            }
-          }
-        } catch (e) {
-          console.error("Failed to fetch pincode details", e);
-        } finally {
-          setIsFetchingPincode(false);
-        }
-      };
-      void fetchDetails();
-    }
-  }, [pincode]);
+  const [invoiceAmount, setInvoiceAmount] = useState("");
+  const [advancePaymentAmount, setAdvancePaymentAmount] = useState("");
+  const [receivedAmount, setReceivedAmount] = useState("");
 
-  const { mutate: createSale, isPending } = api.sales.createSale.useMutation({
+  const createSale = api.sales.createSale.useMutation({
     onSuccess: (data) => {
       if (data) {
         setSuccess(true);
@@ -189,51 +130,49 @@ export default function NewSale() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Frontend Validation
     if (!branchId) {
       toast.error("Please select a branch");
       return;
     }
-    const missingItems = items.some(
-      (item) => !item.productId || !item.quantity,
-    );
-    if (missingItems) {
-      toast.error("Please select a product and quantity for all items");
+    
+    // Combine items
+    const validSaleItems = saleItems.filter(i => i.productId && i.quantity).map(i => ({
+      productId: parseInt(i.productId),
+      quantity: parseInt(i.quantity),
+      isFree: false,
+      ptsPerQty: i.ptsPerQty,
+      totalPts: i.totalPts,
+    }));
+
+    const validFreeItems = freeItems.filter(i => i.productId && i.freeQty).map(i => ({
+      productId: parseInt(i.productId), // Note: using main product dropdown here, or free product if available
+      quantity: parseInt(i.freeQty),
+      isFree: true,
+      offerNumber: i.offerNumber,
+    }));
+
+    const allItems = [...validSaleItems, ...validFreeItems];
+
+    if (allItems.length === 0) {
+      toast.error("Please select a product and quantity for at least one item");
       return;
     }
+
     if (!orderNumber?.trim()) {
-      toast.error("Order ID is required");
-      return;
-    }
-    if (orderNumberCheck?.exists) {
-      toast.error("Order ID already exists. Please use a unique Order ID.");
-      return;
-    }
-    if (!customerId) {
-      toast.error("Customer selection is required");
+      toast.error("Order No is required");
       return;
     }
 
-    if (
-      isAdmin &&
-      (selectedUserIds.length === 0 || selectedManagerIds.length === 0)
-    ) {
-      toast.error(
-        "At least one Employee and Manager selection is required for Admins",
-      );
+    if (!customerName?.trim()) {
+      toast.error("Customer Name is required");
       return;
     }
 
-    const selectedCustomer = customers.find((c) => c.id === customerId);
-    if (!pincode || !/^[1-9][0-9]{5}$/.test(pincode)) {
+    if (!pin || !/^[1-9][0-9]{5}$/.test(pin)) {
       toast.error("Valid 6-digit Pincode is required");
       return;
     }
-    if (!city?.trim() || !state?.trim() || !addressLine1?.trim()) {
-      toast.error("City, State, and Address Line 1 are required");
-      return;
-    }
+    
     if (!invoiceAmount || parseFloat(invoiceAmount) < 0) {
       toast.error("Valid Invoice Amount is required");
       return;
@@ -241,43 +180,28 @@ export default function NewSale() {
 
     const saleData = {
       branchId: parseInt(branchId),
-      pincode: pincode === "" ? undefined : pincode,
-      addressLine1: addressLine1 === "" ? undefined : addressLine1,
-      landmark: landmark === "" ? undefined : landmark,
-      area: area === "" ? undefined : area,
-      city: city === "" ? undefined : city,
+      pincode: pin === "" ? undefined : pin,
+      addressLine1: houseNo === "" ? undefined : houseNo,
+      landmark: landMark === "" ? undefined : landMark,
+      area: mandal === "" ? undefined : mandal, // storing mandal as area
+      city: district === "" ? undefined : district,
       state: state === "" ? undefined : state,
       cmrId: cmrId === "" ? undefined : cmrId,
       tmNo: tmNo === "" ? undefined : tmNo,
       saleType: saleType,
       orderNumber: orderNumber,
-      transactionNumber:
-        transactionNumber === "" ? undefined : transactionNumber,
-      userIds:
-        isAdmin && selectedUserIds.length > 0 ? selectedUserIds : undefined,
-      managerIds:
-        isAdmin && selectedManagerIds.length > 0
-          ? selectedManagerIds
-          : undefined,
-      customerName: selectedCustomer?.name,
-      customerAddress: selectedCustomer?.address,
+      transactionNumber: transactionNumber === "" ? undefined : transactionNumber,
+      customerName: customerName,
+      customerAddress: houseNo,
       invoiceAmount: invoiceAmount === "" ? undefined : invoiceAmount,
-      advancePaymentAmount:
-        advancePaymentAmount === "" ? undefined : advancePaymentAmount,
-      receivedAmount: "0",
-      tradeDiscount,
-      basicInvoiceValue,
-      cgst,
-      sgst,
-      igst,
-      items: items.map((item) => ({
-        productId: parseInt(item.productId),
-        quantity: parseInt(item.quantity),
-        isFree: item.isFree,
-        ptsPerQty: item.ptsPerQty === "" ? undefined : item.ptsPerQty,
-        totalPts: item.totalPts === "" ? undefined : item.totalPts,
-        offerNumber: item.offerNumber === "" ? undefined : item.offerNumber,
-      })),
+      advancePaymentAmount: advancePaymentAmount === "" ? undefined : advancePaymentAmount,
+      receivedAmount: receivedAmount === "" ? "0" : receivedAmount,
+      tradeDiscount: "0",
+      basicInvoiceValue: "0",
+      cgst: "0",
+      sgst: "0",
+      igst: "0",
+      items: allItems,
     };
 
     if (!navigator.onLine) {
@@ -288,641 +212,378 @@ export default function NewSale() {
         createdAt: Date.now(),
       });
       setSuccess(true);
-      setNewSaleId(-1); // Indicator for offline
+      setNewSaleId(-1);
       return;
     }
 
-    createSale(saleData);
+    createSale.mutate(saleData);
   };
 
-  const addItem = () => {
-    setItems([
-      ...items,
-      { id: Date.now(), productId: "", quantity: "1", isFree: false, ptsPerQty: "", totalPts: "", offerNumber: "" },
-    ]);
+  const clearForm = () => {
+    setBranchId("");
+    setOrderNumber("");
+    setOrderDate("");
+    setTransactionNumber("");
+    setInvDate("");
+    setCmrId("");
+    setTmNo("");
+    setDocMonth("");
+    setEcode("");
+    setFieldSuppBy("");
+    setSaleType("Direct to Customer from PU");
+    setCustomerId("");
+    setCustomerSearch("");
+    setVillageSearch("");
+    setCustomerName("");
+    setSo("");
+    setVillage("");
+    setMandal("");
+    setDistrict("");
+    setState("");
+    setPin("");
+    setHouseNo("");
+    setLandMark("");
+    setMobileNo("");
+    setLandLineNo("");
+    setDob("");
+    setMarriageDate("");
+    setSaleItems([{ id: Date.now(), productId: "", quantity: "1", rate: "", amount: "", ptsPerQty: "", totalPts: "" }]);
+    setFreeItems([{ id: Date.now() + 1, productId: "", offerNumber: "", freeProduct: "", freeQty: "" }]);
+    setInvoiceAmount("");
+    setAdvancePaymentAmount("");
+    setReceivedAmount("");
   };
 
-  const removeItem = (id: number) => {
-    if (items.length === 1) return;
-    setItems(items.filter((item) => item.id !== id));
+  const updateSaleItem = (id: number, field: string, value: string) => {
+    setSaleItems(saleItems.map((item) => item.id === id ? { ...item, [field]: value } : item));
   };
-
-  const updateItem = (id: number, field: string, value: string | boolean) => {
-    if (field === "productId") {
-      const isDuplicate = items.some(
-        (item) => item.id !== id && item.productId === value,
-      );
-      if (isDuplicate) {
-        alert("This product is already added to the sale.");
-        return;
-      }
-    }
-    setItems(
-      items.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item,
-      ),
-    );
+  const updateFreeItem = (id: number, field: string, value: string) => {
+    setFreeItems(freeItems.map((item) => item.id === id ? { ...item, [field]: value } : item));
   };
 
   return (
     <DashboardLayout>
       <FeatureGate featureKey="sales">
-        <div className="mx-auto flex max-w-4xl flex-col space-y-4">
-          <div className="flex items-center space-x-2">
-            <Link href="/sales">
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
-            <h1 className="text-xl font-bold tracking-tight">Log Sale</h1>
-          </div>
+        {success && newSaleId ? (
+          <div className="mx-auto flex max-w-4xl flex-col space-y-6">
+            <Card className={cn("border-primary/20", newSaleId === -1 ? "border-orange-200 bg-orange-50" : "bg-primary/5")}>
+              <CardContent className="pt-6 text-center">
+                <div className={cn("mb-4 inline-flex rounded-full p-3", newSaleId === -1 ? "bg-orange-100" : "bg-primary/20")}>
+                  {newSaleId === -1 ? <WifiOff className="h-10 w-10 text-orange-600" /> : <CheckCircle className="text-primary h-10 w-10" />}
+                </div>
+                <h2 className="text-2xl font-bold">{newSaleId === -1 ? "Sale Saved Locally!" : "Sale Logged Successfully!"}</h2>
+                <p className="text-muted-foreground mt-2">{newSaleId === -1 ? "You are offline." : "Saved."}</p>
+              </CardContent>
+            </Card>
 
-          {success && newSaleId ? (
-            <div className="space-y-6">
-              <Card
-                className={cn(
-                  "border-primary/20",
-                  newSaleId === -1
-                    ? "border-orange-200 bg-orange-50"
-                    : "bg-primary/5",
-                )}
-              >
-                <CardContent className="pt-6 text-center">
-                  <div
-                    className={cn(
-                      "mb-4 inline-flex rounded-full p-3",
-                      newSaleId === -1 ? "bg-orange-100" : "bg-primary/20",
-                    )}
-                  >
-                    {newSaleId === -1 ? (
-                      <WifiOff className="h-10 w-10 text-orange-600" />
-                    ) : (
-                      <CheckCircle className="text-primary h-10 w-10" />
-                    )}
+            {newSaleId !== -1 ? (
+              <Card>
+                <CardHeader><CardTitle className="text-muted-foreground text-sm font-semibold uppercase">Upload Invoice / Documents</CardTitle></CardHeader>
+                <CardContent>
+                  <FileUploader entityType="sale" entityId={newSaleId} maxFiles={3} onUploadComplete={() => undefined} />
+                  <div className="mt-6 flex justify-center">
+                    <Link href="/sales"><Button variant="outline">Skip & Finish</Button></Link>
                   </div>
-                  <h2 className="text-2xl font-bold">
-                    {newSaleId === -1
-                      ? "Sale Saved Locally!"
-                      : "Sale Logged Successfully!"}
-                  </h2>
-                  <p className="text-muted-foreground mt-2">
-                    {newSaleId === -1
-                      ? "You are currently offline. This sale has been saved to your device and will sync automatically once you regain connection."
-                      : "Your sale record has been created. You can now upload the invoice or relevant documents below."}
-                  </p>
                 </CardContent>
               </Card>
-
-              {newSaleId !== -1 ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-muted-foreground text-sm font-semibold uppercase">
-                      Upload Invoice / Documents
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FileUploader
-                      entityType="sale"
-                      entityId={newSaleId}
-                      maxFiles={3}
-                      onUploadComplete={() => undefined}
-                    />
-                    <div className="mt-6 flex justify-center">
-                      <Link href="/sales">
-                        <Button variant="outline">Skip & Finish</Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="flex justify-center">
-                  <Link href="/sales">
-                    <Button className="px-8">Return to Sales</Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4 pb-6">
-              {/* TOP SECTION */}
-              <div className="rounded-md border border-emerald-200 bg-emerald-50/50 p-3 shadow-sm">
-                <div className="grid grid-cols-12 gap-2 text-xs">
-                  <div className="col-span-2 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900 uppercase">CMR ID</Label>
-                    <Input className="h-7 text-xs border-emerald-200 focus-visible:ring-emerald-500 bg-white" value={cmrId} onChange={e => setCmrId(e.target.value)} />
-                  </div>
-                  <div className="col-span-2 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900 uppercase">TM NO.</Label>
-                    <Input className="h-7 text-xs border-emerald-200 focus-visible:ring-emerald-500 bg-white" value={tmNo} onChange={e => setTmNo(e.target.value)} />
-                  </div>
-                  <div className="col-span-4 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900 uppercase">Type of Sale</Label>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1.5">
-                      {["Retail", "Stockist", "Inter Branch", "Institution", "Distributor", "Wholesale"].map(type => (
-                        <label key={type} className="flex items-center gap-1 cursor-pointer">
-                          <input type="radio" name="saleType" value={type} checked={saleType === type} onChange={e => setSaleType(e.target.value)} className="accent-emerald-600" />
-                          <span className="text-[10px] leading-none">{type}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="col-span-2 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900 uppercase">Order No / Date <span className="text-red-500">*</span></Label>
-                    <Input className={cn("h-7 text-xs border-emerald-200 focus-visible:ring-emerald-500 bg-white", orderNumberCheck?.exists && "border-red-500")} value={orderNumber} onChange={e => setOrderNumber(e.target.value)} placeholder="ORD-XXXX" />
-                    {orderNumberCheck?.exists && <p className="text-[10px] text-red-500 mt-0.5">Order ID exists.</p>}
-                  </div>
-                  <div className="col-span-2 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900 uppercase">Invoice No & Date</Label>
-                    <Input className="h-7 text-xs border-emerald-200 focus-visible:ring-emerald-500 bg-white" value={transactionNumber} onChange={e => setTransactionNumber(e.target.value)} />
-                  </div>
-                </div>
-
-                {isAdmin && (
-                  <div className="grid grid-cols-12 gap-2 mt-2 pt-2 border-t border-emerald-200 text-xs">
-                    <div className="col-span-6 space-y-1">
-                      <Label className="text-[10px] font-bold text-emerald-900 uppercase flex items-center justify-between">
-                        <span>Employee <span className="text-red-500">*</span></span>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-5 px-1 text-[10px] text-emerald-700 hover:text-emerald-900">+ Add</Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[300px] p-0" align="start">
-                            <Command>
-                              <CommandInput placeholder="Search employee..." className="h-8 text-xs" />
-                              <CommandList>
-                                <CommandEmpty>No employee found.</CommandEmpty>
-                                <CommandGroup>
-                                  {allUsers
-                                    .filter((u) => u.role === "Employee" || u.role === "Manager")
-                                    .map((u) => (
-                                      <CommandItem
-                                        key={u.id}
-                                        value={`${u.firstName} ${u.lastName} ${u.employeeCode}`}
-                                        onSelect={() => {
-                                          setSelectedUserIds((prev) =>
-                                            prev.includes(u.id) ? prev.filter((id) => id !== u.id) : [...prev, u.id],
-                                          );
-                                        }}
-                                      >
-                                        {u.firstName} {u.lastName} ({u.employeeCode})
-                                        <Check className={cn("ml-auto h-3 w-3", selectedUserIds.includes(u.id) ? "opacity-100" : "opacity-0")} />
-                                      </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-                      </Label>
-                      <div className="flex flex-wrap gap-1">
-                        {selectedUserIds.length > 0 ? (
-                          selectedUserIds.map((id) => {
-                            const u = allUsers.find((user) => user.id === id);
-                            return (
-                              <div key={id} className="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 border border-emerald-200">
-                                {u?.firstName} {u?.lastName}
-                                <button type="button" onClick={() => setSelectedUserIds((prev) => prev.filter((i) => i !== id))}><X className="h-3 w-3 hover:text-red-500" /></button>
-                              </div>
-                            );
-                          })
-                        ) : <div className="text-[10px] text-muted-foreground">None</div>}
-                      </div>
-                    </div>
-                    <div className="col-span-6 space-y-1">
-                      <Label className="text-[10px] font-bold text-emerald-900 uppercase flex items-center justify-between">
-                        <span>Manager <span className="text-red-500">*</span></span>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-5 px-1 text-[10px] text-emerald-700 hover:text-emerald-900">+ Add</Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[300px] p-0" align="start">
-                            <Command>
-                              <CommandInput placeholder="Search manager..." className="h-8 text-xs" />
-                              <CommandList>
-                                <CommandEmpty>No manager found.</CommandEmpty>
-                                <CommandGroup>
-                                  {allUsers
-                                    .filter((u) => u.role === "Manager" || u.role === "Admin")
-                                    .map((u) => (
-                                      <CommandItem
-                                        key={u.id}
-                                        value={`${u.firstName} ${u.lastName} ${u.employeeCode}`}
-                                        onSelect={() => {
-                                          setSelectedManagerIds((prev) =>
-                                            prev.includes(u.id) ? prev.filter((id) => id !== u.id) : [...prev, u.id],
-                                          );
-                                        }}
-                                      >
-                                        {u.firstName} {u.lastName} ({u.employeeCode})
-                                        <Check className={cn("ml-auto h-3 w-3", selectedManagerIds.includes(u.id) ? "opacity-100" : "opacity-0")} />
-                                      </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-                      </Label>
-                      <div className="flex flex-wrap gap-1">
-                        {selectedManagerIds.length > 0 ? (
-                          selectedManagerIds.map((id) => {
-                            const u = allUsers.find((user) => user.id === id);
-                            return (
-                              <div key={id} className="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 border border-emerald-200">
-                                {u?.firstName} {u?.lastName}
-                                <button type="button" onClick={() => setSelectedManagerIds((prev) => prev.filter((i) => i !== id))}><X className="h-3 w-3 hover:text-red-500" /></button>
-                              </div>
-                            );
-                          })
-                        ) : <div className="text-[10px] text-muted-foreground">None</div>}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* CUSTOMER DETAILS */}
-              <div className="rounded-md border border-emerald-200 bg-white p-3 shadow-sm">
-                <div className="grid grid-cols-12 gap-x-3 gap-y-2 text-xs">
-                  <div className="col-span-3 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900 uppercase">Customer Name <span className="text-red-500">*</span></Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" role="combobox" className={cn("w-full justify-between h-7 text-xs border-emerald-200", !customerId && "text-muted-foreground")}>
-                          <span className="truncate">{customerId ? customers.find((c) => c.id === customerId)?.name : "Select..."}</span>
-                          <ChevronsUpDown className="ml-1 h-3 w-3 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[300px] p-0" align="start">
-                        <Command>
-                          <CommandInput placeholder="Search customer..." className="h-8 text-xs" />
-                          <CommandList>
-                            <CommandEmpty>No customer found.</CommandEmpty>
-                            <CommandGroup>
-                              {customers.map((customer) => (
-                                <CommandItem key={customer.id} value={customer.name} onSelect={() => setCustomerId(customer.id)}>
-                                  {customer.name} - {customer.mobile}
-                                  <Check className={cn("ml-auto h-3 w-3", customerId === customer.id ? "opacity-100" : "opacity-0")} />
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                            <div className="p-1 border-t border-border">
-                              <Button variant="ghost" size="sm" className="w-full text-xs h-7 text-emerald-700" onClick={() => setIsCustomerModalOpen(true)}>
-                                <Plus className="mr-1 h-3 w-3" /> Add New
-                              </Button>
-                            </div>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="col-span-3 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900 uppercase">Branch <span className="text-red-500">*</span></Label>
-                    <Select value={branchId} onValueChange={setBranchId}>
-                      <SelectTrigger className="h-7 text-xs border-emerald-200"><SelectValue placeholder="Branch" /></SelectTrigger>
-                      <SelectContent>
-                        {branches.map((branch) => (
-                          <SelectItem key={branch.id} value={branch.id.toString()} className="text-xs">{branch.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="col-span-3 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900 uppercase flex justify-between">
-                      <span>Pincode <span className="text-red-500">*</span></span>
-                      {isFetchingPincode && <Loader2 className="h-3 w-3 animate-spin text-emerald-600" />}
-                    </Label>
-                    <Input className="h-7 text-xs border-emerald-200 focus-visible:ring-emerald-500" value={pincode} onChange={e => setPincode(e.target.value)} maxLength={6} />
-                  </div>
-                  <div className="col-span-3 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900 uppercase">City <span className="text-red-500">*</span></Label>
-                    <Input className="h-7 text-xs border-emerald-200 focus-visible:ring-emerald-500" value={city} onChange={e => setCity(e.target.value)} />
-                  </div>
-                  <div className="col-span-3 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900 uppercase">State <span className="text-red-500">*</span></Label>
-                    <Input className="h-7 text-xs border-emerald-200 focus-visible:ring-emerald-500" value={state} onChange={e => setState(e.target.value)} />
-                  </div>
-                  <div className="col-span-3 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900 uppercase">Area / Post Office</Label>
-                    <Input className="h-7 text-xs border-emerald-200 focus-visible:ring-emerald-500" value={area} onChange={e => setArea(e.target.value)} />
-                  </div>
-                  <div className="col-span-3 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900 uppercase">Address Line 1 <span className="text-red-500">*</span></Label>
-                    <Input className="h-7 text-xs border-emerald-200 focus-visible:ring-emerald-500" value={addressLine1} onChange={e => setAddressLine1(e.target.value)} />
-                  </div>
-                  <div className="col-span-3 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900 uppercase">Landmark</Label>
-                    <Input className="h-7 text-xs border-emerald-200 focus-visible:ring-emerald-500" value={landmark} onChange={e => setLandmark(e.target.value)} />
-                  </div>
-                </div>
-              </div>
-
-              {/* PRODUCTS TABLE */}
-              <div className="rounded-md border border-emerald-200 bg-white shadow-sm overflow-hidden">
-                <div className="bg-emerald-600 px-3 py-2 flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">Products Grid</h3>
-                  <Button type="button" variant="secondary" size="sm" className="h-6 text-[10px] px-2 bg-emerald-50 text-emerald-800 hover:bg-emerald-100" onClick={addItem}>
-                    <Plus className="mr-1 h-3 w-3" /> Add Row
-                  </Button>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs text-left whitespace-nowrap">
-                    <thead className="bg-emerald-50 text-emerald-900 border-b border-emerald-200">
-                      <tr>
-                        <th className="px-2 py-1.5 font-bold w-8 text-center border-r border-emerald-200">S.No</th>
-                        <th className="px-2 py-1.5 font-bold border-r border-emerald-200 min-w-[200px]">Product Name <span className="text-red-500">*</span></th>
-                        <th className="px-2 py-1.5 font-bold w-20 text-center border-r border-emerald-200">Main/Free</th>
-                        <th className="px-2 py-1.5 font-bold w-20 text-right border-r border-emerald-200">Qty <span className="text-red-500">*</span></th>
-                        <th className="px-2 py-1.5 font-bold w-24 text-right border-r border-emerald-200">Pts/Qty</th>
-                        <th className="px-2 py-1.5 font-bold w-24 text-right border-r border-emerald-200">Total Pts</th>
-                        <th className="px-2 py-1.5 font-bold w-32 border-r border-emerald-200">Offer No.</th>
-                        <th className="px-2 py-1.5 font-bold w-10 text-center">Act</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-emerald-100">
-                      {items.map((item, index) => (
-                        <tr key={item.id} className="hover:bg-emerald-50/50">
-                          <td className="px-2 py-1 text-center border-r border-emerald-100 text-emerald-600 font-medium">{index + 1}</td>
-                          <td className="px-2 py-1 border-r border-emerald-100">
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" role="combobox" className={cn("w-full justify-between h-6 px-2 text-[10px] border-emerald-200 bg-white", !item.productId && "text-muted-foreground")}>
-                                  <span className="truncate">{item.productId ? products.find((p) => p.id.toString() === item.productId)?.name : "Select..."}</span>
-                                  <ChevronsUpDown className="ml-1 h-3 w-3 opacity-50" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-[300px] p-0" align="start">
-                                <Command>
-                                  <CommandInput placeholder="Search product..." className="h-8 text-xs" />
-                                  <CommandList>
-                                    <CommandEmpty>No product found.</CommandEmpty>
-                                    <CommandGroup>
-                                      {products.map((product) => (
-                                        <CommandItem key={product.id} value={product.name} onSelect={() => updateItem(item.id, "productId", product.id.toString())}>
-                                          {product.name}
-                                          <Check className={cn("ml-auto h-3 w-3", item.productId === product.id.toString() ? "opacity-100" : "opacity-0")} />
-                                        </CommandItem>
-                                      ))}
-                                    </CommandGroup>
-                                  </CommandList>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
-                          </td>
-                          <td className="px-2 py-1 text-center border-r border-emerald-100">
-                            <select
-                              value={item.isFree ? "Free" : "Main"}
-                              onChange={(e) => updateItem(item.id, "isFree", e.target.value === "Free")}
-                              className="h-6 w-full rounded border border-emerald-200 bg-white px-1 text-[10px] outline-none focus:ring-1 focus:ring-emerald-500"
-                            >
-                              <option value="Main">Main</option>
-                              <option value="Free">Free</option>
-                            </select>
-                          </td>
-                          <td className="px-2 py-1 border-r border-emerald-100">
-                            <Input type="number" min="1" className="h-6 px-2 text-[10px] text-right border-emerald-200 focus-visible:ring-emerald-500 bg-white" value={item.quantity} onChange={e => updateItem(item.id, "quantity", e.target.value)} />
-                          </td>
-                          <td className="px-2 py-1 border-r border-emerald-100">
-                            <Input type="number" step="0.01" className="h-6 px-2 text-[10px] text-right border-emerald-200 focus-visible:ring-emerald-500 bg-white" value={item.ptsPerQty} onChange={e => updateItem(item.id, "ptsPerQty", e.target.value)} />
-                          </td>
-                          <td className="px-2 py-1 border-r border-emerald-100">
-                            <Input type="number" step="0.01" className="h-6 px-2 text-[10px] text-right border-emerald-200 focus-visible:ring-emerald-500 bg-white" value={item.totalPts} onChange={e => updateItem(item.id, "totalPts", e.target.value)} />
-                          </td>
-                          <td className="px-2 py-1 border-r border-emerald-100">
-                            <Input className="h-6 px-2 text-[10px] border-emerald-200 focus-visible:ring-emerald-500 bg-white" value={item.offerNumber} onChange={e => updateItem(item.id, "offerNumber", e.target.value)} />
-                          </td>
-                          <td className="px-2 py-1 text-center">
-                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:bg-red-50 hover:text-red-600" onClick={() => removeItem(item.id)} disabled={items.length === 1}>
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* FINANCIALS */}
-              <div className="rounded-md border border-emerald-200 bg-emerald-50/30 p-3 shadow-sm">
-                <h3 className="text-[10px] font-bold text-emerald-900 uppercase tracking-wider mb-2 border-b border-emerald-200 pb-1">Financial Details</h3>
-                <div className="grid grid-cols-12 gap-3 text-xs">
-                  <div className="col-span-2 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900">Total Invoice Amt <span className="text-red-500">*</span></Label>
-                    <Input className="h-7 text-xs border-emerald-300 font-bold bg-white" value={invoiceAmount} onChange={e => setInvoiceAmount(e.target.value)} type="number" step="0.01" />
-                  </div>
-                  <div className="col-span-2 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900">Advance Amt</Label>
-                    <Input className="h-7 text-xs border-emerald-200 bg-white" value={advancePaymentAmount} onChange={e => setAdvancePaymentAmount(parseFloat(e.target.value) > parseFloat(invoiceAmount || "0") ? advancePaymentAmount : e.target.value)} type="number" step="0.01" />
-                  </div>
-                  <div className="col-span-2 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900">Pending Amt</Label>
-                    <Input className="h-7 text-xs border-emerald-200 bg-emerald-100/50 font-bold" value={pendingAmount > 0 ? pendingAmount : 0} readOnly disabled type="number" />
-                  </div>
-                  <div className="col-span-2 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900">Trade Discount</Label>
-                    <Input className="h-7 text-xs border-emerald-200 bg-white" value={tradeDiscount} onChange={e => setTradeDiscount(e.target.value)} type="number" step="0.01" />
-                  </div>
-                  <div className="col-span-2 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900">Basic Invoice Val</Label>
-                    <Input className="h-7 text-xs border-emerald-200 bg-white" value={basicInvoiceValue} onChange={e => setBasicInvoiceValue(e.target.value)} type="number" step="0.01" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-12 gap-3 mt-2 text-xs">
-                  <div className="col-span-2 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900">CGST</Label>
-                    <Input className="h-7 text-xs border-emerald-200 bg-white" value={cgst} onChange={e => setCgst(e.target.value)} type="number" step="0.01" />
-                  </div>
-                  <div className="col-span-2 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900">SGST</Label>
-                    <Input className="h-7 text-xs border-emerald-200 bg-white" value={sgst} onChange={e => setSgst(e.target.value)} type="number" step="0.01" />
-                  </div>
-                  <div className="col-span-2 space-y-1">
-                    <Label className="text-[10px] font-bold text-emerald-900">IGST</Label>
-                    <Input className="h-7 text-xs border-emerald-200 bg-white" value={igst} onChange={e => setIgst(e.target.value)} type="number" step="0.01" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <Button type="submit" className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 shadow-md" disabled={isPending}>
-                  {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  LOG SALE
-                </Button>
-              </div>
-            </form>
-
-          )}
-        </div>
-      </FeatureGate>
-
-      {/* Add Customer Modal */}
-      {isCustomerModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="animate-in fade-in zoom-in-95 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl duration-200 dark:bg-slate-900">
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5 dark:border-slate-800">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                Add New Customer
-              </h3>
-              <button
-                onClick={() => setIsCustomerModalOpen(false)}
-                className="text-slate-400 transition-colors hover:text-slate-600"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="max-h-[70vh] space-y-4 overflow-y-auto p-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                    Name *
-                  </label>
-                  <input
-                    type="text"
-                    className="focus:ring-primary/20 focus:border-primary w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
-                    value={newCustomer.name}
-                    onChange={(e) =>
-                      setNewCustomer({ ...newCustomer, name: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                    Mobile *
-                  </label>
-                  <input
-                    type="text"
-                    className="focus:ring-primary/20 focus:border-primary w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
-                    value={newCustomer.mobile}
-                    onChange={(e) =>
-                      setNewCustomer({ ...newCustomer, mobile: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                    Pincode *
-                  </label>
-                  <input
-                    type="text"
-                    className="focus:ring-primary/20 focus:border-primary w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
-                    value={newCustomer.pincode}
-                    maxLength={6}
-                    onChange={(e) =>
-                      setNewCustomer({
-                        ...newCustomer,
-                        pincode: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                    Area / Post Office
-                  </label>
-                  <input
-                    type="text"
-                    className="focus:ring-primary/20 focus:border-primary w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
-                    value={newCustomer.village}
-                    onChange={(e) =>
-                      setNewCustomer({
-                        ...newCustomer,
-                        village: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                    City *
-                  </label>
-                  <input
-                    type="text"
-                    className="focus:ring-primary/20 focus:border-primary w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
-                    value={newCustomer.district}
-                    onChange={(e) =>
-                      setNewCustomer({
-                        ...newCustomer,
-                        district: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                    State *
-                  </label>
-                  <input
-                    type="text"
-                    className="focus:ring-primary/20 focus:border-primary w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
-                    value={newCustomer.state}
-                    onChange={(e) =>
-                      setNewCustomer({ ...newCustomer, state: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                  Address & Landmark *
-                </label>
-                <Textarea
-                  className="focus:ring-primary/20 focus:border-primary min-h-[80px] w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm transition-all outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-800"
-                  value={newCustomer.address}
-                  onChange={(e) =>
-                    setNewCustomer({ ...newCustomer, address: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-5 dark:border-slate-800 dark:bg-slate-900/50">
-              <button
-                onClick={() => setIsCustomerModalOpen(false)}
-                className="rounded-xl px-5 py-2.5 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  if (
-                    !newCustomer.name ||
-                    !newCustomer.mobile ||
-                    !newCustomer.pincode
-                  ) {
-                    toast.error("Please fill Name, Mobile, and Pincode");
-                    return;
-                  }
-                  addCustomerMutation.mutate({
-                    name: newCustomer.name,
-                    mobile: newCustomer.mobile,
-                    pincode: newCustomer.pincode,
-                    landlineNo: newCustomer.landlineNo || undefined,
-                    dob: newCustomer.dob || undefined,
-                    marriageDate: newCustomer.marriageDate || undefined,
-                    village: newCustomer.village || "Unknown",
-                    district: newCustomer.district || "Unknown",
-                    state: newCustomer.state || "Unknown",
-                    address: newCustomer.address || "Unknown",
-                    branchId: parseInt(branchId) || undefined,
-                  });
-                }}
-                disabled={addCustomerMutation.isPending}
-                className="bg-primary text-primary-foreground flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold shadow-[0_1px_3px_rgba(37,99,235,0.2)] transition-all hover:opacity-90 disabled:opacity-50"
-              >
-                {addCustomerMutation.isPending ? "Saving..." : "Save Customer"}
-              </button>
-            </div>
+            ) : (
+              <div className="flex justify-center"><Link href="/sales"><Button className="px-8">Return</Button></Link></div>
+            )}
           </div>
-        </div>
-      )}
+        ) : (
+          <form onSubmit={handleSubmit} className="mx-auto max-w-[1200px] border-2 border-slate-300 shadow bg-[#cde8e8] text-xs pb-4 font-sans">
+            <div className="flex justify-between items-center bg-white px-2 py-1 border-b-2 border-slate-300">
+              <div className="font-bold text-sm">PU Invoice :: B2C</div>
+              <div className="flex gap-4 items-center">
+                <div className="font-bold text-sm border px-2 py-0.5 bg-gray-100">Sales Invoice :: B2C</div>
+                <Link href="/sales" className="flex items-center text-red-600 font-bold hover:underline"><X className="w-4 h-4 mr-1"/> Close</Link>
+              </div>
+            </div>
+
+            <div className="p-2 space-y-2">
+              {/* TOP METADATA BLOCK */}
+              <div className="grid grid-cols-12 gap-x-2 gap-y-1">
+                {/* Column 1 */}
+                <div className="col-span-1 text-right mt-1">Company</div>
+                <div className="col-span-4">
+                  <input type="text" value="SHIVASHAKTI AGRITEC LIMITED" readOnly className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs"/>
+                </div>
+                <div className="col-span-1"></div>
+                <div className="col-span-1 text-right mt-1">Tax Inv No</div>
+                <div className="col-span-2">
+                  <input type="text" value={transactionNumber} onChange={e=>setTransactionNumber(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#fefce8] text-xs"/>
+                </div>
+                <div className="col-span-3"></div>
+
+                <div className="col-span-1 text-right mt-1">Branch</div>
+                <div className="col-span-4">
+                  <select value={branchId} onChange={e=>setBranchId(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs">
+                    <option value="">Select Branch</option>
+                    {branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+                <div className="col-span-1 text-right mt-1">DocMonth</div>
+                <div className="col-span-1">
+                  <input type="text" value={docMonth} onChange={e=>setDocMonth(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#fefce8] text-xs"/>
+                </div>
+                <div className="col-span-1 text-right mt-1">CMR ID</div>
+                <div className="col-span-2">
+                  <input type="text" value={cmrId} onChange={e=>setCmrId(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#fefce8] text-xs"/>
+                </div>
+                <div className="col-span-2"></div>
+
+                <div className="col-span-1 text-right mt-1">Order No</div>
+                <div className="col-span-2">
+                  <input type="text" value={orderNumber} onChange={e=>setOrderNumber(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#e0f2fe] text-xs"/>
+                </div>
+                <div className="col-span-1 text-right mt-1">Order Date</div>
+                <div className="col-span-1">
+                  <input type="date" value={orderDate} onChange={e=>setOrderDate(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs"/>
+                </div>
+                <div className="col-span-1 text-right mt-1">Ecode</div>
+                <div className="col-span-4">
+                  <input type="text" value={ecode} onChange={e=>setEcode(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs" placeholder="e.g. 39957-SHIVAM (GL)"/>
+                </div>
+                <div className="col-span-2"></div>
+
+                <div className="col-span-1 text-right mt-1">Tm No</div>
+                <div className="col-span-2">
+                  <input type="text" value={tmNo} onChange={e=>setTmNo(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#e0f2fe] text-xs"/>
+                </div>
+                <div className="col-span-1 text-right mt-1">Inv Date</div>
+                <div className="col-span-1">
+                  <input type="date" value={invDate} onChange={e=>setInvDate(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs"/>
+                </div>
+                <div className="col-span-1 text-right mt-1 whitespace-nowrap">Field SupP By</div>
+                <div className="col-span-4">
+                  <input type="text" value={fieldSuppBy} onChange={e=>setFieldSuppBy(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs"/>
+                </div>
+                <div className="col-span-2"></div>
+              </div>
+
+              {/* RADIO BUTTONS */}
+              <div className="flex gap-12 ml-16 py-1">
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input type="radio" name="saleType" checked={saleType === "Direct to Customer from PU"} onChange={() => setSaleType("Direct to Customer from PU")} />
+                  Direct to Customer from PU
+                </label>
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input type="radio" name="saleType" checked={saleType === "Against DC from GL"} onChange={() => setSaleType("Against DC from GL")} />
+                  Against DC from GL
+                </label>
+              </div>
+
+              {/* CUSTOMER SECTION */}
+              <div className="grid grid-cols-12 gap-x-2 gap-y-1">
+                <div className="col-span-2 text-right mt-1">Village Search</div>
+                <div className="col-span-2 flex">
+                  <input type="text" value={villageSearch} onChange={e=>setVillageSearch(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#fefce8] text-xs"/>
+                  <button type="button" className="bg-emerald-600 px-1.5 border border-gray-600 text-white"><Search className="w-3 h-3"/></button>
+                </div>
+                <div className="col-span-1 text-right mt-1 whitespace-nowrap">Customer Name</div>
+                <div className="col-span-3">
+                  <select value={customerId} onChange={e=>setCustomerId(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs">
+                    <option value="">Select Existing Customer</option>
+                    {customers.map(c=><option key={c.id} value={c.id}>{c.name} - {c.mobile}</option>)}
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <input type="text" value={customerName} onChange={e=>setCustomerName(e.target.value)} placeholder="Type new..." className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs"/>
+                </div>
+                <div className="col-span-2"></div>
+
+                <div className="col-span-2 text-right mt-1">Village</div>
+                <div className="col-span-2">
+                  <input type="text" value={village} onChange={e=>setVillage(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#fefce8] text-xs"/>
+                </div>
+                <div className="col-span-1 text-right mt-1">
+                  <select className="border border-gray-400 text-xs py-0.5"><option>S/O</option><option>W/O</option><option>D/O</option></select>
+                </div>
+                <div className="col-span-5">
+                  <input type="text" value={so} onChange={e=>setSo(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs"/>
+                </div>
+                <div className="col-span-2"></div>
+
+                <div className="col-span-2 text-right mt-1">Mandal/Tahsil</div>
+                <div className="col-span-2">
+                  <input type="text" value={mandal} onChange={e=>setMandal(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#fefce8] text-xs"/>
+                </div>
+                <div className="col-span-1 text-right mt-1">House No</div>
+                <div className="col-span-2">
+                  <input type="text" value={houseNo} onChange={e=>setHouseNo(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs"/>
+                </div>
+                <div className="col-span-1 text-right mt-1">Land Mark</div>
+                <div className="col-span-2">
+                  <input type="text" value={landMark} onChange={e=>setLandMark(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#e0f2fe] text-xs"/>
+                </div>
+                <div className="col-span-2"></div>
+
+                <div className="col-span-2 text-right mt-1">District</div>
+                <div className="col-span-2">
+                  <input type="text" value={district} onChange={e=>setDistrict(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#fefce8] text-xs"/>
+                </div>
+                <div className="col-span-1 text-right mt-1">Mobile No</div>
+                <div className="col-span-2">
+                  <input type="text" value={mobileNo} onChange={e=>setMobileNo(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs"/>
+                </div>
+                <div className="col-span-1 text-right mt-1">Land Line No</div>
+                <div className="col-span-2">
+                  <input type="text" value={landLineNo} onChange={e=>setLandLineNo(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#e0f2fe] text-xs"/>
+                </div>
+                <div className="col-span-2"></div>
+
+                <div className="col-span-2 text-right mt-1">State</div>
+                <div className="col-span-1 flex gap-1 items-center">
+                  <input type="text" value={state} onChange={e=>setState(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#fefce8] text-xs"/>
+                  <span>Pin</span>
+                </div>
+                <div className="col-span-1">
+                  <input type="text" value={pin} onChange={e=>setPin(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#e0f2fe] text-xs"/>
+                </div>
+                <div className="col-span-1 text-right mt-1">DOB / Age</div>
+                <div className="col-span-2">
+                  <input type="date" value={dob} onChange={e=>setDob(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#e0f2fe] text-xs"/>
+                </div>
+                <div className="col-span-1 text-right mt-1">Marriage Date</div>
+                <div className="col-span-2">
+                  <input type="date" value={marriageDate} onChange={e=>setMarriageDate(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs"/>
+                </div>
+                <div className="col-span-2"></div>
+              </div>
+
+              {/* SALE PRODUCTS TAB/GRID */}
+              <div className="mt-2 border border-gray-300 bg-white">
+                <div className="flex justify-between items-center bg-gray-100 border-b border-gray-300 px-2 py-1">
+                  <div className="font-semibold text-[11px]">Sale Products</div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setSaleItems([{ id: Date.now(), productId: "", quantity: "1", rate: "", amount: "", ptsPerQty: "", totalPts: "" }])} className="text-red-600 flex items-center gap-1 font-semibold text-[11px]"><X className="w-3 h-3"/> Clear Products</button>
+                    <button type="button" onClick={() => setSaleItems([...saleItems, { id: Date.now(), productId: "", quantity: "1", rate: "", amount: "", ptsPerQty: "", totalPts: "" }])} className="text-green-600 flex items-center gap-1 font-semibold text-[11px]"><Plus className="w-3 h-3"/> Add Products</button>
+                  </div>
+                </div>
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50 border-b border-gray-300">
+                    <tr>
+                      <th className="font-normal px-1 py-1 w-12 text-center">Sl.No</th>
+                      <th className="font-normal px-1 py-1">Main Product</th>
+                      <th className="font-normal px-1 py-1 w-24">Brand</th>
+                      <th className="font-normal px-1 py-1 w-20">Qty</th>
+                      <th className="font-normal px-1 py-1 w-24">Rate</th>
+                      <th className="font-normal px-1 py-1 w-24">Amount</th>
+                      <th className="font-normal px-1 py-1 w-24">Pts.PerQty</th>
+                      <th className="font-normal px-1 py-1 w-24">TotalPts</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {saleItems.map((item, idx) => (
+                      <tr key={item.id} className="border-b border-gray-200 bg-[#e2e8f0]">
+                        <td className="px-1 text-center">{idx + 1}</td>
+                        <td className="px-1 py-0.5">
+                          <select value={item.productId} onChange={e=>updateSaleItem(item.id, "productId", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5">
+                            <option value="">Select...</option>
+                            {products.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                          </select>
+                        </td>
+                        <td className="px-1 py-0.5"><input type="text" disabled className="w-full border-none bg-transparent px-1 py-0.5"/></td>
+                        <td className="px-1 py-0.5"><input type="number" min="1" value={item.quantity} onChange={e=>updateSaleItem(item.id, "quantity", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5 text-right"/></td>
+                        <td className="px-1 py-0.5"><input type="text" value={item.rate} onChange={e=>updateSaleItem(item.id, "rate", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5 text-right"/></td>
+                        <td className="px-1 py-0.5"><input type="text" value={item.amount} onChange={e=>updateSaleItem(item.id, "amount", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5 text-right"/></td>
+                        <td className="px-1 py-0.5"><input type="text" value={item.ptsPerQty} onChange={e=>updateSaleItem(item.id, "ptsPerQty", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5 text-right"/></td>
+                        <td className="px-1 py-0.5"><input type="text" value={item.totalPts} onChange={e=>updateSaleItem(item.id, "totalPts", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5 text-right"/></td>
+                      </tr>
+                    ))}
+                    {/* Padding rows */}
+                    {Array.from({length: Math.max(0, 5 - saleItems.length)}).map((_, i) => (
+                       <tr key={`pad-${i}`} className="border-b border-gray-200 bg-[#e2e8f0] h-6"><td colSpan={8}></td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* FREE PRODUCTS TAB/GRID */}
+              <div className="mt-2 border border-gray-300 bg-white">
+                <div className="flex justify-between items-center bg-gray-100 border-b border-gray-300 px-2 py-1">
+                  <div className="font-semibold text-[11px]">Free Products</div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setFreeItems([{ id: Date.now() + 1, productId: "", offerNumber: "", freeProduct: "", freeQty: "" }])} className="text-red-600 flex items-center gap-1 font-semibold text-[11px]"><X className="w-3 h-3"/> Clear Products</button>
+                    <button type="button" onClick={() => setFreeItems([...freeItems, { id: Date.now() + 1, productId: "", offerNumber: "", freeProduct: "", freeQty: "" }])} className="text-green-600 flex items-center gap-1 font-semibold text-[11px]"><Plus className="w-3 h-3"/> Add Products</button>
+                  </div>
+                </div>
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50 border-b border-gray-300">
+                    <tr>
+                      <th className="font-normal px-1 py-1 w-12 text-center">Sl.No</th>
+                      <th className="font-normal px-1 py-1">Main Product</th>
+                      <th className="font-normal px-1 py-1 w-32">OfferNumber</th>
+                      <th className="font-normal px-1 py-1 w-64">Free Product</th>
+                      <th className="font-normal px-1 py-1 w-20">FreeQty</th>
+                      <th className="font-normal px-1 py-1 w-12">Edit</th>
+                      <th className="font-normal px-1 py-1 w-12">Del</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {freeItems.map((item, idx) => (
+                      <tr key={item.id} className="border-b border-gray-200 bg-[#e2e8f0]">
+                        <td className="px-1 text-center">{idx + 1}</td>
+                        <td className="px-1 py-0.5">
+                          <select value={item.productId} onChange={e=>updateFreeItem(item.id, "productId", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5">
+                            <option value="">Select...</option>
+                            {products.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                          </select>
+                        </td>
+                        <td className="px-1 py-0.5"><input type="text" value={item.offerNumber} onChange={e=>updateFreeItem(item.id, "offerNumber", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5"/></td>
+                        <td className="px-1 py-0.5"><input type="text" value={item.freeProduct} onChange={e=>updateFreeItem(item.id, "freeProduct", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5"/></td>
+                        <td className="px-1 py-0.5"><input type="number" min="1" value={item.freeQty} onChange={e=>updateFreeItem(item.id, "freeQty", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5 text-right"/></td>
+                        <td className="px-1 text-center text-blue-600 font-bold cursor-pointer">E</td>
+                        <td className="px-1 text-center text-red-600 font-bold cursor-pointer" onClick={() => { if(freeItems.length > 1) setFreeItems(freeItems.filter(f=>f.id !== item.id))}}>X</td>
+                      </tr>
+                    ))}
+                     {/* Padding rows */}
+                     {Array.from({length: Math.max(0, 3 - freeItems.length)}).map((_, i) => (
+                       <tr key={`pad-f-${i}`} className="border-b border-gray-200 bg-[#e2e8f0] h-6"><td colSpan={7}></td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* SUMMARY SECTION */}
+              <div className="flex gap-4 mt-4 items-end">
+                <div className="flex gap-2 mb-1">
+                  <div className="flex items-center gap-1"><span className="w-4 h-4 bg-[#c4b5fd] border border-gray-400 block"></span> Combi</div>
+                  <div className="flex items-center gap-1"><span className="w-4 h-4 bg-[#86efac] border border-gray-400 block"></span> Free</div>
+                </div>
+
+                <div className="flex flex-col space-y-1 w-48 ml-auto">
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Main Qty:</span> <input type="text" className="w-24 border border-gray-400 bg-white px-1"/></div>
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Free Qty:</span> <input type="text" className="w-24 border border-gray-400 bg-white px-1"/></div>
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Total Qty:</span> <input type="text" className="w-24 border border-gray-400 bg-white px-1"/></div>
+                </div>
+
+                <div className="flex flex-col space-y-1 w-64">
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Invoice Amt:</span> <input type="text" value={invoiceAmount} onChange={e=>setInvoiceAmount(e.target.value)} className="w-32 border border-gray-400 bg-white px-1"/></div>
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Advance Amt:</span> <input type="text" value={advancePaymentAmount} onChange={e=>setAdvancePaymentAmount(e.target.value)} className="w-32 border border-gray-400 bg-white px-1"/></div>
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Received Amt:</span> <input type="text" value={receivedAmount} onChange={e=>setReceivedAmount(e.target.value)} className="w-32 border border-gray-400 bg-white px-1"/></div>
+                </div>
+                
+                <div className="flex flex-col ml-4 mr-4 w-32 justify-end mb-1">
+                  <div className="text-center font-bold mb-1">Bal Amount</div>
+                  <input type="text" disabled className="w-full border border-gray-400 bg-white px-1 py-1 h-6"/>
+                </div>
+              </div>
+
+              {/* ACTION BUTTONS */}
+              <div className="flex gap-2 mt-4 ml-2">
+                <button type="submit" disabled={createSale.isPending} className="bg-white border border-gray-400 px-6 py-1 hover:bg-gray-50 flex items-center gap-1">
+                  {createSale.isPending && <Loader2 className="w-3 h-3 animate-spin"/>} Save
+                </button>
+                <button type="button" onClick={clearForm} className="bg-white border border-gray-400 px-6 py-1 hover:bg-gray-50">Clear</button>
+                <button type="button" className="bg-white border border-gray-400 px-6 py-1 hover:bg-gray-50">Delete</button>
+                <Link href="/sales" className="bg-white border border-gray-400 px-6 py-1 hover:bg-gray-50 flex items-center justify-center">Close</Link>
+                <button type="button" className="bg-white border border-gray-400 px-6 py-1 hover:bg-gray-50">Print</button>
+              </div>
+            </div>
+            </form>
+        )}
+      </FeatureGate>
     </DashboardLayout>
   );
 }
