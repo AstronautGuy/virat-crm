@@ -106,6 +106,11 @@ interface UserType {
   lastName: string | null;
   email: string | null;
   employeeCode: string | null;
+  fatherName: string | null;
+  joiningDate: string | Date | null;
+  joiningRole: string | null;
+  promotionDate: string | Date | null;
+  dob: string | Date | null;
   role: string | null;
   branchId: number | null;
   isActive: boolean;
@@ -165,8 +170,24 @@ function UserList() {
     },
   });
 
+
+  const [promoteUser, setPromoteUser] = useState<UserType | null>(null);
+  const [promoteForm, setPromoteForm] = useState({ role: "", date: new Date().toISOString().split('T')[0] });
+
+  const promoteMutation = api.users.promoteEmployee.useMutation({
+    onSuccess: () => {
+      toast.success("Employee promoted successfully");
+      setPromoteUser(null);
+      void utils.users.getAllUsers.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const [editUser, setEditUser] = useState<UserType | null>(null);
   const [editForm, setEditForm] = useState<{
+    fatherName: string;
+    joiningRole: string;
+    joiningDate: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -247,6 +268,10 @@ function UserList() {
       branchId:
         editForm.branchId === "none" ? null : parseInt(editForm.branchId, 10),
       managerIds: editForm.managerIds,
+      fatherName: editForm.fatherName,
+      joiningRole: editForm.joiningRole,
+      joiningDate: editForm.joiningDate ? new Date(editForm.joiningDate) : undefined,
+      dob: editForm.dob ? new Date(editForm.dob) : undefined,
     });
   };
 
@@ -577,14 +602,18 @@ function UserList() {
                 setEditForm({
                   firstName: contextMenu.user.firstName ?? "",
                   lastName: contextMenu.user.lastName ?? "",
+                  fatherName: contextMenu.user.fatherName ?? "",
                   email: contextMenu.user.email ?? "",
                   employeeCode: contextMenu.user.employeeCode ?? "",
                   role: contextMenu.user.role ?? "",
+                  joiningRole: contextMenu.user.joiningRole ?? "",
+                  joiningDate: contextMenu.user.joiningDate ? new Date(contextMenu.user.joiningDate).toISOString().split('T')[0] : "",
+                  dob: contextMenu.user.dob ? new Date(contextMenu.user.dob).toISOString().split('T')[0] : "",
                   branchId: contextMenu.user.branchId
                     ? contextMenu.user.branchId.toString()
                     : "none",
                   managerIds: contextMenu.user.managers
-                    ? contextMenu.user.managers.map((m: any) => m.manager.id)
+                    ? contextMenu.user.managers.map((m: any) => m.manager.manager.id || m.manager.id)
                     : [],
                 });
                 setContextMenu(null);
@@ -594,6 +623,19 @@ function UserList() {
               <Edit className="h-4 w-4 text-slate-400" />
               <span>Edit Details</span>
             </button>
+
+            <button
+              onClick={() => {
+                setPromoteUser(contextMenu.user);
+                setPromoteForm({ role: contextMenu.user.role ?? "", date: new Date().toISOString().split('T')[0] });
+                setContextMenu(null);
+              }}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              <Users className="h-4 w-4 text-slate-400" />
+              <span>Promote Employee</span>
+            </button>
+
 
             <button
               onClick={() => {
@@ -669,6 +711,43 @@ function UserList() {
         </div>
       )}
 
+      
+      {/* Promote Modal */}
+      {promoteUser && (
+        <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm duration-200">
+          <div className="animate-in zoom-in-95 w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl duration-200">
+            <h3 className="text-lg font-bold">Promote {promoteUser.firstName}</h3>
+            <p className="text-sm text-slate-500 mb-4">Select new role and promotion date. This will automatically update their Employee Code if a series is defined.</p>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              promoteMutation.mutate({
+                userId: promoteUser.id,
+                newRole: promoteForm.role,
+                promotionDate: new Date(promoteForm.date)
+              });
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label>New Role</Label>
+                <Select value={promoteForm.role} onValueChange={(v) => setPromoteForm({...promoteForm, role: v})}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    {roles?.map(r => <SelectItem key={r.name} value={r.name}>{r.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Promotion Date</Label>
+                <Input type="date" value={promoteForm.date} onChange={(e) => setPromoteForm({...promoteForm, date: e.target.value})} required className="rounded-xl" />
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button type="button" variant="ghost" onClick={() => setPromoteUser(null)}>Cancel</Button>
+                <Button type="submit" disabled={promoteMutation.isPending} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">Promote</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {editUser && (
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/40 p-4 backdrop-blur-sm duration-200">
           <div className="animate-in zoom-in-95 my-8 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl duration-200">
@@ -716,6 +795,22 @@ function UserList() {
                     className="rounded-xl border-slate-200 bg-slate-50/50 focus-visible:ring-indigo-500"
                     required
                   />
+                </div>
+              </div>
+
+              
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-slate-700">Father's Name</Label>
+                  <Input value={editForm.fatherName} onChange={(e) => setEditForm({...editForm, fatherName: e.target.value})} className="rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-slate-700">Joining Date</Label>
+                  <Input type="date" value={editForm.joiningDate} onChange={(e) => setEditForm({...editForm, joiningDate: e.target.value})} className="rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-slate-700">Date of Birth</Label>
+                  <Input type="date" value={editForm.dob} onChange={(e) => setEditForm({...editForm, dob: e.target.value})} className="rounded-xl" />
                 </div>
               </div>
 
@@ -883,13 +978,19 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    fatherName: "",
     email: "",
-    employeeCode: "",
     password: "",
     role: "Employee",
+    joiningRole: "Employee",
+    joiningDate: new Date().toISOString().split("T")[0],
+    dob: "",
     branchId: undefined as number | undefined,
     managerIds: [] as string[],
   });
+  
+  const { data: nextCode } = api.users.getNextEmployeeCode.useQuery({ role: formData.role }, { enabled: !!formData.role });
+
 
   const { data: branches } = api.inventory.getBranches.useQuery();
   const { data: managers } = api.hierarchy.getManagers.useQuery();
@@ -912,6 +1013,8 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
     mutation.mutate({
       ...formData,
       branchId: formData.branchId,
+      joiningDate: formData.joiningDate ? new Date(formData.joiningDate) : undefined,
+      dob: formData.dob ? new Date(formData.dob) : undefined,
     });
   };
 
@@ -960,17 +1063,7 @@ function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label>Employee Code (Login ID)</Label>
-              <Input
-                value={formData.employeeCode}
-                onChange={(e) =>
-                  setFormData({ ...formData, employeeCode: e.target.value })
-                }
-                placeholder="EMP001"
-                required
-              />
-            </div>
+            
           </div>
 
           <div className="space-y-2">

@@ -1,4 +1,5 @@
-import { z } from "zod";
+with open("src/server/api/routers/users.ts", "w", encoding="utf-8") as fw:
+    fw.write("""import { z } from "zod";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -6,8 +7,7 @@ import {
   publicProcedure,
 } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { users } from "@/server/db/schema/users";
-import { roles } from "@/server/db/schema/roles";
+import { users } from "@/server/db/schema/users";\nimport { roles } from "@/server/db/schema/roles";
 import { eq, or, sql, desc, like } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -18,12 +18,7 @@ export const usersRouter = createTRPCRouter({
         firstName: z.string().min(2),
         lastName: z.string().min(2),
         email: z.string().email(),
-        employeeCode: z.string().min(3).optional(),
-        fatherName: z.string().optional(),
-        joiningDate: z.date().optional(),
-        dob: z.date().optional(),
-        joiningRole: z.string().optional(),
-        promotionDate: z.date().optional(),
+        employeeCode: z.string().min(3).optional(),\n        fatherName: z.string().optional(),\n        joiningDate: z.date().optional(),\n        joiningRole: z.string().optional(),\n        promotionDate: z.date().optional(),
         password: z.string().min(6),
         branchId: z.number(),
       }),
@@ -153,100 +148,13 @@ export const usersRouter = createTRPCRouter({
       return { success: true };
     }),
 
-
-  getNextEmployeeCode: protectedProcedure
-    .input(z.object({ role: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const roleData = await ctx.db.query.roles.findFirst({
-        where: eq(roles.name, input.role)
-      });
-      const series = roleData?.codeSeries?.trim();
-      if (!series) return 'EMP-0001 (Auto Generated)';
-      
-      // Extract trailing digits and prefix
-      const match = series.match(/^(.*?)(\d+)$/);
-      if (!match) {
-        // If there are no trailing digits, just append 0001 as fallback
-        return `${series}0001`;
-      }
-      
-      const prefix = match[1];
-      const startNumStr = match[2];
-      const startNum = parseInt(startNumStr, 10);
-      
-      const latestUsers = await ctx.db.query.users.findMany({
-        where: like(users.employeeCode, `${prefix}%`),
-        orderBy: [desc(users.employeeCode)],
-        limit: 100
-      });
-      
-      if (latestUsers.length === 0) {
-        return series; // No users yet, return the exact starting code
-      }
-      
-      let maxNum = startNum - 1; // Base case: if we found users, we need to at least start at startNum
-      for (const u of latestUsers) {
-        const numPart = u.employeeCode.replace(prefix, '');
-        const parsed = parseInt(numPart, 10);
-        if (!isNaN(parsed) && parsed > maxNum) {
-          maxNum = parsed;
-        }
-      }
-      
-      return `${prefix}${(maxNum + 1).toString().padStart(startNumStr.length, '0')}`;
-    }),
-
-
-  previewNextEmployeeCode: protectedProcedure
-    .input(z.object({ series: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const series = input.series.trim();
-      if (!series) return '';
-      
-      // Extract trailing digits and prefix
-      const match = series.match(/^(.*?)(\d+)$/);
-      if (!match) {
-        // If there are no trailing digits, just append 0001 as fallback
-        return `${series}0001`;
-      }
-      
-      const prefix = match[1];
-      const startNumStr = match[2];
-      const startNum = parseInt(startNumStr, 10);
-      
-      const latestUsers = await ctx.db.query.users.findMany({
-        where: like(users.employeeCode, `${prefix}%`),
-        orderBy: [desc(users.employeeCode)],
-        limit: 100
-      });
-      
-      if (latestUsers.length === 0) {
-        return series; // No users yet, return the exact starting code
-      }
-      
-      let maxNum = startNum - 1; // Base case: if we found users, we need to at least start at startNum
-      for (const u of latestUsers) {
-        const numPart = u.employeeCode.replace(prefix, '');
-        const parsed = parseInt(numPart, 10);
-        if (!isNaN(parsed) && parsed > maxNum) {
-          maxNum = parsed;
-        }
-      }
-      
-      return `${prefix}${(maxNum + 1).toString().padStart(startNumStr.length, '0')}`;
-    }),
-
   createUser: protectedProcedure
     .input(
       z.object({
         firstName: z.string(),
         lastName: z.string(),
         email: z.string().email(),
-        employeeCode: z.string().optional(),
-        fatherName: z.string().optional(),
-        joiningDate: z.date().optional(),
-        dob: z.date().optional(),
-        joiningRole: z.string().optional(),
+        employeeCode: z.string().optional(),\n        fatherName: z.string().optional(),\n        joiningDate: z.date().optional(),\n        joiningRole: z.string().optional(),
         password: z.string().min(6),
         role: z.string().min(2).max(64),
         branchId: z.number(),
@@ -312,8 +220,7 @@ export const usersRouter = createTRPCRouter({
           finalEmployeeCode = `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
         }
       }
-
-      const { managerIds, employeeCode, ...userData } = input;
+\n      const { managerIds, employeeCode, ...userData } = input;
 
       const [newUser] = await ctx.db
         .insert(users)
@@ -455,12 +362,7 @@ export const usersRouter = createTRPCRouter({
         firstName: z.string().min(2),
         lastName: z.string().min(2),
         email: z.string().email(),
-        employeeCode: z.string().min(3).optional(),
-        fatherName: z.string().optional(),
-        joiningDate: z.date().optional(),
-        dob: z.date().optional(),
-        joiningRole: z.string().optional(),
-        promotionDate: z.date().optional(),
+        employeeCode: z.string().min(3).optional(),\n        fatherName: z.string().optional(),\n        joiningDate: z.date().optional(),\n        joiningRole: z.string().optional(),\n        promotionDate: z.date().optional(),
         role: z.string().min(2).max(64),
         branchId: z.number().nullable().optional(),
         managerIds: z.array(z.string()).optional(),
@@ -602,8 +504,7 @@ export const usersRouter = createTRPCRouter({
         })
         .where(eq(users.id, input.userId));
     }),
-
-  getOrgTree: featureProtectedProcedure("org-chart").query(async ({ ctx }) => {
+\n  getOrgTree: featureProtectedProcedure("org-chart").query(async ({ ctx }) => {
     // Fetch all active users with their managers
     const allUsers = await ctx.db.query.users.findMany({
       where: eq(users.isActive, true),
@@ -676,3 +577,4 @@ export const usersRouter = createTRPCRouter({
     return [];
   }),
 });
+""")

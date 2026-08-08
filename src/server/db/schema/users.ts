@@ -5,6 +5,7 @@ import {
   boolean,
   integer,
   timestamp,
+  date,
   primaryKey,
 } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
@@ -21,6 +22,11 @@ export const users = createTable("user", {
   password: varchar("password", { length: 256 }), // Nullable for existing users migration
   firstName: varchar("first_name", { length: 256 }).notNull(),
   lastName: varchar("last_name", { length: 256 }).notNull(),
+  fatherName: varchar("father_name", { length: 256 }),
+  joiningDate: timestamp("joining_date", { withTimezone: true }).defaultNow(),
+  dob: date("dob"),
+  joiningRole: varchar("joining_role", { length: 64 }),
+  promotionDate: timestamp("promotion_date", { withTimezone: true }),
   role: varchar("role", { length: 64 })
     .default("Employee")
     .notNull()
