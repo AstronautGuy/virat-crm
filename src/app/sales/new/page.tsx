@@ -132,7 +132,6 @@ export default function NewSale() {
     const total = saleItems.reduce((acc, item) => acc + (parseFloat(item.amount) || 0), 0);
     setInvoiceAmount(total > 0 ? total.toFixed(2) : "");
   }, [saleItems]);
-  const [receivedAmount, setReceivedAmount] = useState("");
 
   const createSale = api.sales.createSale.useMutation({
     onSuccess: (data) => {
@@ -214,7 +213,7 @@ export default function NewSale() {
       customerAddress: houseNo,
       invoiceAmount: invoiceAmount === "" ? undefined : invoiceAmount,
       advancePaymentAmount: advancePaymentAmount === "" ? undefined : advancePaymentAmount,
-      receivedAmount: receivedAmount === "" ? "0" : receivedAmount,
+      receivedAmount: advancePaymentAmount === "" ? "0" : advancePaymentAmount,
       tradeDiscount: "0",
       basicInvoiceValue: "0",
       cgst: "0",
@@ -276,7 +275,6 @@ export default function NewSale() {
     setFreeItems([{ id: Date.now() + 1, productId: "", offerNumber: "", freeProduct: "", freeQty: "" }]);
     setInvoiceAmount("");
     setAdvancePaymentAmount("");
-    setReceivedAmount("");
   };
 
   const updateSaleItem = (id: number, field: string, value: string) => {
@@ -310,6 +308,10 @@ export default function NewSale() {
   const updateFreeItem = (id: number, field: string, value: string) => {
     setFreeItems(freeItems.map((item) => item.id === id ? { ...item, [field]: value } : item));
   };
+
+  const parsedInvoice = parseFloat(invoiceAmount) || 0;
+  const parsedAdvance = parseFloat(advancePaymentAmount) || 0;
+  const balanceAmount = (parsedInvoice - parsedAdvance).toFixed(2);
 
   return (
     <DashboardLayout>
