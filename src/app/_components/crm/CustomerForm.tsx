@@ -45,11 +45,13 @@ const formSchema = z.object({
 interface CustomerFormProps {
   onSuccess?: () => void;
   isManager?: boolean;
+  initialData?: any;
 }
 
 export function CustomerForm({
   onSuccess,
   isManager = false,
+  initialData,
 }: CustomerFormProps) {
   const [isFetchingPincode, setIsFetchingPincode] = useState(false);
   const [villages, setVillages] = useState<string[]>([]);

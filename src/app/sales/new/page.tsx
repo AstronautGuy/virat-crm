@@ -127,6 +127,11 @@ export default function NewSale() {
 
   const [invoiceAmount, setInvoiceAmount] = useState("");
   const [advancePaymentAmount, setAdvancePaymentAmount] = useState("");
+  
+  useEffect(() => {
+    const total = saleItems.reduce((acc, item) => acc + (parseFloat(item.amount) || 0), 0);
+    setInvoiceAmount(total > 0 ? total.toFixed(2) : "");
+  }, [saleItems]);
   const [receivedAmount, setReceivedAmount] = useState("");
 
   const createSale = api.sales.createSale.useMutation({
@@ -271,7 +276,32 @@ export default function NewSale() {
   };
 
   const updateSaleItem = (id: number, field: string, value: string) => {
-    setSaleItems(saleItems.map((item) => item.id === id ? { ...item, [field]: value } : item));
+    setSaleItems(saleItems.map((item) => {
+      if (item.id !== id) return item;
+      const updated = { ...item, [field]: value };
+      
+      // Auto-populate from product if productId changes
+      if (field === "productId") {
+        const prod = products.find(p => p.id === parseInt(value, 10));
+        if (prod) {
+          updated.rate = prod.mrp?.toString() || "0";
+          updated.ptsPerQty = prod.points?.toString() || "0";
+        }
+      }
+      
+      const qty = parseFloat(updated.quantity) || 0;
+      const rate = parseFloat(updated.rate) || 0;
+      const pts = parseFloat(updated.ptsPerQty) || 0;
+      
+      if (field === "quantity" || field === "rate" || field === "productId") {
+        updated.amount = (qty * rate).toFixed(2);
+      }
+      if (field === "quantity" || field === "ptsPerQty" || field === "productId") {
+        updated.totalPts = (qty * pts).toFixed(2);
+      }
+      
+      return updated;
+    }));
   };
   const updateFreeItem = (id: number, field: string, value: string) => {
     setFreeItems(freeItems.map((item) => item.id === id ? { ...item, [field]: value } : item));
