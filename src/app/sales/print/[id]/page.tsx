@@ -180,7 +180,9 @@ export default function SalePrintLayout() {
               {sale.items.map((item, index) => (
                 <tr key={item.id} className="border-b border-gray-300">
                   <td className="border-r border-black p-2 text-center">{index + 1}</td>
-                  <td className="border-r border-black p-2">{item.product.name}</td>
+                  <td className="border-r border-black p-2">
+                    {item.product.name} {item.isFree ? <span className="font-semibold text-gray-600">(Free)</span> : ""}
+                  </td>
                   <td className="border-r border-black p-2">{(item.product as any).category || "-"}</td>
                   <td className="border-r border-black p-2">{(item.product as any).hsnCode || "-"}</td>
                   <td className="border-r border-black p-2 text-right">{item.quantity}</td>
