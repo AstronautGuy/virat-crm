@@ -240,6 +240,10 @@ export default function NewSale() {
     createSale.mutate(saleData);
   };
 
+  const mainQtyTotal = saleItems.reduce((acc, item) => acc + (parseInt(item.quantity) || 0), 0);
+  const freeQtyTotal = freeItems.reduce((acc, item) => acc + (parseInt(item.freeQty) || 0), 0);
+  const totalQty = mainQtyTotal + freeQtyTotal;
+
   const clearForm = () => {
     setBranchId("");
     setOrderNumber("");
