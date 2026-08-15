@@ -242,6 +242,7 @@ export default function SalePrintLayout() {
             </div>
           </div>
         </div>
+        </div>
       </div>
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
