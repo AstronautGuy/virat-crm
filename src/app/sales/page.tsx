@@ -348,15 +348,15 @@ export default function SalesDashboard() {
                     </div>
 
                     <div className="pt-2">
-                      <Button
-                        className="w-full bg-slate-800 hover:bg-slate-700 text-white"
-                        onClick={() => {
-                          window.open(`/sales/print/${selectedSale.id}`, "_blank");
-                        }}
-                      >
-                        <Printer className="mr-2 h-4 w-4" />
-                        Print Invoice
-                      </Button>
+                        <Link
+                          href={`/sales/print/${selectedSale.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full flex items-center justify-center rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 h-9"
+                        >
+                          <Printer className="mr-2 h-4 w-4" />
+                          Print Invoice
+                        </Link>
                     </div>
 
                     {user?.role === "Admin" && (
