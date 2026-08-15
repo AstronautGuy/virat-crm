@@ -605,20 +605,19 @@ export default function NewSale() {
                 </div>
 
                 <div className="flex flex-col space-y-1 w-48 ml-auto">
-                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Main Qty:</span> <input type="text" className="w-24 border border-gray-400 bg-white px-1"/></div>
-                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Free Qty:</span> <input type="text" className="w-24 border border-gray-400 bg-white px-1"/></div>
-                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Total Qty:</span> <input type="text" className="w-24 border border-gray-400 bg-white px-1"/></div>
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Main Qty:</span> <input type="text" readOnly value={mainQtyTotal} className="w-24 border border-gray-400 bg-gray-100 px-1 text-right font-semibold"/></div>
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Free Qty:</span> <input type="text" readOnly value={freeQtyTotal} className="w-24 border border-gray-400 bg-gray-100 px-1 text-right font-semibold"/></div>
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Total Qty:</span> <input type="text" readOnly value={totalQty} className="w-24 border border-gray-400 bg-gray-100 px-1 text-right font-semibold"/></div>
                 </div>
 
                 <div className="flex flex-col space-y-1 w-64">
-                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Invoice Amt:</span> <input type="text" value={invoiceAmount} onChange={e=>setInvoiceAmount(e.target.value)} className="w-32 border border-gray-400 bg-white px-1"/></div>
-                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Advance Amt:</span> <input type="text" value={advancePaymentAmount} onChange={e=>setAdvancePaymentAmount(e.target.value)} className="w-32 border border-gray-400 bg-white px-1"/></div>
-                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Received Amt:</span> <input type="text" value={receivedAmount} onChange={e=>setReceivedAmount(e.target.value)} className="w-32 border border-gray-400 bg-white px-1"/></div>
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Invoice Amt:</span> <input type="text" value={invoiceAmount} readOnly className="w-32 border border-gray-400 bg-gray-100 px-1 font-semibold text-right"/></div>
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Advance Amt:</span> <input type="number" min="0" value={advancePaymentAmount} onChange={e=>setAdvancePaymentAmount(e.target.value)} className="w-32 border border-gray-400 bg-white px-1 text-right"/></div>
                 </div>
                 
                 <div className="flex flex-col ml-4 mr-4 w-32 justify-end mb-1">
                   <div className="text-center font-bold mb-1">Bal Amount</div>
-                  <input type="text" disabled className="w-full border border-gray-400 bg-white px-1 py-1 h-6"/>
+                  <input type="text" value={balanceAmount} readOnly className="w-full border border-gray-400 bg-gray-100 px-1 py-1 h-6 text-right font-bold text-red-600"/>
                 </div>
               </div>
 
