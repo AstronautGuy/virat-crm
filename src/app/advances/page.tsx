@@ -42,7 +42,7 @@ const FileGallery = dynamic(
 
 import { PageWrapper } from "../_components/layout/PageWrapper";
 
-export default function SalesDashboard() {
+export default function AdvancesDashboard() {
   const [filter, setFilter] = useState<
     "All" | "Pending" | "Approved" | "Rejected"
   >("All");
@@ -71,7 +71,7 @@ export default function SalesDashboard() {
     isFetchingNextPage,
     refetch,
   } = api.sales.getSales.useInfiniteQuery(
-    { limit: 20, search: debouncedSearch || undefined, registerType: "Sale" },
+    { limit: 20, search: debouncedSearch || undefined, registerType: "Advance" },
     { getNextPageParam: (lastPage) => lastPage.nextCursor },
   );
 
@@ -88,7 +88,7 @@ export default function SalesDashboard() {
       onSuccess: () => {
         setSelectedSale(null);
         refetch();
-        toast.success("Sale deleted successfully");
+        toast.success("Entry deleted successfully");
       },
       onError: (error) => {
         toast.error(`Delete failed: ${error.message}`);
@@ -107,7 +107,7 @@ export default function SalesDashboard() {
     }
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Sales Register");
+    const worksheet = workbook.addWorksheet("Advance Register");
 
     // Title Row
     worksheet.addRow(["[U07TFQ"]);
@@ -123,7 +123,7 @@ export default function SalesDashboard() {
       "GL Name",
       "Customer Address",
       "Mobile No",
-      "Product name",
+      "Proudct name",
       "Sold Qty",
       "Price",
       "SaleProduct",
@@ -199,7 +199,7 @@ export default function SalesDashboard() {
 
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    saveAs(blob, "Sales_Register.xlsx");
+    saveAs(blob, "Advance_Register.xlsx");
   };
 
   return (
@@ -207,13 +207,11 @@ export default function SalesDashboard() {
       <FeatureGate featureKey="sales">
         <PageWrapper isLoading={isLoading}>
           <div className="flex flex-col space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-                  Sales Register
-                </h1>
-                <p className="mt-1 text-sm text-slate-500">
-                  Track and manage all transactions in real-time.
+                <h1 className="text-3xl font-bold tracking-tight">Advance Register</h1>
+                <p className="text-muted-foreground">
+                  Track and manage all advance entries.
                 </p>
               </div>
               <div className="flex gap-2">
@@ -221,7 +219,7 @@ export default function SalesDashboard() {
                   <Download className="mr-2 h-5 w-5" />
                   Excel
                 </Button>
-                <Link href="/sales/new">
+                <Link href="/advances/new">
                   <Button size="lg" className="rounded-2xl px-6">
                     <Plus className="mr-2 h-5 w-5" />
                     New Entry
@@ -262,15 +260,13 @@ export default function SalesDashboard() {
             </div>
 
             {filteredSales.length === 0 && !isLoading ? (
-              <Card className="flex flex-col items-center justify-center border-dashed bg-slate-50/50 p-12 text-center">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
-                  <FileText className="h-6 w-6 text-slate-400" />
+              <Card className="flex flex-col items-center justify-center border-dashed p-12 text-center">
+                <div className="bg-primary/10 rounded-full p-4">
+                  <FileText className="text-primary h-8 w-8" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-800">
-                  No Sales Found
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Try adjusting your filters or create a new entry.
+                <h3 className="mt-4 text-lg font-semibold">No advances found</h3>
+                <p className="text-muted-foreground mt-2 text-sm max-w-sm">
+                  There are no advance entries to display. Try adjusting your search or filters.
                 </p>
               </Card>
             ) : (

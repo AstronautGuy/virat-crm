@@ -16,7 +16,7 @@ export {
 } from "./leaves";
 export { products } from "./products";
 export { saleItems, saleItemsRelations } from "./saleItems";
-export { replacements, replacementsRelations } from "./replacements";
+export { replacements, replacementsRelations, replacementItems, replacementItemsRelations } from "./replacements";
 export { notifications, notificationsRelations } from "./notifications";
 export { files, filesRelations, fileEntityTypeEnum } from "./files";
 export {

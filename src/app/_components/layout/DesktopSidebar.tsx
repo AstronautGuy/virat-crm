@@ -83,6 +83,12 @@ export function DesktopSidebar({ isMobile = false }: { isMobile?: boolean }) {
           hidden: !getIsFeatureEnabled("sales"),
         },
         {
+          href: "/advances",
+          label: "Advance Register",
+          icon: ShoppingBag,
+          hidden: !getIsFeatureEnabled("sales"),
+        },
+        {
           href: "/replacements",
           label: "Replacements",
           icon: RefreshCcw,

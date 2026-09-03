@@ -1,7 +1,7 @@
 "use client";
 import { env } from "@/env";
 import { FeatureGate } from "@/app/_components/auth/FeatureGate";
-import { DashboardLayout } from "@/app/_components/layout/DashboardLayout";
+import { DashboardLayout } from "../../_components/layout/DashboardLayout";
 import { api } from "@/trpc/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,17 +21,8 @@ import { useState, useEffect } from "react";
 import { FileUploader } from "@/app/_components/ui/FileUploader";
 import { MultiSelectInput } from "@/app/_components/ui/MultiSelectInput";
 
-import { useParams } from "next/navigation";
-export default function EditSale() {
+export default function NewAdvance() {
   const router = useRouter();
-  const params = useParams();
-  const saleId = parseInt(params.id as string);
-
-  const { data: sale, isLoading: isFetchingSale } = api.sales.getSale.useQuery(
-    { id: saleId },
-    { enabled: !!saleId },
-  );
-
 
   const [branchId, setBranchId] = useState("");
   const [success, setSuccess] = useState(false);
@@ -78,53 +69,6 @@ export default function EditSale() {
   const { data: branches = [] } = api.inventory.getBranches.useQuery();
   const { data: products = [] } = api.inventory.getProducts.useQuery();
   
-  
-  useEffect(() => {
-    if (sale) {
-      setBranchId(sale.branchId?.toString() ?? "");
-      setOrderNumber(sale.orderNumber ?? "");
-      setTransactionNumber(sale.transactionNumber ?? "");
-      setCmrId(sale.cmrId ?? "");
-      setTmNo(sale.tmNo ?? "");
-      setSaleType(sale.saleType ?? "Direct to Customer from PU");
-      setCustomerId(sale.customerId ?? "");
-      setCustomerName(sale.customerName ?? "");
-      if (sale.assignments) {
-        setUserIds(sale.assignments.filter((a: any) => a.role === "Ecode").map((a: any) => a.userId));
-        setManagerIds(sale.assignments.filter((a: any) => a.role === "FieldSupport").map((a: any) => a.userId));
-      }
-      setHouseNo(sale.customerAddress ?? "");
-      setPin(sale.pincode ?? "");
-      setMandal(sale.area ?? "");
-      setDistrict(sale.city ?? "");
-      setState(sale.state ?? "");
-      setLandMark(sale.landmark ?? "");
-      setInvoiceAmount(sale.invoiceAmount ?? "");
-
-      if (sale.items) {
-        const sItems = sale.items.filter(i => !i.isFree).map((item, idx) => ({
-          id: item.id ?? idx,
-          productId: item.productId?.toString() ?? "",
-          quantity: item.quantity?.toString() ?? "1",
-          rate: "",
-          amount: "",
-          ptsPerQty: item.ptsPerQty ?? "",
-          totalPts: item.totalPts ?? "",
-        }));
-        if(sItems.length > 0) setSaleItems(sItems);
-
-        const fItems = sale.items.filter(i => i.isFree).map((item, idx) => ({
-          id: item.id ?? idx,
-          productId: item.productId?.toString() ?? "",
-          offerNumber: item.offerNumber ?? "",
-          freeProduct: "",
-          freeQty: item.quantity?.toString() ?? "1",
-        }));
-        if(fItems.length > 0) setFreeItems(fItems);
-      }
-    }
-  }, [sale]);
-
   const { data: nextInvoiceId } = api.sales.getNextInvoiceId.useQuery();
   useEffect(() => {
     if (nextInvoiceId && !transactionNumber)
@@ -182,13 +126,15 @@ export default function EditSale() {
     { id: Date.now(), productId: "", quantity: "1", rate: "", amount: "", ptsPerQty: "", totalPts: "" },
   ]);
 
-  const [freeItems, setFreeItems] = useState([
-    { id: Date.now() + 1, productId: "", offerNumber: "", freeProduct: "", freeQty: "" },
-  ]);
-
   const [invoiceAmount, setInvoiceAmount] = useState("");
+  const [advancePaymentAmount, setAdvancePaymentAmount] = useState("");
+  
+  useEffect(() => {
+    const total = saleItems.reduce((acc, item) => acc + (parseFloat(item.amount) || 0), 0);
+    setInvoiceAmount(total > 0 ? total.toFixed(2) : "");
+  }, [saleItems]);
 
-  const updateSale = api.sales.updateSale.useMutation({
+  const createSale = api.sales.createSale.useMutation({
     onSuccess: (data) => {
       if (data) {
         setSuccess(true);
@@ -217,14 +163,7 @@ export default function EditSale() {
       totalPts: i.totalPts,
     }));
 
-    const validFreeItems = freeItems.filter(i => i.productId && i.freeQty).map(i => ({
-      productId: parseInt(i.productId), // Note: using main product dropdown here, or free product if available
-      quantity: parseInt(i.freeQty),
-      isFree: true,
-      offerNumber: i.offerNumber,
-    }));
-
-    const allItems = [...validSaleItems, ...validFreeItems];
+    const allItems = [...validSaleItems];
 
     if (allItems.length === 0) {
       toast.error("Please select a product and quantity for at least one item");
@@ -252,7 +191,6 @@ export default function EditSale() {
     }
 
     const saleData = {
-      id: saleId,
       branchId: parseInt(branchId),
       pincode: pin === "" ? undefined : pin,
       addressLine1: houseNo === "" ? undefined : houseNo,
@@ -268,9 +206,9 @@ export default function EditSale() {
       customerName: customerName,
       customerAddress: houseNo,
       invoiceAmount: invoiceAmount === "" ? undefined : invoiceAmount,
-      advancePaymentAmount: "0",
-      receivedAmount: "0",
-      registerType: "Sale" as const,
+      advancePaymentAmount: advancePaymentAmount === "" ? undefined : advancePaymentAmount,
+      receivedAmount: advancePaymentAmount === "" ? "0" : advancePaymentAmount,
+      registerType: "Advance" as const,
       tradeDiscount: "0",
       basicInvoiceValue: "0",
       cgst: "0",
@@ -284,7 +222,7 @@ export default function EditSale() {
     if (!navigator.onLine) {
       const { addToOfflineQueue } = await import("@/lib/offline-db");
       await addToOfflineQueue({
-        type: "updateSale",
+        type: "createSale",
         data: saleData,
         createdAt: Date.now(),
       });
@@ -293,17 +231,11 @@ export default function EditSale() {
       return;
     }
 
-    updateSale.mutate(saleData);
+    createSale.mutate(saleData);
   };
 
-
-  const deleteSale = api.sales.deleteSale.useMutation({
-    onSuccess: () => {
-      toast.success("Sale deleted successfully");
-      router.push("/sales");
-    },
-    onError: (err) => toast.error(`Delete failed: ${err.message}`),
-  });
+  const mainQtyTotal = saleItems.reduce((acc, item) => acc + (parseInt(item.quantity) || 0), 0);
+  const totalQty = mainQtyTotal;
 
   const clearForm = () => {
     setBranchId("");
@@ -334,20 +266,42 @@ export default function EditSale() {
     setDob("");
     setMarriageDate("");
     setSaleItems([{ id: Date.now(), productId: "", quantity: "1", rate: "", amount: "", ptsPerQty: "", totalPts: "" }]);
-    setFreeItems([{ id: Date.now() + 1, productId: "", offerNumber: "", freeProduct: "", freeQty: "" }]);
     setInvoiceAmount("");
+    setAdvancePaymentAmount("");
   };
-
-  const mainQtyTotal = saleItems.reduce((acc, item) => acc + (parseInt(item.quantity) || 0), 0);
-  const freeQtyTotal = freeItems.reduce((acc, item) => acc + (parseInt(item.freeQty) || 0), 0);
-  const totalQty = mainQtyTotal + freeQtyTotal;
 
   const updateSaleItem = (id: number, field: string, value: string) => {
-    setSaleItems(saleItems.map((item) => item.id === id ? { ...item, [field]: value } : item));
+    setSaleItems(saleItems.map((item) => {
+      if (item.id !== id) return item;
+      const updated = { ...item, [field]: value };
+      
+      // Auto-populate from product if productId changes
+      if (field === "productId") {
+        const prod = products.find(p => p.id === parseInt(value, 10));
+        if (prod) {
+          updated.rate = prod.price?.toString() || "0";
+          updated.ptsPerQty = prod.pointsPerQty?.toString() || "0";
+        }
+      }
+      
+      const qty = parseFloat(updated.quantity) || 0;
+      const rate = parseFloat(updated.rate) || 0;
+      const pts = parseFloat(updated.ptsPerQty) || 0;
+      
+      if (field === "quantity" || field === "rate" || field === "productId") {
+        updated.amount = (qty * rate).toFixed(2);
+      }
+      if (field === "quantity" || field === "ptsPerQty" || field === "productId") {
+        updated.totalPts = (qty * pts).toFixed(2);
+      }
+      
+      return updated;
+    }));
   };
-  const updateFreeItem = (id: number, field: string, value: string) => {
-    setFreeItems(freeItems.map((item) => item.id === id ? { ...item, [field]: value } : item));
-  };
+
+  const parsedInvoice = parseFloat(invoiceAmount) || 0;
+  const parsedAdvance = parseFloat(advancePaymentAmount) || 0;
+  const balanceAmount = (parsedInvoice - parsedAdvance).toFixed(2);
 
   return (
     <DashboardLayout>
@@ -370,21 +324,21 @@ export default function EditSale() {
                 <CardContent>
                   <FileUploader entityType="sale" entityId={newSaleId} maxFiles={3} onUploadComplete={() => undefined} />
                   <div className="mt-6 flex justify-center">
-                    <Link href="/sales"><Button variant="outline">Skip & Finish</Button></Link>
+                    <Link href="/advances"><Button variant="outline">Skip & Finish</Button></Link>
                   </div>
                 </CardContent>
               </Card>
             ) : (
-              <div className="flex justify-center"><Link href="/sales"><Button className="px-8">Return</Button></Link></div>
+              <div className="flex justify-center"><Link href="/advances"><Button className="px-8">Return</Button></Link></div>
             )}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mx-auto max-w-[1200px] border-2 border-slate-300 shadow bg-[#cde8e8] text-xs pb-4 font-sans">
             <div className="flex justify-between items-center bg-white px-2 py-1 border-b-2 border-slate-300">
-              <div className="font-bold text-sm">PU Invoice :: B2C</div>
+              <div className="font-bold text-sm">Advance Entry</div>
               <div className="flex gap-4 items-center">
-                <div className="font-bold text-sm border px-2 py-0.5 bg-gray-100">Sales Invoice :: B2C</div>
-                <Link href="/sales" className="flex items-center text-red-600 font-bold hover:underline"><X className="w-4 h-4 mr-1"/> Close</Link>
+                <div className="font-bold text-sm border px-2 py-0.5 bg-gray-100">Advance Entry :: B2C</div>
+                <Link href="/advances" className="flex items-center text-red-600 font-bold hover:underline"><X className="w-4 h-4 mr-1"/> Close</Link>
               </div>
             </div>
 
@@ -462,7 +416,7 @@ export default function EditSale() {
                 <div className="col-span-5">
                   <input 
                     type="text" 
-                    list="edit-customers-list"
+                    list="customers-list"
                     value={customerName} 
                     onChange={e => {
                       setCustomerName(e.target.value);
@@ -476,7 +430,7 @@ export default function EditSale() {
                     placeholder="Type or select customer..." 
                     className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs"
                   />
-                  <datalist id="edit-customers-list">
+                  <datalist id="customers-list">
                     {customers.filter(c => !villageSearch || (c.village && c.village.toLowerCase().includes(villageSearch.toLowerCase()))).map(c => (
                       <option key={c.id} value={c.name}>{c.mobile}</option>
                     ))}
@@ -589,51 +543,7 @@ export default function EditSale() {
                 </table>
               </div>
 
-              {/* FREE PRODUCTS TAB/GRID */}
-              <div className="mt-2 border border-gray-300 bg-white">
-                <div className="flex justify-between items-center bg-gray-100 border-b border-gray-300 px-2 py-1">
-                  <div className="font-semibold text-[11px]">Free Products</div>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => setFreeItems([{ id: Date.now() + 1, productId: "", offerNumber: "", freeProduct: "", freeQty: "" }])} className="text-red-600 flex items-center gap-1 font-semibold text-[11px]"><X className="w-3 h-3"/> Clear Products</button>
-                    <button type="button" onClick={() => setFreeItems([...freeItems, { id: Date.now() + 1, productId: "", offerNumber: "", freeProduct: "", freeQty: "" }])} className="text-green-600 flex items-center gap-1 font-semibold text-[11px]"><Plus className="w-3 h-3"/> Add Products</button>
-                  </div>
-                </div>
-                <table className="w-full text-left">
-                  <thead className="bg-gray-50 border-b border-gray-300">
-                    <tr>
-                      <th className="font-normal px-1 py-1 w-12 text-center">Sl.No</th>
-                      <th className="font-normal px-1 py-1">Main Product</th>
-                      <th className="font-normal px-1 py-1 w-32">OfferNumber</th>
-                      <th className="font-normal px-1 py-1 w-64">Free Product</th>
-                      <th className="font-normal px-1 py-1 w-20">FreeUnit</th>
-                      <th className="font-normal px-1 py-1 w-12">Edit</th>
-                      <th className="font-normal px-1 py-1 w-12">Del</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {freeItems.map((item, idx) => (
-                      <tr key={item.id} className="border-b border-gray-200 bg-[#e2e8f0]">
-                        <td className="px-1 text-center">{idx + 1}</td>
-                        <td className="px-1 py-0.5">
-                          <select value={item.productId} onChange={e=>updateFreeItem(item.id, "productId", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5">
-                            <option value="">Select...</option>
-                            {products.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                          </select>
-                        </td>
-                        <td className="px-1 py-0.5"><input type="text" value={item.offerNumber} onChange={e=>updateFreeItem(item.id, "offerNumber", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5"/></td>
-                        <td className="px-1 py-0.5"><input type="text" value={item.freeProduct} onChange={e=>updateFreeItem(item.id, "freeProduct", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5"/></td>
-                        <td className="px-1 py-0.5"><input type="number" min="1" value={item.freeQty} onChange={e=>updateFreeItem(item.id, "freeQty", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5 text-right"/></td>
-                        <td className="px-1 text-center text-blue-600 font-bold cursor-pointer">E</td>
-                        <td className="px-1 text-center text-red-600 font-bold cursor-pointer" onClick={() => { if(freeItems.length > 1) setFreeItems(freeItems.filter(f=>f.id !== item.id))}}>X</td>
-                      </tr>
-                    ))}
-                     {/* Padding rows */}
-                     {Array.from({length: Math.max(0, 3 - freeItems.length)}).map((_, i) => (
-                       <tr key={`pad-f-${i}`} className="border-b border-gray-200 bg-[#e2e8f0] h-6"><td colSpan={7}></td></tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+
 
               {/* SUMMARY SECTION */}
               <div className="flex gap-4 mt-4 items-end">
@@ -644,28 +554,28 @@ export default function EditSale() {
 
                 <div className="flex flex-col space-y-1 w-48 ml-auto">
                   <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Main Unit:</span> <input type="text" readOnly value={mainQtyTotal} className="w-24 border border-gray-400 bg-gray-100 px-1 text-right font-semibold"/></div>
-                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Free Unit:</span> <input type="text" readOnly value={freeQtyTotal} className="w-24 border border-gray-400 bg-gray-100 px-1 text-right font-semibold"/></div>
                   <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Total Unit:</span> <input type="text" readOnly value={totalQty} className="w-24 border border-gray-400 bg-gray-100 px-1 text-right font-semibold"/></div>
                 </div>
 
                 <div className="flex flex-col space-y-1 w-64">
-                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Invoice Amt:</span> <input type="text" value={invoiceAmount} onChange={e=>setInvoiceAmount(e.target.value)} className="w-32 border border-gray-400 bg-white px-1 text-right"/></div>
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Invoice Amt:</span> <input type="text" value={invoiceAmount} readOnly className="w-32 border border-gray-400 bg-gray-100 px-1 font-semibold text-right"/></div>
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Advance Amt:</span> <input type="number" min="0" value={advancePaymentAmount} onChange={e=>setAdvancePaymentAmount(e.target.value)} className="w-32 border border-gray-400 bg-white px-1 text-right"/></div>
                 </div>
                 
                 <div className="flex flex-col ml-4 mr-4 w-32 justify-end mb-1">
                   <div className="text-center font-bold mb-1">Bal Amount</div>
-                  <input type="text" disabled value={invoiceAmount || "0.00"} className="w-full border border-gray-400 bg-white px-1 py-1 h-6 text-right font-bold text-red-600"/>
+                  <input type="text" value={balanceAmount} readOnly className="w-full border border-gray-400 bg-gray-100 px-1 py-1 h-6 text-right font-bold text-red-600"/>
                 </div>
               </div>
 
               {/* ACTION BUTTONS */}
               <div className="flex gap-2 mt-4 ml-2">
-                <button type="submit" disabled={updateSale.isPending} className="bg-white border border-gray-400 px-6 py-1 hover:bg-gray-50 flex items-center gap-1">
-                  {updateSale.isPending && <Loader2 className="w-3 h-3 animate-spin"/>} Save
+                <button type="submit" disabled={createSale.isPending} className="bg-white border border-gray-400 px-6 py-1 hover:bg-gray-50 flex items-center gap-1">
+                  {createSale.isPending && <Loader2 className="w-3 h-3 animate-spin"/>} Save
                 </button>
                 <button type="button" onClick={clearForm} className="bg-white border border-gray-400 px-6 py-1 hover:bg-gray-50">Clear</button>
-                <button type="button" onClick={() => { if(confirm("Are you sure?")) deleteSale.mutate({ id: saleId }) }} className="bg-white border border-gray-400 px-6 py-1 hover:bg-gray-50">Delete</button>
-                <Link href="/sales" className="bg-white border border-gray-400 px-6 py-1 hover:bg-gray-50 flex items-center justify-center">Close</Link>
+                <button type="button" className="bg-white border border-gray-400 px-6 py-1 hover:bg-gray-50">Delete</button>
+                <Link href="/advances" className="bg-white border border-gray-400 px-6 py-1 hover:bg-gray-50 flex items-center justify-center">Close</Link>
                 <button type="button" className="bg-white border border-gray-400 px-6 py-1 hover:bg-gray-50">Print</button>
               </div>
             </div>

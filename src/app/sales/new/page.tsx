@@ -35,6 +35,11 @@ export default function NewSale() {
   const [cmrId, setCmrId] = useState("");
   const [tmNo, setTmNo] = useState("");
   const [docMonth, setDocMonth] = useState("");
+  
+  useEffect(() => {
+    setDocMonth(new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' }).replace(' ', '-'));
+  }, []);
+
   const [userIds, setUserIds] = useState<string[]>([]);
   const [managerIds, setManagerIds] = useState<string[]>([]);
   const [saleType, setSaleType] = useState("Direct to Customer from PU"); // Radio button
@@ -126,7 +131,6 @@ export default function NewSale() {
   ]);
 
   const [invoiceAmount, setInvoiceAmount] = useState("");
-  const [advancePaymentAmount, setAdvancePaymentAmount] = useState("");
   
   useEffect(() => {
     const total = saleItems.reduce((acc, item) => acc + (parseFloat(item.amount) || 0), 0);
@@ -212,8 +216,9 @@ export default function NewSale() {
       customerName: customerName,
       customerAddress: houseNo,
       invoiceAmount: invoiceAmount === "" ? undefined : invoiceAmount,
-      advancePaymentAmount: advancePaymentAmount === "" ? undefined : advancePaymentAmount,
-      receivedAmount: advancePaymentAmount === "" ? "0" : advancePaymentAmount,
+      advancePaymentAmount: "0",
+      receivedAmount: "0",
+      registerType: "Sale" as const,
       tradeDiscount: "0",
       basicInvoiceValue: "0",
       cgst: "0",
@@ -251,7 +256,7 @@ export default function NewSale() {
     setInvDate("");
     setCmrId("");
     setTmNo("");
-    setDocMonth("");
+    setDocMonth(new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' }).replace(' ', '-'));
     setUserIds([]);
     setManagerIds([]);
     setSaleType("Direct to Customer from PU");
@@ -274,7 +279,6 @@ export default function NewSale() {
     setSaleItems([{ id: Date.now(), productId: "", quantity: "1", rate: "", amount: "", ptsPerQty: "", totalPts: "" }]);
     setFreeItems([{ id: Date.now() + 1, productId: "", offerNumber: "", freeProduct: "", freeQty: "" }]);
     setInvoiceAmount("");
-    setAdvancePaymentAmount("");
   };
 
   const updateSaleItem = (id: number, field: string, value: string) => {
@@ -286,8 +290,8 @@ export default function NewSale() {
       if (field === "productId") {
         const prod = products.find(p => p.id === parseInt(value, 10));
         if (prod) {
-          updated.rate = prod.mrp?.toString() || "0";
-          updated.ptsPerQty = prod.points?.toString() || "0";
+          updated.rate = prod.price?.toString() || "0";
+          updated.ptsPerQty = prod.pointsPerQty?.toString() || "0";
         }
       }
       
@@ -310,8 +314,7 @@ export default function NewSale() {
   };
 
   const parsedInvoice = parseFloat(invoiceAmount) || 0;
-  const parsedAdvance = parseFloat(advancePaymentAmount) || 0;
-  const balanceAmount = (parsedInvoice - parsedAdvance).toFixed(2);
+  const balanceAmount = parsedInvoice.toFixed(2);
 
   return (
     <DashboardLayout>
@@ -413,17 +416,7 @@ export default function NewSale() {
                 <div className="col-span-2"></div>
               </div>
 
-              {/* RADIO BUTTONS */}
-              <div className="flex gap-12 ml-16 py-1">
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input type="radio" className="w-3 h-3" name="saleType" checked={saleType === "Direct to Customer from PU"} onChange={() => setSaleType("Direct to Customer from PU")} />
-                  Direct to Customer from PU
-                </label>
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input type="radio" className="w-3 h-3" name="saleType" checked={saleType === "Against DC from GL"} onChange={() => setSaleType("Against DC from GL")} />
-                  Against DC from GL
-                </label>
-              </div>
+              {/* RADIO BUTTONS REMOVED */}
 
               {/* CUSTOMER SECTION */}
               <div className="grid grid-cols-12 gap-x-2 gap-y-1">
@@ -433,14 +426,28 @@ export default function NewSale() {
                   <button type="button" className="bg-emerald-600 px-1.5 border border-gray-600 text-white"><Search className="w-3 h-3"/></button>
                 </div>
                 <div className="col-span-1 text-right mt-1 whitespace-nowrap">Customer Name</div>
-                <div className="col-span-3">
-                  <select value={customerId} onChange={e=>setCustomerId(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs">
-                    <option value="">Select Existing Customer</option>
-                    {customers.filter(c => !villageSearch || (c.village && c.village.toLowerCase().includes(villageSearch.toLowerCase()))).map(c=><option key={c.id} value={c.id}>{c.name} - {c.mobile}</option>)}
-                  </select>
-                </div>
-                <div className="col-span-2">
-                  <input type="text" value={customerName} onChange={e=>setCustomerName(e.target.value)} placeholder="Type new..." className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs"/>
+                <div className="col-span-5">
+                  <input 
+                    type="text" 
+                    list="customers-list"
+                    value={customerName} 
+                    onChange={e => {
+                      setCustomerName(e.target.value);
+                      const existing = customers.find(c => c.name === e.target.value);
+                      if (existing) {
+                        setCustomerId(existing.id);
+                      } else {
+                        setCustomerId("");
+                      }
+                    }} 
+                    placeholder="Type or select customer..." 
+                    className="w-full border border-gray-400 px-1 py-0.5 bg-white text-xs"
+                  />
+                  <datalist id="customers-list">
+                    {customers.filter(c => !villageSearch || (c.village && c.village.toLowerCase().includes(villageSearch.toLowerCase()))).map(c => (
+                      <option key={c.id} value={c.name}>{c.mobile}</option>
+                    ))}
+                  </datalist>
                 </div>
                 <div className="col-span-2"></div>
 
@@ -518,10 +525,9 @@ export default function NewSale() {
                       <th className="font-normal px-1 py-1 w-12 text-center">Sl.No</th>
                       <th className="font-normal px-1 py-1">Main Product</th>
                       <th className="font-normal px-1 py-1 w-24">Brand</th>
-                      <th className="font-normal px-1 py-1 w-20">Qty</th>
+                      <th className="font-normal px-1 py-1 w-20">Unit</th>
                       <th className="font-normal px-1 py-1 w-24">Rate</th>
                       <th className="font-normal px-1 py-1 w-24">Amount</th>
-                      <th className="font-normal px-1 py-1 w-24">Pts.PerQty</th>
                       <th className="font-normal px-1 py-1 w-24">TotalPts</th>
                     </tr>
                   </thead>
@@ -539,13 +545,12 @@ export default function NewSale() {
                         <td className="px-1 py-0.5"><input type="number" min="1" value={item.quantity} onChange={e=>updateSaleItem(item.id, "quantity", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5 text-right"/></td>
                         <td className="px-1 py-0.5"><input type="text" value={item.rate} onChange={e=>updateSaleItem(item.id, "rate", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5 text-right"/></td>
                         <td className="px-1 py-0.5"><input type="text" value={item.amount} onChange={e=>updateSaleItem(item.id, "amount", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5 text-right"/></td>
-                        <td className="px-1 py-0.5"><input type="text" value={item.ptsPerQty} onChange={e=>updateSaleItem(item.id, "ptsPerQty", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5 text-right"/></td>
                         <td className="px-1 py-0.5"><input type="text" value={item.totalPts} onChange={e=>updateSaleItem(item.id, "totalPts", e.target.value)} className="w-full border border-gray-300 bg-white px-1 py-0.5 text-right"/></td>
                       </tr>
                     ))}
                     {/* Padding rows */}
                     {Array.from({length: Math.max(0, 5 - saleItems.length)}).map((_, i) => (
-                       <tr key={`pad-${i}`} className="border-b border-gray-200 bg-[#e2e8f0] h-6"><td colSpan={8}></td></tr>
+                       <tr key={`pad-${i}`} className="border-b border-gray-200 bg-[#e2e8f0] h-6"><td colSpan={7}></td></tr>
                     ))}
                   </tbody>
                 </table>
@@ -567,7 +572,7 @@ export default function NewSale() {
                       <th className="font-normal px-1 py-1">Main Product</th>
                       <th className="font-normal px-1 py-1 w-32">OfferNumber</th>
                       <th className="font-normal px-1 py-1 w-64">Free Product</th>
-                      <th className="font-normal px-1 py-1 w-20">FreeQty</th>
+                      <th className="font-normal px-1 py-1 w-20">FreeUnit</th>
                       <th className="font-normal px-1 py-1 w-12">Edit</th>
                       <th className="font-normal px-1 py-1 w-12">Del</th>
                     </tr>
@@ -605,14 +610,13 @@ export default function NewSale() {
                 </div>
 
                 <div className="flex flex-col space-y-1 w-48 ml-auto">
-                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Main Qty:</span> <input type="text" readOnly value={mainQtyTotal} className="w-24 border border-gray-400 bg-gray-100 px-1 text-right font-semibold"/></div>
-                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Free Qty:</span> <input type="text" readOnly value={freeQtyTotal} className="w-24 border border-gray-400 bg-gray-100 px-1 text-right font-semibold"/></div>
-                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Total Qty:</span> <input type="text" readOnly value={totalQty} className="w-24 border border-gray-400 bg-gray-100 px-1 text-right font-semibold"/></div>
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Main Unit:</span> <input type="text" readOnly value={mainQtyTotal} className="w-24 border border-gray-400 bg-gray-100 px-1 text-right font-semibold"/></div>
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Free Unit:</span> <input type="text" readOnly value={freeQtyTotal} className="w-24 border border-gray-400 bg-gray-100 px-1 text-right font-semibold"/></div>
+                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Total Unit:</span> <input type="text" readOnly value={totalQty} className="w-24 border border-gray-400 bg-gray-100 px-1 text-right font-semibold"/></div>
                 </div>
 
                 <div className="flex flex-col space-y-1 w-64">
                   <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Invoice Amt:</span> <input type="text" value={invoiceAmount} readOnly className="w-32 border border-gray-400 bg-gray-100 px-1 font-semibold text-right"/></div>
-                  <div className="flex justify-between items-center"><span className="text-right flex-1 mr-2">Advance Amt:</span> <input type="number" min="0" value={advancePaymentAmount} onChange={e=>setAdvancePaymentAmount(e.target.value)} className="w-32 border border-gray-400 bg-white px-1 text-right"/></div>
                 </div>
                 
                 <div className="flex flex-col ml-4 mr-4 w-32 justify-end mb-1">

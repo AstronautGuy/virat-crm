@@ -52,6 +52,19 @@ export const salesRouter = createTRPCRouter({
       return { exists: !!existing };
     }),
 
+  getSaleByOrderNumber: featureProtectedProcedure("sales")
+    .input(z.object({ orderNumber: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const sale = await ctx.db.query.sales.findFirst({
+        where: eq(sales.orderNumber, input.orderNumber),
+        with: {
+          items: true,
+          assignments: true,
+        },
+      });
+      return sale;
+    }),
+
   createSale: featureProtectedProcedure("sales")
     .meta({
       openapi: {
@@ -68,6 +81,7 @@ export const salesRouter = createTRPCRouter({
         cmrId: z.string().optional(),
         tmNo: z.string().optional(),
         saleType: z.string().optional(),
+        registerType: z.enum(["Sale", "Advance"]).default("Sale"),
         branchId: z.number().optional(),
         pincode: z
           .string()
@@ -221,6 +235,7 @@ export const salesRouter = createTRPCRouter({
               cmrId: input.cmrId,
               tmNo: input.tmNo,
               saleType: input.saleType,
+              registerType: input.registerType,
               pincode: input.pincode,
               addressLine1: input.addressLine1,
               landmark: input.landmark,
@@ -364,6 +379,7 @@ export const salesRouter = createTRPCRouter({
         cmrId: z.string().optional(),
         tmNo: z.string().optional(),
         saleType: z.string().optional(),
+        registerType: z.enum(["Sale", "Advance"]).optional(),
         pincode: z
           .string()
           .regex(/^[1-9][0-9]{5}$/, "Invalid Pincode")
@@ -516,6 +532,7 @@ export const salesRouter = createTRPCRouter({
             cmrId: input.cmrId,
             tmNo: input.tmNo,
             saleType: input.saleType,
+            registerType: input.registerType ?? existingSale.registerType,
             addressLine1: input.addressLine1,
             landmark: input.landmark,
             area: input.area,
@@ -587,6 +604,7 @@ export const salesRouter = createTRPCRouter({
           limit: z.number().min(1).max(100).nullish(),
           cursor: z.number().nullish(), // Use sale id as cursor for keyset pagination
           search: z.string().optional(),
+          registerType: z.enum(["Sale", "Advance"]).optional(),
         })
         .optional(),
     )
@@ -621,6 +639,7 @@ export const salesRouter = createTRPCRouter({
       if (currentUser.role === "Admin" || currentUser.role === "Developer") {
         items = await ctx.db.query.sales.findMany({
           where: and(
+            input?.registerType ? eq(sales.registerType, input.registerType) : undefined,
             cursor ? sql`${sales.id} < ${cursor}` : undefined,
             searchCondition
           ),
@@ -644,6 +663,7 @@ export const salesRouter = createTRPCRouter({
           currentUser.role === "Employee"
             ? and(
                 eq(sales.branchId, assignedBranchId!),
+                input?.registerType ? eq(sales.registerType, input.registerType) : undefined,
                 exists(
                   ctx.db
                     .select()
@@ -660,6 +680,7 @@ export const salesRouter = createTRPCRouter({
               )
             : and(
                 eq(sales.branchId, assignedBranchId!),
+                input?.registerType ? eq(sales.registerType, input.registerType) : undefined,
                 cursor ? sql`${sales.id} < ${cursor}` : undefined,
                 searchCondition
               );
