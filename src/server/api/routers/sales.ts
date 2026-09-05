@@ -81,6 +81,7 @@ export const salesRouter = createTRPCRouter({
         cmrId: z.string().optional(),
         tmNo: z.string().optional(),
         saleType: z.string().optional(),
+        oldAdvanceOrderNumber: z.string().optional(),
         registerType: z.enum(["Sale", "Advance"]).default("Sale"),
         branchId: z.number().optional(),
         pincode: z
@@ -133,6 +134,22 @@ export const salesRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      if (input.oldAdvanceOrderNumber) {
+        const oldAdvance = await ctx.db.query.sales.findFirst({
+          where: (sales, { eq, and }) =>
+            and(
+              eq(sales.orderNumber, input.oldAdvanceOrderNumber!),
+              eq(sales.registerType, "Advance")
+            ),
+        });
+        if (!oldAdvance) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid old advance order number.",
+          });
+        }
+      }
+
       const targetBranchId = enforceBranchIsolation(
         ctx,
         input.branchId ?? undefined,
@@ -235,6 +252,7 @@ export const salesRouter = createTRPCRouter({
               cmrId: input.cmrId,
               tmNo: input.tmNo,
               saleType: input.saleType,
+              oldAdvanceOrderNumber: input.oldAdvanceOrderNumber,
               registerType: input.registerType,
               pincode: input.pincode,
               addressLine1: input.addressLine1,
@@ -379,6 +397,7 @@ export const salesRouter = createTRPCRouter({
         cmrId: z.string().optional(),
         tmNo: z.string().optional(),
         saleType: z.string().optional(),
+        oldAdvanceOrderNumber: z.string().optional(),
         registerType: z.enum(["Sale", "Advance"]).optional(),
         pincode: z
           .string()
@@ -419,6 +438,22 @@ export const salesRouter = createTRPCRouter({
           code: "FORBIDDEN",
           message: "Only Admins can edit sales",
         });
+      }
+
+      if (input.oldAdvanceOrderNumber) {
+        const oldAdvance = await ctx.db.query.sales.findFirst({
+          where: (sales, { eq, and }) =>
+            and(
+              eq(sales.orderNumber, input.oldAdvanceOrderNumber!),
+              eq(sales.registerType, "Advance")
+            ),
+        });
+        if (!oldAdvance) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid old advance order number.",
+          });
+        }
       }
 
       return await ctx.db.transaction(async (tx) => {
@@ -532,6 +567,7 @@ export const salesRouter = createTRPCRouter({
             cmrId: input.cmrId,
             tmNo: input.tmNo,
             saleType: input.saleType,
+            oldAdvanceOrderNumber: input.oldAdvanceOrderNumber,
             registerType: input.registerType ?? existingSale.registerType,
             addressLine1: input.addressLine1,
             landmark: input.landmark,

@@ -22,6 +22,8 @@ import { FileUploader } from "@/app/_components/ui/FileUploader";
 import { MultiSelectInput } from "@/app/_components/ui/MultiSelectInput";
 
 import { useParams } from "next/navigation";
+import { usePincodeLookup } from "@/hooks/usePincodeLookup";
+
 export default function EditSale() {
   const router = useRouter();
   const params = useParams();
@@ -52,6 +54,7 @@ export default function EditSale() {
   const [userIds, setUserIds] = useState<string[]>([]);
   const [managerIds, setManagerIds] = useState<string[]>([]);
   const [saleType, setSaleType] = useState("Direct to Customer from PU"); // Radio button
+  const [oldAdvanceOrderNumber, setOldAdvanceOrderNumber] = useState("");
 
   const [customerId, setCustomerId] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
@@ -87,6 +90,7 @@ export default function EditSale() {
       setCmrId(sale.cmrId ?? "");
       setTmNo(sale.tmNo ?? "");
       setSaleType(sale.saleType ?? "Direct to Customer from PU");
+      setOldAdvanceOrderNumber(sale.oldAdvanceOrderNumber ?? "");
       setCustomerId(sale.customerId ?? "");
       setCustomerName(sale.customerName ?? "");
       if (sale.assignments) {
@@ -133,6 +137,16 @@ export default function EditSale() {
 
   const { data: customers = [], refetch: refetchCustomers } =
     api.crm.getBranchCustomers.useQuery();
+
+  const { fetchedDistrict, fetchedState, villages: fetchedVillages, isLoading: isLoadingPincode } = usePincodeLookup(pin);
+
+  useEffect(() => {
+    if (fetchedDistrict) setDistrict(fetchedDistrict);
+    if (fetchedState) setState(fetchedState);
+    if (fetchedVillages.length > 0) {
+      setVillage(fetchedVillages[0]);
+    }
+  }, [fetchedDistrict, fetchedState, fetchedVillages]);
 
   const { data: orgUsers = [] } = api.users.getUsersForDropdown.useQuery();
   const allUsersOptions = orgUsers.map((u) => ({
@@ -263,6 +277,7 @@ export default function EditSale() {
       cmrId: cmrId === "" ? undefined : cmrId,
       tmNo: tmNo === "" ? undefined : tmNo,
       saleType: saleType,
+      oldAdvanceOrderNumber: saleType === "Free product against old advance" ? (oldAdvanceOrderNumber || undefined) : undefined,
       orderNumber: orderNumber,
       transactionNumber: transactionNumber === "" ? undefined : transactionNumber,
       customerName: customerName,
@@ -449,9 +464,22 @@ export default function EditSale() {
                 <div className="col-span-2"></div>
               </div>
 
-              {/* RADIO BUTTONS REMOVED */}
-
-              {/* CUSTOMER SECTION */}
+              <div className="flex flex-col gap-1 mt-2 mb-2 bg-gray-100 p-2 border border-gray-300">
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-1 font-semibold">
+                    <input type="radio" name="saleType" value="Direct to Customer from PU" checked={saleType === "Direct to Customer from PU"} onChange={(e) => setSaleType(e.target.value)} /> Direct to Customer from PU
+                  </label>
+                  <label className="flex items-center gap-1 font-semibold">
+                    <input type="radio" name="saleType" value="Free product against old advance" checked={saleType === "Free product against old advance"} onChange={(e) => setSaleType(e.target.value)} /> Free product against old advance
+                  </label>
+                </div>
+                {saleType === "Free product against old advance" && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="font-semibold text-xs whitespace-nowrap">Old Advance Order No <span className="text-red-500">*</span></span>
+                    <input type="text" value={oldAdvanceOrderNumber} onChange={(e) => setOldAdvanceOrderNumber(e.target.value)} className="w-48 border border-gray-400 px-1 py-0.5 bg-white text-xs" required />
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-12 gap-x-2 gap-y-1">
                 <div className="col-span-2 text-right mt-1">Village Search</div>
                 <div className="col-span-2 flex">
@@ -485,8 +513,14 @@ export default function EditSale() {
                 <div className="col-span-2"></div>
 
                 <div className="col-span-2 text-right mt-1">Village</div>
-                <div className="col-span-2">
-                  <input type="text" value={village} onChange={e=>setVillage(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#fefce8] text-xs"/>
+                <div className="col-span-2 relative">
+                  <input type="text" list="villages-list" value={village} onChange={e=>setVillage(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#fefce8] text-xs"/>
+                  {isLoadingPincode && <div className="absolute right-1 top-1 text-[10px] text-gray-500">...</div>}
+                  <datalist id="villages-list">
+                    {fetchedVillages.map(v => (
+                      <option key={v} value={v} />
+                    ))}
+                  </datalist>
                 </div>
                 <div className="col-span-1 text-right mt-1">
                   <select className="border border-gray-400 text-xs py-0.5"><option>S/O</option><option>W/O</option><option>D/O</option></select>

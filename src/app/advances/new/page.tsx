@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { FileUploader } from "@/app/_components/ui/FileUploader";
 import { MultiSelectInput } from "@/app/_components/ui/MultiSelectInput";
+import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 
 export default function NewAdvance() {
   const router = useRouter();
@@ -77,6 +78,16 @@ export default function NewAdvance() {
 
   const { data: customers = [], refetch: refetchCustomers } =
     api.crm.getBranchCustomers.useQuery();
+
+  const { fetchedDistrict, fetchedState, villages: fetchedVillages, isLoading: isLoadingPincode } = usePincodeLookup(pin);
+
+  useEffect(() => {
+    if (fetchedDistrict) setDistrict(fetchedDistrict);
+    if (fetchedState) setState(fetchedState);
+    if (fetchedVillages.length > 0) {
+      setVillage(fetchedVillages[0]);
+    }
+  }, [fetchedDistrict, fetchedState, fetchedVillages]);
 
   const { data: orgUsers = [] } = api.users.getUsersForDropdown.useQuery();
   const allUsersOptions = orgUsers.map((u) => ({
@@ -439,8 +450,14 @@ export default function NewAdvance() {
                 <div className="col-span-2"></div>
 
                 <div className="col-span-2 text-right mt-1">Village</div>
-                <div className="col-span-2">
-                  <input type="text" value={village} onChange={e=>setVillage(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#fefce8] text-xs"/>
+                <div className="col-span-2 relative">
+                  <input type="text" list="adv-villages-list" value={village} onChange={e=>setVillage(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#fefce8] text-xs"/>
+                  {isLoadingPincode && <div className="absolute right-1 top-1 text-[10px] text-gray-500">...</div>}
+                  <datalist id="adv-villages-list">
+                    {fetchedVillages.map(v => (
+                      <option key={v} value={v} />
+                    ))}
+                  </datalist>
                 </div>
                 <div className="col-span-1 text-right mt-1">
                   <select className="border border-gray-400 text-xs py-0.5"><option>S/O</option><option>W/O</option><option>D/O</option></select>

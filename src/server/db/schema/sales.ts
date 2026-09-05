@@ -39,6 +39,7 @@ export const sales = createTable(
     tmNo: varchar("tm_no", { length: 100 }),
     saleType: varchar("sale_type", { length: 100 }).default("Direct to Customer from PU"),
     registerType: varchar("register_type", { length: 50 }).notNull().default("Sale"), // "Sale" or "Advance"
+    oldAdvanceOrderNumber: varchar("old_advance_order_number", { length: 100 }), // Reference to old advance order
     status: varchar("status", { length: 50 }).notNull().default("Pending"), // Pending, Approved, Rejected
     userId: uuid("user_id")
       .references(() => users.id, { onDelete: "cascade" })

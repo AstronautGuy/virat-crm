@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { FileUploader } from "@/app/_components/ui/FileUploader";
 import { MultiSelectInput } from "@/app/_components/ui/MultiSelectInput";
+import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 
 export default function NewReplacement() {
   const router = useRouter();
@@ -75,6 +76,17 @@ export default function NewReplacement() {
   const { data: products = [] } = api.inventory.getProducts.useQuery();
   
   const { data: customers = [] } = api.crm.getBranchCustomers.useQuery();
+
+  const { fetchedDistrict, fetchedState, villages: fetchedVillages, isLoading: isLoadingPincode } = usePincodeLookup(pin);
+
+  useEffect(() => {
+    if (fetchedDistrict) setDistrict(fetchedDistrict);
+    if (fetchedState) setState(fetchedState);
+    if (fetchedVillages.length > 0) {
+      setVillage(fetchedVillages[0]);
+    }
+  }, [fetchedDistrict, fetchedState, fetchedVillages]);
+
   const { data: orgUsers = [] } = api.users.getUsersForDropdown.useQuery();
   const allUsersOptions = orgUsers.map((u) => ({
     id: u.id,
