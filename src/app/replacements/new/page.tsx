@@ -114,6 +114,7 @@ export default function NewReplacement() {
       setCmrId(fetchedSale.cmrId || "");
       setTmNo(fetchedSale.tmNo || "");
       setCustomerName(fetchedSale.customerName || "");
+        setSo(String((fetchedSale as any).customer?.fatherName || ""));
       setHouseNo(fetchedSale.customerAddress || "");
       setPin(fetchedSale.pincode || "");
       setMandal(fetchedSale.area || "");

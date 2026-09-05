@@ -94,6 +94,7 @@ export default function EditSale() {
       setOldAdvanceOrderNumber(sale.oldAdvanceOrderNumber ?? "");
       setCustomerId(sale.customerId ?? "");
       setCustomerName(sale.customerName ?? "");
+        setSo(String((sale as any).customer?.fatherName || ""));
       if (sale.assignments) {
         setUserIds(sale.assignments.filter((a: any) => a.role === "Ecode").map((a: any) => a.userId));
         setManagerIds(sale.assignments.filter((a: any) => a.role === "FieldSupport").map((a: any) => a.userId));
@@ -219,6 +220,7 @@ export default function EditSale() {
         setDistrict("");
         setState("");
         setHouseNo("");
+          setSo("");
         setDob("");
         setMarriageDate("");
     }
@@ -310,6 +312,7 @@ export default function EditSale() {
       cmrId: cmrId === "" ? undefined : cmrId,
       tmNo: tmNo === "" ? undefined : tmNo,
       saleType: saleType,
+        customerId: customerId === "" ? undefined : customerId,
       oldAdvanceOrderNumber: saleType === "Free product against old advance" ? (oldAdvanceOrderNumber || undefined) : undefined,
       orderNumber: orderNumber,
       transactionNumber: transactionNumber === "" ? undefined : transactionNumber,
@@ -376,6 +379,7 @@ export default function EditSale() {
     setState("");
     setPin("");
     setHouseNo("");
+          setSo("");
     setLandMark("");
     setMobileNo("");
     setLandLineNo("");

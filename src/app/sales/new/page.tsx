@@ -162,6 +162,7 @@ export default function NewSale() {
         setDistrict("");
         setState("");
         setHouseNo("");
+          setSo("");
         setDob("");
         setMarriageDate("");
     }
@@ -266,6 +267,7 @@ export default function NewSale() {
       advancePaymentAmount: "0",
       receivedAmount: "0",
       registerType: "Sale" as const,
+        customerId: customerId === "" ? undefined : customerId,
       tradeDiscount: "0",
       basicInvoiceValue: "0",
       cgst: "0",
@@ -319,6 +321,7 @@ export default function NewSale() {
     setState("");
     setPin("");
     setHouseNo("");
+          setSo("");
     setLandMark("");
     setMobileNo("");
     setLandLineNo("");

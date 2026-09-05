@@ -60,6 +60,7 @@ export const salesRouter = createTRPCRouter({
         with: {
           items: true,
           assignments: true,
+          customer: true,
         },
       });
       return sale;
@@ -95,6 +96,7 @@ export const salesRouter = createTRPCRouter({
         state: z.string().optional(),
         customerName: z.string().optional(),
         customerAddress: z.string().optional(),
+        customerId: z.string().optional(),
         userIds: z.array(z.string()).optional(),
         managerIds: z.array(z.string()).optional(),
         invoiceAmount: z.string().optional(),
@@ -263,6 +265,7 @@ export const salesRouter = createTRPCRouter({
               deliveryAddress: deliveryAddress || undefined,
               customerName: input.customerName,
               customerAddress: input.customerAddress,
+              customerId: input.customerId,
               mainQty,
               freeQty,
               totalQty,
@@ -410,6 +413,7 @@ export const salesRouter = createTRPCRouter({
         state: z.string().optional(),
         customerName: z.string().optional(),
         customerAddress: z.string().optional(),
+        customerId: z.string().optional(),
         userIds: z.array(z.string()).optional(),
         managerIds: z.array(z.string()).optional(),
         invoiceAmount: z.string().optional(),
@@ -577,6 +581,7 @@ export const salesRouter = createTRPCRouter({
             deliveryAddress: deliveryAddress ?? undefined,
             customerName: input.customerName,
             customerAddress: input.customerAddress,
+            customerId: input.customerId,
             mainQty,
             freeQty,
             totalQty,
@@ -759,6 +764,7 @@ export const salesRouter = createTRPCRouter({
           items: { with: { product: true } },
           user: true,
           assignments: { with: { user: true } },
+          customer: true,
         },
       });
 

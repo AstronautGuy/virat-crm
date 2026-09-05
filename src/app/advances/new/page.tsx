@@ -160,6 +160,7 @@ export default function NewAdvance() {
         setDistrict("");
         setState("");
         setHouseNo("");
+          setSo("");
         setDob("");
         setMarriageDate("");
     }
@@ -253,6 +254,7 @@ export default function NewAdvance() {
       advancePaymentAmount: advancePaymentAmount === "" ? undefined : advancePaymentAmount,
       receivedAmount: advancePaymentAmount === "" ? "0" : advancePaymentAmount,
       registerType: "Advance" as const,
+        customerId: customerId === "" ? undefined : customerId,
       tradeDiscount: "0",
       basicInvoiceValue: "0",
       cgst: "0",
@@ -304,6 +306,7 @@ export default function NewAdvance() {
     setState("");
     setPin("");
     setHouseNo("");
+          setSo("");
     setLandMark("");
     setMobileNo("");
     setLandLineNo("");
