@@ -336,8 +336,8 @@ export default function NewReplacement() {
       <Link href="/replacements">
         <Button variant="outline" type="button">Cancel</Button>
       </Link>
-      <Button type="submit" disabled={createSale.isPending}>
-        {createSale.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+      <Button type="submit" disabled={createReplacement.isPending}>
+        {createReplacement.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
         Save Replacement
       </Button>
     </div>
