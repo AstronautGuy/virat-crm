@@ -732,10 +732,6 @@ export default function NewAdvance() {
             <span>Main Unit:</span> 
             <span className="font-medium">{mainQtyTotal}</span>
           </div>
-          <div className="flex justify-between items-center text-sm">
-            <span>Free Unit:</span> 
-            <span className="font-medium">{freeQtyTotal}</span>
-          </div>
           <div className="flex justify-between items-center text-sm pt-2 border-t font-semibold">
             <span>Total Unit:</span> 
             <span>{totalQty}</span>
