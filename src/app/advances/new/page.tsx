@@ -82,19 +82,27 @@ export default function NewAdvance() {
 
   const { fetchedDistrict, fetchedState, villages: fetchedVillages, isLoading: isLoadingPincode } = usePincodeLookup(pin);
 
+  const [villageSearchResults, setVillageSearchResults] = useState<{Name: string, District: string, State: string, Pincode: string}[]>([]);
+
   const handleVillageSearchAction = async () => {
     if (!villageSearch) return;
     setIsSearchingVillage(true);
+    setVillageSearchResults([]);
     try {
       const res = await fetch(`https://api.postalpincode.in/postoffice/${villageSearch}`);
       const data = await res.json();
       if (Array.isArray(data) && data[0]?.Status === "Success") {
-        const postOffice = data[0].PostOffice[0];
-        if (postOffice) {
-          setVillage(postOffice.Name || "");
-          setDistrict(postOffice.District || "");
-          setState(postOffice.State || "");
-          setPin(postOffice.Pincode || "");
+        const postOffices = data[0].PostOffice;
+        if (postOffices && postOffices.length > 0) {
+          if (postOffices.length === 1) {
+            const postOffice = postOffices[0];
+            setVillage(postOffice.Name || "");
+            setDistrict(postOffice.District || "");
+            setState(postOffice.State || "");
+            setPin(postOffice.Pincode || "");
+          } else {
+            setVillageSearchResults(postOffices);
+          }
         }
       } else {
         toast.error("Village not found");
@@ -444,11 +452,33 @@ export default function NewAdvance() {
               {/* CUSTOMER SECTION */}
               <div className="grid grid-cols-12 gap-x-2 gap-y-1">
                 <div className="col-span-2 text-right mt-1">Village Search</div>
-                <div className="col-span-2 flex relative">
-                  <input type="text" value={villageSearch} onKeyDown={(e) => e.key === 'Enter' && handleVillageSearchAction()} onChange={e=>setVillageSearch(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#fefce8] text-xs"/>
-                  <button type="button" onClick={handleVillageSearchAction} disabled={isSearchingVillage} className="bg-emerald-600 px-1.5 border border-gray-600 text-white disabled:opacity-50">
-                    {isSearchingVillage ? <Loader2 className="w-3 h-3 animate-spin"/> : <Search className="w-3 h-3"/>}
-                  </button>
+                <div className="col-span-2 flex flex-col relative">
+                  <div className="flex w-full">
+                    <input type="text" value={villageSearch} onKeyDown={(e) => e.key === 'Enter' && handleVillageSearchAction()} onChange={e=>setVillageSearch(e.target.value)} className="w-full border border-gray-400 px-1 py-0.5 bg-[#fefce8] text-xs"/>
+                    <button type="button" onClick={handleVillageSearchAction} disabled={isSearchingVillage} className="bg-emerald-600 px-1.5 border border-gray-600 text-white disabled:opacity-50">
+                      {isSearchingVillage ? <Loader2 className="w-3 h-3 animate-spin"/> : <Search className="w-3 h-3"/>}
+                    </button>
+                  </div>
+                  {villageSearchResults.length > 0 && (
+                    <select 
+                      className="mt-1 border border-gray-400 text-xs px-1 py-0.5 bg-white w-full"
+                      onChange={(e) => {
+                        const selected = villageSearchResults[e.target.selectedIndex - 1];
+                        if (selected) {
+                           setVillage(selected.Name);
+                           setDistrict(selected.District);
+                           setState(selected.State);
+                           setPin(selected.Pincode);
+                           setVillageSearchResults([]);
+                        }
+                      }}
+                    >
+                      <option value="">-- Select Village --</option>
+                      {villageSearchResults.map((v, i) => (
+                        <option key={i} value={v.Name}>{v.Name}, {v.District}, {v.State} ({v.Pincode})</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <div className="col-span-1 text-right mt-1 whitespace-nowrap">Customer Name</div>
                 <div className="col-span-5">
