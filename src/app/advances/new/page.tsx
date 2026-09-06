@@ -466,29 +466,7 @@ export default function NewAdvance() {
     </CardContent>
   </Card>
 
-  <Card>
-    <CardHeader>
-      <CardTitle>Sale Type</CardTitle>
-    </CardHeader>
-    <CardContent className="space-y-4">
-      <div className="flex gap-6">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="radio" name="saleType" value="Direct to Customer from PU" checked={saleType === "Direct to Customer from PU"} onChange={(e) => setSaleType(e.target.value)} className="w-4 h-4" />
-          <span className="font-medium text-sm">Direct to Customer from PU</span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="radio" name="saleType" value="Free product against old advance" checked={saleType === "Free product against old advance"} onChange={(e) => setSaleType(e.target.value)} className="w-4 h-4" />
-          <span className="font-medium text-sm">Free product against old advance</span>
-        </label>
-      </div>
-      {saleType === "Free product against old advance" && (
-        <div className="w-full md:w-1/3 space-y-1">
-          <Label>Old Advance Order No <span className="text-red-500">*</span></Label>
-          <Input type="text" value={oldAdvanceOrderNumber} onChange={(e) => setOldAdvanceOrderNumber(e.target.value)} required />
-        </div>
-      )}
-    </CardContent>
-  </Card>
+  
 
   <Card>
     <CardHeader>
@@ -673,54 +651,7 @@ export default function NewAdvance() {
     </CardContent>
   </Card>
 
-  <Card>
-    <CardHeader className="flex flex-row items-center justify-between pb-2">
-      <CardTitle>Free Products</CardTitle>
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => setFreeItems([{ id: Date.now() + 1, productId: "", offerNumber: "", freeProduct: "", freeQty: "" }])}>
-          <X className="w-4 h-4 mr-1 text-red-500"/> Clear
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => setFreeItems([...freeItems, { id: Date.now() + 1, productId: "", offerNumber: "", freeProduct: "", freeQty: "" }])}>
-          <Plus className="w-4 h-4 mr-1 text-green-500"/> Add Row
-        </Button>
-      </div>
-    </CardHeader>
-    <CardContent className="overflow-x-auto">
-      <table className="w-full text-sm text-left border-collapse">
-        <thead className="bg-muted text-muted-foreground">
-          <tr>
-            <th className="font-medium p-3 w-12 text-center rounded-tl-md">Sl</th>
-            <th className="font-medium p-3">Main Product</th>
-            <th className="font-medium p-3 w-40">Offer Number</th>
-            <th className="font-medium p-3">Free Product</th>
-            <th className="font-medium p-3 w-24">Free Unit</th>
-            <th className="font-medium p-3 w-12 text-center rounded-tr-md">Del</th>
-          </tr>
-        </thead>
-        <tbody>
-          {freeItems.map((item: any, idx: number) => (
-            <tr key={item.id} className="border-b">
-              <td className="p-2 text-center font-medium">{idx + 1}</td>
-              <td className="p-2">
-                <select value={item.productId} onChange={e=>updateFreeItem(item.id, "productId", e.target.value)} className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                  <option value="">Select Product...</option>
-                  {products.map((p: any)=><option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </td>
-              <td className="p-2"><Input value={item.offerNumber} onChange={e=>updateFreeItem(item.id, "offerNumber", e.target.value)} className="h-9" /></td>
-              <td className="p-2"><Input value={item.freeProduct} onChange={e=>updateFreeItem(item.id, "freeProduct", e.target.value)} className="h-9" /></td>
-              <td className="p-2"><Input type="number" min="1" value={item.freeQty} onChange={e=>updateFreeItem(item.id, "freeQty", e.target.value)} className="h-9 text-right" /></td>
-              <td className="p-2 text-center">
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => { if(freeItems.length > 1) setFreeItems(freeItems.filter((f: any)=>f.id !== item.id))}}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </CardContent>
-  </Card>
+  
 
   <Card>
     <CardContent className="pt-6">
