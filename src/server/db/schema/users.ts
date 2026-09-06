@@ -23,6 +23,7 @@ export const users = createTable("user", {
   firstName: varchar("first_name", { length: 256 }).notNull(),
   lastName: varchar("last_name", { length: 256 }).notNull(),
   fatherName: varchar("father_name", { length: 256 }),
+  profilePhoto: varchar("profile_photo", { length: 512 }),
   joiningDate: timestamp("joining_date", { withTimezone: true }).defaultNow(),
   dob: date("dob"),
   joiningRole: varchar("joining_role", { length: 64 }),

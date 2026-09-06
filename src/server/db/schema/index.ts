@@ -40,3 +40,4 @@ export { dailyMileage, dailyMileageRelations } from "./daily_mileage";
 export { customerVisits, customerVisitsRelations } from "./customer_visits";
 export { saleAssignments, saleAssignmentsRelations } from "./saleAssignments";
 export { fieldSupportReports, fieldSupportReportItems, fieldSupportReportsRelations, fieldSupportReportItemsRelations } from "./fieldSupportReports";
+export { userDocuments, userDocumentsRelations } from "./userDocuments";

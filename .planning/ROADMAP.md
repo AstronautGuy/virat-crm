@@ -21,3 +21,7 @@
 - **Phase 51: Visual Analytics Integration**
   - Goal: Incorporate dynamic charts and visual dashboards using Recharts to display sales trends, top performers, and other critical metrics directly in the reporting view.
   - Requirements: VIS-01, VIS-02
+
+- **Phase 52: Employee Profile & Document Management**
+  - Goal: Create a comprehensive employee profile view, enhance employee onboarding with custom joining dates and document uploads (PDF/photo), enable password resets from the profile, and display active login sessions.
+  - Requirements: EMP-01, EMP-02, EMP-03, EMP-04, EMP-05

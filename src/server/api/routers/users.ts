@@ -24,7 +24,16 @@ export const usersRouter = createTRPCRouter({
         dob: z.date().optional(),
         joiningRole: z.string().optional(),
         promotionDate: z.date().optional(),
-        password: z.string().min(6),
+                password: z.string().min(6),
+        profilePhoto: z.string().optional(),
+        documents: z.array(z.object({
+          name: z.string(),
+          url: z.string(),
+          key: z.string(),
+          mimeType: z.string().optional(),
+          size: z.number().optional()
+        })).optional(),
+        promotionDate: z.date().optional(),
         branchId: z.number(),
       }),
     )
@@ -71,12 +80,62 @@ export const usersRouter = createTRPCRouter({
           branchId: input.branchId,
           isActive: true,
         })
-        .returning();
+                .returning();
+
+      if (newUser && documents && documents.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { userDocuments } = require("@/server/db/schema/userDocuments");
+        await ctx.db.insert(userDocuments).values(
+          documents.map(doc => ({
+            userId: newUser.id,
+            name: doc.name,
+            url: doc.url,
+            key: doc.key,
+            mimeType: doc.mimeType,
+            size: doc.size
+          }))
+        );
+      }
 
       return {
         success: true,
         userId: newUser?.id,
       };
+    }),
+
+  
+  getUserById: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.id, input.id),
+        with: {
+          branch: true,
+          managers: {
+            with: { manager: true },
+          },
+        },
+      });
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+      
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { userDocuments } = require("@/server/db/schema/userDocuments");
+      const docs = await ctx.db.select().from(userDocuments).where(eq(userDocuments.userId, user.id));
+
+      return { ...user, documents: docs, activeSessions: [] };
+    }),
+
+  updateUserPassword: protectedProcedure
+    .input(z.object({ userId: z.string(), newPassword: z.string().min(6) }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Developer") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can change user passwords" });
+      }
+      const hashedPassword = await bcrypt.hash(input.newPassword, 10);
+      await ctx.db.update(users).set({ password: hashedPassword }).where(eq(users.id, input.userId));
+      return { success: true };
     }),
 
   getPublicBranches: publicProcedure.query(async ({ ctx }) => {
@@ -247,7 +306,16 @@ export const usersRouter = createTRPCRouter({
         joiningDate: z.date().optional(),
         dob: z.date().optional(),
         joiningRole: z.string().optional(),
-        password: z.string().min(6),
+                password: z.string().min(6),
+        profilePhoto: z.string().optional(),
+        documents: z.array(z.object({
+          name: z.string(),
+          url: z.string(),
+          key: z.string(),
+          mimeType: z.string().optional(),
+          size: z.number().optional()
+        })).optional(),
+        promotionDate: z.date().optional(),
         role: z.string().min(2).max(64),
         branchId: z.number(),
         managerIds: z.array(z.string()).optional(),
@@ -313,12 +381,16 @@ export const usersRouter = createTRPCRouter({
         }
       }
 
-      const { managerIds, employeeCode, ...userData } = input;
+      const { managerIds, employeeCode, documents, dob, joiningDate, promotionDate, ...userData } = input;
 
       const [newUser] = await ctx.db
         .insert(users)
         .values({
           ...userData,
+          dob: dob ? dob.toISOString().split('T')[0] : undefined,
+          joiningDate: joiningDate ? joiningDate.toISOString().split('T')[0] : undefined,
+          promotionDate: promotionDate ? promotionDate.toISOString().split('T')[0] : undefined,
+          employeeCode: finalEmployeeCode,
           password: hashedPassword,
         })
         .returning();
