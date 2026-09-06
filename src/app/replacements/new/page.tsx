@@ -57,6 +57,38 @@ export default function NewReplacement() {
   
   // Customer details
   const [villageSearch, setVillageSearch] = useState("");
+  const [isSearchingVillage, setIsSearchingVillage] = useState(false);
+  const [villageSearchResults, setVillageSearchResults] = useState<{Name: string, District: string, State: string, Pincode: string}[]>([]);
+  
+  const handleVillageSearchAction = async () => {
+    if (!villageSearch) return;
+    setIsSearchingVillage(true);
+    setVillageSearchResults([]);
+    try {
+      const res = await fetch(`https://api.postalpincode.in/postoffice/${villageSearch}`);
+      const data = await res.json();
+      if (Array.isArray(data) && data[0]?.Status === "Success") {
+        const postOffices = data[0].PostOffice;
+        if (postOffices && postOffices.length > 0) {
+          if (postOffices.length === 1) {
+            const postOffice = postOffices[0];
+            setVillage(postOffice.Name || "");
+            setDistrict(postOffice.District || "");
+            setState(postOffice.State || "");
+            setPin(postOffice.Pincode || "");
+          } else {
+            setVillageSearchResults(postOffices);
+          }
+        }
+      } else {
+        toast.error("Village not found");
+      }
+    } catch (e) {
+      toast.error("Error searching village");
+    } finally {
+      setIsSearchingVillage(false);
+    }
+  };
   const [customerName, setCustomerName] = useState("");
   const [so, setSo] = useState("");
   const [village, setVillage] = useState("");
