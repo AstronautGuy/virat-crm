@@ -409,27 +409,21 @@ export default function NewReplacement() {
     </CardContent>
   </Card>
 
-  <Card>
+    <Card>
     <CardHeader>
-      <CardTitle>Sale Type</CardTitle>
+      <CardTitle>Replacement Type</CardTitle>
     </CardHeader>
     <CardContent className="space-y-4">
       <div className="flex gap-6">
         <label className="flex items-center gap-2 cursor-pointer">
-          <input type="radio" name="saleType" value="Direct to Customer from PU" checked={saleType === "Direct to Customer from PU"} onChange={(e) => setSaleType(e.target.value)} className="w-4 h-4" />
-          <span className="font-medium text-sm">Direct to Customer from PU</span>
+          <input type="radio" name="replacementType" value="First Replacement" checked={replacementType === "First Replacement"} onChange={(e) => setReplacementType(e.target.value)} className="w-4 h-4" />
+          <span className="font-medium text-sm">First Replacement</span>
         </label>
         <label className="flex items-center gap-2 cursor-pointer">
-          <input type="radio" name="saleType" value="Free product against old advance" checked={saleType === "Free product against old advance"} onChange={(e) => setSaleType(e.target.value)} className="w-4 h-4" />
-          <span className="font-medium text-sm">Free product against old advance</span>
+          <input type="radio" name="replacementType" value="Second Replacement" checked={replacementType === "Second Replacement"} onChange={(e) => setReplacementType(e.target.value)} className="w-4 h-4" />
+          <span className="font-medium text-sm">Second Replacement</span>
         </label>
       </div>
-      {saleType === "Free product against old advance" && (
-        <div className="w-full md:w-1/3 space-y-1">
-          <Label>Old Advance Order No <span className="text-red-500">*</span></Label>
-          <Input type="text" value={oldAdvanceOrderNumber} onChange={(e) => setOldAdvanceOrderNumber(e.target.value)} required />
-        </div>
-      )}
     </CardContent>
   </Card>
 
