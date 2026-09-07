@@ -218,7 +218,7 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
                     )}
                   </div>
                   
-                  <div className="mt-14 space-y-1">
+                  <div className="pt-16 space-y-1">
                     <h2 className="text-xl font-bold text-slate-900">{user.firstName} {user.lastName}</h2>
                     <p className="text-sm text-slate-500">{user.email}</p>
                     <div className="pt-2 flex flex-wrap gap-2">
@@ -544,10 +544,36 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="py-6 text-center text-sm text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
-                    <p className="text-slate-600 font-medium">Session tracking is simulated</p>
-                    <p className="text-xs mt-1">This user currently has no active sessions tracked.</p>
-                  </div>
+                  {user.lastActiveAt ? (
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-white">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-3 w-3 rounded-full ${user.connectivityStatus === 'online' ? 'bg-green-500' : 'bg-slate-300'}`} />
+                          <div>
+                            <p className="text-sm font-medium text-slate-900 flex items-center gap-2">
+                              {user.connectivityStatus === 'online' ? 'Currently Online' : 'Offline'}
+                              {currentUser?.id === user.id && (
+                                <Badge variant="secondary" className="text-[10px] h-5 bg-indigo-50 text-indigo-700">Current Session</Badge>
+                              )}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              Last active: {format(new Date(user.lastActiveAt), "MMM d, yyyy 'at' h:mm a")}
+                            </p>
+                          </div>
+                        </div>
+                        {(user.lastLat && user.lastLng) && (
+                          <Badge variant="outline" className="bg-slate-50 font-mono text-xs">
+                            {user.lastLat}, {user.lastLng}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-6 text-center text-sm text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+                      <p className="text-slate-600 font-medium">No Session Data</p>
+                      <p className="text-xs mt-1">This user has not been active recently.</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
