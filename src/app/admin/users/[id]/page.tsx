@@ -544,33 +544,33 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {user.lastActiveAt ? (
+                  {(user.lastActiveAt || currentUser?.id === user.id) ? (
                     <div className="flex flex-col gap-3">
-                      <div className="flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-white">
+                      <div className="flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
                         <div className="flex items-center gap-3">
-                          <div className={`h-3 w-3 rounded-full ${user.connectivityStatus === 'online' ? 'bg-green-500' : 'bg-slate-300'}`} />
+                          <div className={`h-3 w-3 rounded-full ${(user.connectivityStatus === 'online' || currentUser?.id === user.id) ? 'bg-green-500' : 'bg-slate-300'}`} />
                           <div>
                             <p className="text-sm font-medium text-slate-900 flex items-center gap-2">
-                              {user.connectivityStatus === 'online' ? 'Currently Online' : 'Offline'}
+                              {(user.connectivityStatus === 'online' || currentUser?.id === user.id) ? 'Currently Online' : 'Offline'}
                               {currentUser?.id === user.id && (
-                                <Badge variant="secondary" className="text-[10px] h-5 bg-indigo-50 text-indigo-700">Current Session</Badge>
+                                <Badge variant="secondary" className="text-[10px] h-5 bg-indigo-50 text-indigo-700 font-semibold border-indigo-200">Current Session</Badge>
                               )}
                             </p>
                             <p className="text-xs text-slate-500">
-                              Last active: {format(new Date(user.lastActiveAt), "MMM d, yyyy 'at' h:mm a")}
+                              Last active: {user.lastActiveAt ? format(new Date(user.lastActiveAt), "MMM d, yyyy 'at' h:mm a") : "Just now"}
                             </p>
                           </div>
                         </div>
                         {(user.lastLat && user.lastLng) && (
-                          <Badge variant="outline" className="bg-slate-50 font-mono text-xs">
-                            {user.lastLat}, {user.lastLng}
+                          <Badge variant="outline" className="bg-slate-50 font-mono text-xs text-slate-500">
+                            Location: {user.lastLat}, {user.lastLng}
                           </Badge>
                         )}
                       </div>
                     </div>
                   ) : (
-                    <div className="py-6 text-center text-sm text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
-                      <p className="text-slate-600 font-medium">No Session Data</p>
+                    <div className="py-8 text-center text-sm text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                      <p className="text-slate-600 font-medium">No Active Sessions</p>
                       <p className="text-xs mt-1">This user has not been active recently.</p>
                     </div>
                   )}
