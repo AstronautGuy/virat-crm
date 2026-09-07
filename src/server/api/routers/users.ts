@@ -114,6 +114,9 @@ export const usersRouter = createTRPCRouter({
           managers: {
             with: { manager: true },
           },
+          teamMembers: {
+            with: { user: true },
+          },
         },
       });
       if (!user) {
@@ -135,6 +138,45 @@ export const usersRouter = createTRPCRouter({
       }
       const hashedPassword = await bcrypt.hash(input.newPassword, 10);
       await ctx.db.update(users).set({ password: hashedPassword }).where(eq(users.id, input.userId));
+      return { success: true };
+    }),
+
+  
+  updateUserProfilePhoto: protectedProcedure
+    .input(z.object({ userId: z.string(), profilePhoto: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.update(users).set({ profilePhoto: input.profilePhoto }).where(eq(users.id, input.userId));
+      return { success: true };
+    }),
+
+  addUserDocument: protectedProcedure
+    .input(z.object({
+      userId: z.string(),
+      name: z.string(),
+      url: z.string(),
+      key: z.string(),
+      mimeType: z.string().optional(),
+      size: z.number().optional()
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { userDocuments } = require("@/server/db/schema/userDocuments");
+      await ctx.db.insert(userDocuments).values(input);
+      return { success: true };
+    }),
+
+  renameUserDocument: protectedProcedure
+    .input(z.object({ id: z.number(), name: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { userDocuments } = require("@/server/db/schema/userDocuments");
+      await ctx.db.update(userDocuments).set({ name: input.name }).where(eq(userDocuments.id, input.id));
+      return { success: true };
+    }),
+
+  deleteUserDocument: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const { userDocuments } = require("@/server/db/schema/userDocuments");
+      await ctx.db.delete(userDocuments).where(eq(userDocuments.id, input.id));
       return { success: true };
     }),
 
@@ -390,6 +432,7 @@ export const usersRouter = createTRPCRouter({
           dob: dob ? dob.toISOString().split('T')[0] : undefined,
           joiningDate: joiningDate ? joiningDate.toISOString().split('T')[0] : undefined,
           promotionDate: promotionDate ? promotionDate.toISOString().split('T')[0] : undefined,
+          profilePhoto: userData.profilePhoto,
           employeeCode: finalEmployeeCode,
           password: hashedPassword,
         })
@@ -536,6 +579,7 @@ export const usersRouter = createTRPCRouter({
         role: z.string().min(2).max(64),
         branchId: z.number().nullable().optional(),
         managerIds: z.array(z.string()).optional(),
+        profilePhoto: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

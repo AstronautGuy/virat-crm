@@ -1,4 +1,6 @@
-"use client";
+import os
+
+content = """\"\"\"use client\"\"\";
 
 import { DashboardLayout } from "@/app/_components/layout/DashboardLayout";
 import { FeatureGate } from "@/app/_components/auth/FeatureGate";
@@ -210,10 +212,10 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
                         <GenericUploader 
                           label="" 
                           accept="image/*"
-                          className="opacity-0 absolute inset-0 cursor-pointer z-10"
+                          className="opacity-0 absolute inset-0 cursor-pointer"
                           onUploadComplete={(f) => updatePhotoMutation.mutate({ userId: user.id, profilePhoto: f.url })} 
                         />
-                        <Edit className="h-6 w-6 text-white pointer-events-none absolute z-0" />
+                        <Edit className="h-6 w-6 text-white pointer-events-none" />
                       </div>
                     )}
                   </div>
@@ -330,30 +332,6 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
                         <Label>Date of Birth</Label>
                         <Input type="date" value={editData.dob} onChange={e => setEditData({...editData, dob: e.target.value})} />
                       </div>
-                      <div className="space-y-2">
-                        <Label>Reporting Managers</Label>
-                        <div className="flex max-h-40 flex-col gap-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                          {managers?.map((m) => (
-                            <label key={m.id} className="flex cursor-pointer items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={editData.managerIds?.includes(m.id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setEditData({ ...editData, managerIds: [...editData.managerIds, m.id] });
-                                  } else {
-                                    setEditData({ ...editData, managerIds: editData.managerIds.filter((id: string) => id !== m.id) });
-                                  }
-                                }}
-                                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600"
-                              />
-                              <span className="text-sm text-slate-700">
-                                {m.firstName} {m.lastName}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
                       <div className="space-y-2 col-span-1 sm:col-span-2 mt-4 flex justify-end gap-2">
                         <Button type="button" variant="outline" onClick={() => setIsEditMode(false)}>Cancel</Button>
                         <Button type="submit" disabled={updateUserMutation.isPending}>Save Changes</Button>
@@ -440,6 +418,7 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
                       <GenericUploader 
                         label="Upload Document" 
                         accept="application/pdf,image/*"
+                        className="py-1 px-3 h-auto text-xs"
                         onUploadComplete={(f) => {
                           addDocMutation.mutate({
                             userId: user.id,
@@ -558,3 +537,6 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
     </DashboardLayout>
   );
 }
+"""
+with open('scratch/patch_users_page.py', 'w') as f:
+    f.write(f"with open('src/app/admin/users/[id]/page.tsx', 'w') as f:\\n    f.write({repr(content)})")
