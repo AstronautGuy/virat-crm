@@ -127,8 +127,8 @@ export default function AdvancesDashboard() {
       "Sold Qty",
       "Price",
       "SaleProduct",
-      "Total Points",
-      "Total Amount",
+      "Advanced Amount",
+      "Pending Amount",
     ];
     worksheet.addRow(headers);
     const headerRow = worksheet.getRow(2);
@@ -160,8 +160,8 @@ export default function AdvancesDashboard() {
           "", // Sold Qty
           "", // Price
           "", // SaleProduct
-          "", // Total Points
-          sale.invoiceAmount || "", // Total Amount
+          sale.advancePaymentAmount || "0", // Advanced Amount
+          (sale.invoiceAmount || 0) - (sale.advancePaymentAmount || 0), // Pending Amount
         ]);
       } else {
         for (const item of sale.items) {
@@ -178,8 +178,8 @@ export default function AdvancesDashboard() {
             item.quantity,
             item.rate,
             item.isFree ? "Free" : "Sale",
-            item.totalPts || "0",
-            item.totalAmount || "0",
+            sale.advancePaymentAmount || "0", // Advanced Amount
+            (sale.invoiceAmount || 0) - (sale.advancePaymentAmount || 0), // Pending Amount
           ]);
         }
       }
@@ -305,10 +305,13 @@ export default function AdvancesDashboard() {
                         <div className="flex items-center justify-between gap-6 sm:w-1/3 sm:justify-end">
                           <div className="flex flex-col sm:items-end">
                             <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
-                              Amount
+                              Advance / Total
                             </span>
-                            <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                              ₹{sale?.invoiceAmount ?? "00,000"}
+                            <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                              ₹{sale?.advancePaymentAmount ?? "0"} / ₹{sale?.invoiceAmount ?? "0"}
+                            </span>
+                            <span className="text-xs text-rose-500 font-semibold mt-0.5">
+                              Pending: ₹{(sale?.invoiceAmount || 0) - (sale?.advancePaymentAmount || 0)}
                             </span>
                           </div>
                           <Badge

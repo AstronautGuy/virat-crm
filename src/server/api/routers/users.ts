@@ -8,7 +8,7 @@ import {
 import { TRPCError } from "@trpc/server";
 import { users } from "@/server/db/schema/users";
 import { roles } from "@/server/db/schema/roles";
-import { eq, or, sql, desc, like, ne } from "drizzle-orm";
+import { eq, or, sql, desc, like, and, ne } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 export const usersRouter = createTRPCRouter({
@@ -117,9 +117,6 @@ export const usersRouter = createTRPCRouter({
           teamMembers: {
             with: { user: true },
           },
-          teamMembers: {
-            with: { user: true },
-          },
         },
       });
       if (!user) {
@@ -186,52 +183,12 @@ export const usersRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  
-  updateUserProfilePhoto: protectedProcedure
-    .input(z.object({ userId: z.string(), profilePhoto: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      await ctx.db.update(users).set({ profilePhoto: input.profilePhoto }).where(eq(users.id, input.userId));
-      return { success: true };
-    }),
-
-  addUserDocument: protectedProcedure
-    .input(z.object({
-      userId: z.string(),
-      name: z.string(),
-      url: z.string(),
-      key: z.string(),
-      mimeType: z.string().optional(),
-      size: z.number().optional()
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const { userDocuments } = require("@/server/db/schema/userDocuments");
-      await ctx.db.insert(userDocuments).values(input);
-      return { success: true };
-    }),
-
-  renameUserDocument: protectedProcedure
-    .input(z.object({ id: z.number(), name: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const { userDocuments } = require("@/server/db/schema/userDocuments");
-      await ctx.db.update(userDocuments).set({ name: input.name }).where(eq(userDocuments.id, input.id));
-      return { success: true };
-    }),
-
-  deleteUserDocument: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      const { userDocuments } = require("@/server/db/schema/userDocuments");
-      await ctx.db.delete(userDocuments).where(eq(userDocuments.id, input.id));
-      return { success: true };
-    }),
-
   getPublicBranches: publicProcedure.query(async ({ ctx }) => {
     return ctx.db.query.branches.findMany();
   }),
 
   getUsersForDropdown: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.query.users.findMany({
-      where: ne(users.role, "Developer"),
       columns: {
         id: true,
         firstName: true,
@@ -239,7 +196,7 @@ export const usersRouter = createTRPCRouter({
         employeeCode: true,
         role: true,
       },
-      where: eq(users.isActive, true),
+      where: and(eq(users.isActive, true), ne(users.role, "Developer")),
     });
   }),
 
@@ -479,7 +436,6 @@ export const usersRouter = createTRPCRouter({
           joiningDate: joiningDate ? joiningDate.toISOString().split('T')[0] : undefined,
           promotionDate: promotionDate ? promotionDate.toISOString().split('T')[0] : undefined,
           profilePhoto: userData.profilePhoto,
-          profilePhoto: userData.profilePhoto,
           employeeCode: finalEmployeeCode,
           password: hashedPassword,
         })
@@ -628,12 +584,9 @@ export const usersRouter = createTRPCRouter({
         branchId: z.number().nullable().optional(),
         managerIds: z.array(z.string()).optional(),
         profilePhoto: z.string().optional(),
-        profilePhoto: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const targetUserForUpdate = await ctx.db.query.users.findFirst({ where: eq(users.id, input.userId) });
-      if (targetUserForUpdate?.role === "Developer") throw new TRPCError({ code: "FORBIDDEN", message: "Cannot modify Developer profiles" });
       if (ctx.dbUser.role !== "Admin" && ctx.dbUser.role !== "Developer") {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -644,6 +597,8 @@ export const usersRouter = createTRPCRouter({
       const targetUser = await ctx.db.query.users.findFirst({
         where: eq(users.id, input.userId),
       });
+
+      if (targetUser?.role === "Developer") throw new TRPCError({ code: "FORBIDDEN", message: "Cannot modify Developer profiles" });
 
       if (!targetUser) {
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
