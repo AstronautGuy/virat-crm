@@ -605,6 +605,24 @@ export const salesRouter = createTRPCRouter({
           });
         }
 
+        // Update user assignments
+        await tx.delete(saleAssignments).where(eq(saleAssignments.saleId, updatedSale.id));
+        
+        const assignments = [];
+        if (input.userIds) {
+          assignments.push(...input.userIds.map(uid => ({ saleId: updatedSale.id, userId: uid, role: "Employee" as const })));
+        }
+        if (input.managerIds) {
+          assignments.push(...input.managerIds.map(uid => ({ saleId: updatedSale.id, userId: uid, role: "Manager" as const })));
+        }
+        
+        if (assignments.length > 0) {
+          const uniqueAssignments = Array.from(
+            new Map(assignments.map(a => [`${a.saleId}-${a.userId}-${a.role}`, a])).values()
+          );
+          await tx.insert(saleAssignments).values(uniqueAssignments);
+        }
+
         // Insert new items
         if (input.items.length > 0) {
           const productIds = input.items.map(i => i.productId);

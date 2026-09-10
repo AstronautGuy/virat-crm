@@ -122,7 +122,7 @@ export default function NewSale() {
     if (fetchedDistrict) setDistrict(fetchedDistrict);
     if (fetchedState) setState(fetchedState);
     if (fetchedVillages.length > 0) {
-      setVillage(fetchedVillages[0]);
+      setVillage(fetchedVillages[0] || "");
     }
   }, [fetchedDistrict, fetchedState, fetchedVillages]);
 

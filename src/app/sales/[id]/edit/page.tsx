@@ -181,7 +181,7 @@ export default function EditSale() {
     if (fetchedDistrict) setDistrict(fetchedDistrict);
     if (fetchedState) setState(fetchedState);
     if (fetchedVillages.length > 0) {
-      setVillage(fetchedVillages[0]);
+      setVillage(fetchedVillages[0] || "");
     }
   }, [fetchedDistrict, fetchedState, fetchedVillages]);
 
@@ -403,6 +403,9 @@ export default function EditSale() {
   const updateFreeItem = (id: number, field: string, value: string) => {
     setFreeItems(freeItems.map((item) => item.id === id ? { ...item, [field]: value } : item));
   };
+
+  const parsedInvoice = parseFloat(invoiceAmount) || 0;
+  const balanceAmount = parsedInvoice.toFixed(2);
 
   return (
     <DashboardLayout>

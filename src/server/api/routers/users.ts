@@ -22,6 +22,7 @@ export const usersRouter = createTRPCRouter({
         fatherName: z.string().optional(),
         joiningDate: z.date().optional(),
         dob: z.date().optional(),
+        bloodGroup: z.string().optional(),
         joiningRole: z.string().optional(),
         promotionDate: z.date().optional(),
                 password: z.string().min(6),
@@ -33,7 +34,6 @@ export const usersRouter = createTRPCRouter({
           mimeType: z.string().optional(),
           size: z.number().optional()
         })).optional(),
-        promotionDate: z.date().optional(),
         branchId: z.number(),
       }),
     )
@@ -42,7 +42,7 @@ export const usersRouter = createTRPCRouter({
       const existingUser = await ctx.db.query.users.findFirst({
         where: or(
           eq(users.email, input.email),
-          eq(users.employeeCode, input.employeeCode),
+          eq(users.employeeCode, input.employeeCode || ""),
         ),
       });
 
@@ -74,28 +74,13 @@ export const usersRouter = createTRPCRouter({
           firstName: input.firstName,
           lastName: input.lastName,
           email: input.email,
-          employeeCode: input.employeeCode,
+          employeeCode: input.employeeCode ?? ("EMP-" + Math.floor(1000 + Math.random() * 9000).toString()),
           password: hashedPassword,
           role: "Employee", // Default role for self-signup
           branchId: input.branchId,
           isActive: true,
         })
                 .returning();
-
-      if (newUser && documents && documents.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const { userDocuments } = require("@/server/db/schema/userDocuments");
-        await ctx.db.insert(userDocuments).values(
-          documents.map(doc => ({
-            userId: newUser.id,
-            name: doc.name,
-            url: doc.url,
-            key: doc.key,
-            mimeType: doc.mimeType,
-            size: doc.size
-          }))
-        );
-      }
 
       return {
         success: true,
@@ -350,6 +335,7 @@ export const usersRouter = createTRPCRouter({
         fatherName: z.string().optional(),
         joiningDate: z.date().optional(),
         dob: z.date().optional(),
+        bloodGroup: z.string().min(1, "Blood Group is required"),
         joiningRole: z.string().optional(),
                 password: z.string().min(6),
         profilePhoto: z.string().optional(),
@@ -359,7 +345,11 @@ export const usersRouter = createTRPCRouter({
           key: z.string(),
           mimeType: z.string().optional(),
           size: z.number().optional()
-        })).optional(),
+        })).refine(docs => {
+          const required = ["10th marksheet", "12th marksheet", "character certificate", "stamp papers", "requirement form"];
+          const provided = docs.map(d => d.name);
+          return required.every(r => provided.includes(r));
+        }, "All 5 required documents must be uploaded"),
         promotionDate: z.date().optional(),
         role: z.string().min(2).max(64),
         branchId: z.number(),
@@ -432,9 +422,9 @@ export const usersRouter = createTRPCRouter({
         .insert(users)
         .values({
           ...userData,
-          dob: dob ? dob.toISOString().split('T')[0] : undefined,
-          joiningDate: joiningDate ? joiningDate.toISOString().split('T')[0] : undefined,
-          promotionDate: promotionDate ? promotionDate.toISOString().split('T')[0] : undefined,
+          ...(dob ? { dob: dob.toISOString().split('T')[0] } : {}),
+          ...(joiningDate ? { joiningDate } : {}),
+          ...(promotionDate ? { promotionDate } : {}),
           profilePhoto: userData.profilePhoto,
           employeeCode: finalEmployeeCode,
           password: hashedPassword,
@@ -450,6 +440,60 @@ export const usersRouter = createTRPCRouter({
             managerId,
           })),
         );
+      }
+
+      
+      if (documents && documents.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { userDocuments } = require("@/server/db/schema/userDocuments");
+        await ctx.db.insert(userDocuments).values(
+          documents.map(doc => ({
+            userId: newUser.id,
+            name: doc.name,
+            url: doc.url,
+            key: doc.key,
+            mimeType: doc.mimeType,
+            size: doc.size
+          }))
+        );
+      }
+
+      // Dispatch onboarding Email & SMS
+      const { sendEmailAlert } = require("@/server/lib/communication");
+      const appStoreLink = "https://apps.apple.com/app/virat-crm";
+      const playStoreLink = "https://play.google.com/store/apps/details?id=com.virat.crm";
+      const webPortalLink = "https://virat-crm.vercel.app";
+      
+      const emailContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #2563eb;">Welcome to Virat CRM!</h2>
+          <p>Hi ${input.firstName},</p>
+          <p>Your account has been successfully created. Here are your details:</p>
+          <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+            <p style="margin: 4px 0;"><strong>Employee Code (E-Code):</strong> ${finalEmployeeCode}</p>
+            <p style="margin: 4px 0;"><strong>Temporary Password:</strong> ${input.password}</p>
+          </div>
+          <p>Please log in using the links below:</p>
+          <ul style="line-height: 1.6;">
+            <li><a href="${webPortalLink}">Web Portal</a></li>
+            <li><a href="${appStoreLink}">Download for iOS</a></li>
+            <li><a href="${playStoreLink}">Download for Android</a></li>
+          </ul>
+          <p style="margin-top: 24px; font-size: 12px; color: #666;">This is an automated message. Please do not reply.</p>
+        </div>
+      `;
+
+      try {
+        await sendEmailAlert({
+          to: input.email,
+          subject: "Welcome to Virat CRM - Your Login Credentials",
+          html: emailContent
+        });
+        
+        // Mock SMS Dispatch
+        console.log(`[SMS Gateway] Dispatched SMS to ${input.firstName}. Credentials sent.`);
+      } catch (err) {
+        console.error("Failed to send onboarding notifications", err);
       }
 
       return newUser;
@@ -578,6 +622,7 @@ export const usersRouter = createTRPCRouter({
         fatherName: z.string().optional(),
         joiningDate: z.date().optional(),
         dob: z.date().optional(),
+        bloodGroup: z.string().min(1, "Blood Group is required"),
         joiningRole: z.string().optional(),
         promotionDate: z.date().optional(),
         role: z.string().min(2).max(64),
@@ -629,7 +674,7 @@ export const usersRouter = createTRPCRouter({
       const existingUser = await ctx.db.query.users.findFirst({
         where: or(
           eq(users.email, input.email),
-          eq(users.employeeCode, input.employeeCode),
+          eq(users.employeeCode, input.employeeCode || ""),
         ),
       });
 
@@ -643,9 +688,16 @@ export const usersRouter = createTRPCRouter({
 
       const { userId, managerIds, ...updateData } = input;
 
+
+      const updateDataFormatted = {
+        ...updateData,
+        ...(updateData.dob ? { dob: updateData.dob.toISOString().split('T')[0] } : {}),
+        joiningDate: updateData.joiningDate ? updateData.joiningDate : undefined,
+        promotionDate: updateData.promotionDate ? updateData.promotionDate : undefined,
+      };
       const [updatedUser] = await ctx.db
         .update(users)
-        .set(updateData)
+        .set(updateDataFormatted as any)
         .where(eq(users.id, userId))
         .returning();
 

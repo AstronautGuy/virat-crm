@@ -26,6 +26,7 @@ export const users = createTable("user", {
   profilePhoto: varchar("profile_photo", { length: 512 }),
   joiningDate: timestamp("joining_date", { withTimezone: true }).defaultNow(),
   dob: date("dob"),
+  bloodGroup: varchar("blood_group", { length: 8 }),
   joiningRole: varchar("joining_role", { length: 64 }),
   promotionDate: timestamp("promotion_date", { withTimezone: true }),
   role: varchar("role", { length: 64 })

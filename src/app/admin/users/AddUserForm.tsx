@@ -13,6 +13,7 @@ import { GenericUploader, UploadedFile } from "@/app/_components/ui/GenericUploa
 import { Badge } from "@/components/ui/badge";
 
 export function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
+  const [successData, setSuccessData] = useState<{name: string, employeeCode: string} | null>(null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -23,10 +24,11 @@ export function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
     joiningRole: "Employee",
     joiningDate: new Date().toISOString().split("T")[0],
     dob: "",
+    bloodGroup: "",
     branchId: undefined as number | undefined,
     managerIds: [] as string[],
     profilePhoto: "",
-    documents: [] as UploadedFile[],
+    documents: {} as Record<string, UploadedFile>,
   });
   
   const { data: nextCode } = api.users.getNextEmployeeCode.useQuery({ role: formData.role }, { enabled: !!formData.role });
@@ -36,8 +38,8 @@ export function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
   const { data: roles } = api.roles.getAll.useQuery();
 
   const mutation = api.users.createUser.useMutation({
-    onSuccess: () => {
-      toast.success("Employee created successfully");
+    onSuccess: (data) => {
+      setSuccessData({ name: `${data.firstName} ${data.lastName}`, employeeCode: data.employeeCode });
       onSuccess();
     },
     onError: (e) => toast.error(e.message),
@@ -45,6 +47,16 @@ export function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const requiredDocs = ["10th marksheet", "12th marksheet", "character certificate", "stamp papers", "requirement form"];
+    const uploadedDocs = Object.keys(formData.documents);
+    if (!requiredDocs.every(d => uploadedDocs.includes(d))) {
+      toast.error("Please upload all 5 required documents");
+      return;
+    }
+    if (!formData.bloodGroup) {
+      toast.error("Please select a blood group");
+      return;
+    }
     if (formData.branchId === undefined) {
       toast.error("Please select a branch");
       return;
@@ -54,27 +66,29 @@ export function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
       branchId: formData.branchId,
       joiningDate: formData.joiningDate ? new Date(formData.joiningDate) : undefined,
       dob: formData.dob ? new Date(formData.dob) : undefined,
+      bloodGroup: formData.bloodGroup,
       profilePhoto: formData.profilePhoto || undefined,
-      documents: formData.documents.length > 0 ? formData.documents : undefined,
+      documents: Object.keys(formData.documents).map(k => ({ ...formData.documents[k], name: k })),
     });
   };
 
-  const handleDocumentUpload = (file: UploadedFile) => {
+  const handleDocumentUpload = (type: string, file: UploadedFile) => {
     setFormData(prev => ({
       ...prev,
-      documents: [...prev.documents, file]
+      documents: { ...prev.documents, [type]: file }
     }));
   };
 
-  const removeDocument = (index: number) => {
+  const removeDocument = (type: string) => {
     setFormData(prev => {
-      const newDocs = [...prev.documents];
-      newDocs.splice(index, 1);
+      const newDocs = { ...prev.documents };
+      delete newDocs[type];
       return { ...prev, documents: newDocs };
     });
   };
 
   return (
+    <>
     <Card className="border-slate-200/60 shadow-sm">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
         <CardTitle className="text-lg text-slate-800">Employee Details</CardTitle>
@@ -187,7 +201,23 @@ export function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Blood Group</Label>
+                  <Select
+                    value={formData.bloodGroup}
+                    onValueChange={(v: string) => setFormData({ ...formData, bloodGroup: v })}
+                  >
+                    <SelectTrigger className="bg-slate-50/50">
+                      <SelectValue placeholder="Select Blood Group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"].map(bg => (
+                        <SelectItem key={bg} value={bg}>{bg}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2">
                   <Label>Role</Label>
                   <Select
@@ -258,32 +288,41 @@ export function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
 
           {/* Documents Section */}
           <div className="space-y-4">
-            <Label className="text-base">Employee Documents (PDFs)</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {formData.documents.map((doc, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white shadow-sm">
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-                      <FileText className="h-5 w-5" />
+            <Label className="text-base">Required Employee Documents (PDFs)</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+              {["10th marksheet", "12th marksheet", "character certificate", "stamp papers", "requirement form"].map((docType) => {
+                const doc = formData.documents[docType];
+                return (
+                  <div key={docType} className="flex flex-col gap-2 p-4 rounded-xl border border-slate-200 bg-slate-50/50 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <Label className="capitalize text-slate-700 font-semibold">{docType}</Label>
+                      {doc && (
+                        <Button variant="ghost" size="icon" type="button" onClick={() => removeDocument(docType)} className="h-6 w-6 text-red-500 hover:text-red-600 hover:bg-red-50">
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
-                    <div className="truncate">
-                      <p className="text-sm font-medium text-slate-900 truncate" title={doc.name}>{doc.name}</p>
-                      <p className="text-xs text-slate-500">Document</p>
-                    </div>
+                    {doc ? (
+                       <div className="flex items-center gap-3 overflow-hidden mt-2 p-2 bg-white rounded-lg border border-slate-100">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-green-50 text-green-600">
+                            <FileText className="h-4 w-4" />
+                          </div>
+                          <div className="truncate">
+                            <p className="text-xs font-medium text-slate-900 truncate" title={doc.url}>Uploaded successfully</p>
+                          </div>
+                       </div>
+                    ) : (
+                      <div className="mt-2">
+                        <GenericUploader 
+                          label={`Upload ${docType}`} 
+                          accept="application/pdf"
+                          onUploadComplete={(f) => handleDocumentUpload(docType, f)} 
+                        />
+                      </div>
+                    )}
                   </div>
-                  <Button variant="ghost" size="icon" type="button" onClick={() => removeDocument(idx)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              
-              <div className="col-span-1">
-                <GenericUploader 
-                  label="Add PDF Document" 
-                  accept="application/pdf"
-                  onUploadComplete={handleDocumentUpload} 
-                />
-              </div>
+                );
+              })}
             </div>
           </div>
 
@@ -299,5 +338,38 @@ export function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
         </form>
       </CardContent>
     </Card>
+
+    {successData && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="w-full max-w-sm transform overflow-hidden rounded-2xl bg-white p-8 text-center shadow-2xl transition-all scale-in-90 animate-in zoom-in-95 duration-300">
+          <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-green-100">
+            <svg className="h-12 w-12 text-green-500 animate-[bounce_1s_ease-in-out]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+          <h3 className="mb-2 text-2xl font-bold text-slate-900">Success!</h3>
+          <p className="mb-6 text-slate-500">New employee has been created.</p>
+          <div className="mb-8 space-y-3 rounded-xl bg-slate-50 p-4 border border-slate-100">
+            <div>
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Name</p>
+              <p className="text-lg font-bold text-slate-900">{successData.name}</p>
+            </div>
+            <div className="pt-2 border-t border-slate-200">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Employee Code</p>
+              <p className="text-2xl font-black text-indigo-600 tracking-wider">{successData.employeeCode}</p>
+            </div>
+          </div>
+          <Button
+            onClick={() => {
+              setSuccessData(null);
+            }}
+            className="w-full h-12 text-lg font-bold bg-indigo-600 hover:bg-indigo-700"
+          >
+            Continue
+          </Button>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
